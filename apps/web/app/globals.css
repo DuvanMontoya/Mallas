@@ -97,6 +97,11 @@ h1, h2, p { margin-top: 0; }
 .error-panel { margin: 15vh auto; max-width: 32rem; padding: 2rem; }
 .error-panel h1 { font-size: 1.8rem; letter-spacing: -.05em; }
 .error-panel p { color: var(--ink-600); line-height: 1.6; }
+.page-shell { min-height: 100vh; padding: 2rem clamp(1rem, 5vw, 5rem); }
+.module-shell { display: grid; align-content: start; gap: 1.5rem; }
+.module-panel { max-width: 720px; padding: clamp(1.5rem, 5vw, 3rem); }
+.module-panel h1 { font-size: clamp(2rem, 5vw, 3.6rem); letter-spacing: -.06em; margin-bottom: 1rem; }
+.module-panel p:not(.eyebrow) { color: var(--ink-600); line-height: 1.7; margin-bottom: 1.5rem; }
 
 @media (max-width: 900px) {
   .app-frame { grid-template-columns: 80px minmax(0, 1fr); }

@@ -4,9 +4,15 @@
   "dependencyDashboard": true,
   "rangeStrategy": "pin",
   "labels": ["dependencies"],
+  "enabledManagers": ["github-actions", "dockerfile", "npm", "pep621"],
   "packageRules": [
     {
-      "matchDepTypes": ["major"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "matchManagers": ["npm", "pep621", "dockerfile"],
+      "groupName": "runtime-dependencies",
       "automerge": false
     }
   ]

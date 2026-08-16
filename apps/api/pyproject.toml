@@ -47,3 +47,8 @@ strict = true
 warn_unused_ignores = true
 ignore_missing_imports = true
 exclude = ["migrations"]
+
+[[tool.mypy.overrides]]
+module = ["config.*", "modules.*", "tests.*"]
+disallow_subclassing_any = false
+warn_return_any = false

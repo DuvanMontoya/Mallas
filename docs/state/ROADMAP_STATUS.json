@@ -6,9 +6,12 @@
     {
       "id": "P00",
       "name": "Toolchain & repository bootstrap",
-      "status": "pending",
+      "status": "done",
       "depends_on": [],
-      "prompt": "prompts/01_TOOLCHAIN_AND_BOOTSTRAP.md"
+      "prompt": "prompts/01_TOOLCHAIN_AND_BOOTSTRAP.md",
+      "completed_at": "2026-08-16T00:34:00-05:00",
+      "verification": "python scripts/verify.py; pnpm --dir apps/web build; pnpm --dir apps/web e2e; PostgreSQL Compose health/migrate/health endpoints",
+      "notes": "All P00 acceptance gates passed. Specialized reviewer tools were unavailable in the session; manual read-only architecture/code review completed. No automatic Git commit created."
     },
     {
       "id": "P01",

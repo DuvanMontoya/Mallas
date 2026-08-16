@@ -1,53 +1,105 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
     "title": "Curriculum Navigator API",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "API versionada para navegación curricular y planificación académica explicable."
   },
   "paths": {
-    "/health/live": {
+    "/api/v1/health/live": {
       "get": {
+        "operationId": "config_api_live_health",
+        "summary": "Live Health",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "Liveness",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": ["status", "service", "version"],
-                  "properties": {
-                    "status": { "type": "string" },
-                    "service": { "type": "string" },
-                    "version": { "type": "string" }
-                  }
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Operations"
+        ]
       }
     },
-    "/health/ready": {
+    "/api/v1/health/ready": {
       "get": {
+        "operationId": "config_api_ready_health",
+        "summary": "Ready Health",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "Readiness",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": ["status", "service", "database"],
-                  "properties": {
-                    "status": { "type": "string" },
-                    "service": { "type": "string" },
-                    "database": { "type": "string" }
-                  }
+                  "$ref": "#/components/schemas/ReadyResponse"
                 }
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Operations"
+        ]
       }
     }
-  }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "version"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "ReadyResponse": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "database": {
+            "title": "Database",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "database"
+        ],
+        "title": "ReadyResponse",
+        "type": "object"
+      }
+    }
+  },
+  "servers": []
 }

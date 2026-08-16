@@ -1,6 +1,6 @@
-# Navegador Curricular UNAL — Full Agent Build Kit
+# Navegador Curricular UNAL
 
-Este repositorio no es un MVP ni un prototipo de malla curricular. Es el **paquete de control, conocimiento, especificación y ejecución** para construir de extremo a extremo un producto completo de navegación curricular, auditoría de grado, grafo de requisitos, oferta académica, planificación y optimización de trayectorias.
+Plataforma de producción para navegación curricular, auditoría de grado, grafo de requisitos, oferta académica, planificación y optimización de trayectorias. La primera revisión implementa Estadística de la Universidad Nacional de Colombia, Sede Bogotá, plan 2514; el dominio está diseñado para admitir más instituciones, sedes, programas y revisiones sin reescribir el motor.
 
 ## Objetivo inicial
 
@@ -13,56 +13,86 @@ Este repositorio no es un MVP ni un prototipo de malla curricular. Es el **paque
 - Créditos del plan: 141
 - Duración estimada publicada: 9 semestres
 
-## Qué contiene este ZIP
+## Estructura
 
-1. `AGENTS.md`: constitución operativa obligatoria para codex/gpt.
-2. `prompts/`: secuencia completa de prompts listos para copiar y pegar.
-3. `docs/`: especificación funcional, técnica, normativa, UX, seguridad, pruebas, negocio y operación.
-4. `.codex/`: subagentes y Skills especializados.
-5. `data/`: plan 2514 estructurado de forma legible por máquina, catálogo externo y casos de prueba.
-6. `schemas/`: esquemas del DSL de requisitos y del currículo.
-7. `scripts/`: validadores y utilidades para impedir regresiones.
-8. `sources/`: copia de la fuente normativa aportada por el usuario y registro de fuentes públicas.
-9. `infra/`: diseño de infraestructura y plantillas de despliegue.
-10. `diagrams/`: diagramas Mermaid de dominio, arquitectura y flujos.
+- `apps/api`: backend Django modular, motor de dominio y contrato OpenAPI.
+- `apps/web`: frontend Next.js App Router.
+- `packages/api-client`: cliente TypeScript generado desde OpenAPI.
+- `data`, `schemas`, `sources`: datos versionados, esquemas y evidencia normativa.
+- `scripts`: verificadores, exportadores y herramientas operativas.
+- `infra`: Compose y Dockerfiles reproducibles.
+- `docs`, `prompts`: especificación, decisiones, roadmap y milestones obligatorios.
 
-## Cómo usarlo
+## Requisitos
 
-### Paso 1 — descomprimir
+- Python 3.14.x
+- Node.js 24.19.x y pnpm 11.21.x
+- uv 0.11.19
+- Docker Engine/Compose para PostgreSQL local y los servicios completos
 
-Descomprima el ZIP en una carpeta vacía que será la raíz real del proyecto.
+Las versiones se fijan en `.python-version`, `.nvmrc`, `apps/api/pyproject.toml`, `apps/api/uv.lock` y `pnpm-lock.yaml`.
 
-### Paso 2 — iniciar Git
+## Bootstrap local
+
+1. Instale las versiones indicadas y copie `.env.example` a `.env` si necesita personalizar la configuración.
+
+2. Instale dependencias:
 
 ```bash
-git init
-git add .
-git commit -m "chore: initialize curriculum platform control repository"
+uv sync --project apps/api
+pnpm install --frozen-lockfile
 ```
 
-### Paso 3 — abrir codex en esa carpeta
+3. Levante PostgreSQL y prepare la base local:
 
-Use una versión actualizada de codex. Conecte gpt mediante `/connect`, elija gpt y seleccione `gpt` en `/models`.
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres
+uv run --project apps/api python apps/api/manage.py migrate
+```
 
-### Paso 4 — no use `/init` para reemplazar AGENTS.md
+Sin Docker, el backend usa SQLite local para desarrollo y pruebas:
 
-`AGENTS.md` ya fue diseñado deliberadamente. Si codex propone regenerarlo, no permita que lo reemplace sin revisar el diff.
+```bash
+uv run --project apps/api python apps/api/manage.py migrate
+```
 
-### Paso 5 — copiar el primer prompt
+4. Ejecute el backend y el frontend en terminales separadas:
 
-Abra:
+```bash
+uv run --project apps/api python apps/api/manage.py runserver 127.0.0.1:8000
+pnpm --dir apps/web dev
+```
 
-`prompts/00_MASTER_AUTONOMOUS_BUILD.md`
+La API publica health checks en `/api/v1/health/live` y `/api/v1/health/ready`, y OpenAPI en `/api/v1/openapi.json`.
 
-Cópielo y péguelo completo en codex.
+## Verificación
 
-### Paso 6 — continuar
+La verificación canónica ejecuta invariantes de currículo, frescura de OpenAPI, checks y tests Django, Ruff, mypy, lint, typecheck y tests unitarios del frontend:
 
-El agente debe trabajar desde el ROADMAP y guardar su estado dentro del repositorio. Los prompts siguientes sirven para forzar auditorías o reanudar fases concretas, no para volver a explicarle el proyecto desde cero.
+```bash
+python scripts/verify.py
+pnpm --dir apps/web build
+pnpm --dir apps/web e2e
+```
+
+Para regenerar y comprobar el cliente TypeScript:
+
+```bash
+python scripts/export_openapi.py
+pnpm run verify:api
+```
+
+Para ejecutar todo el stack local:
+
+```bash
+docker compose -f infra/docker-compose.yml up --build
+```
+
+El servicio web queda en `http://localhost:3000` y la API en `http://localhost:8000`.
 
 ## Regla central
 
-La memoria permanente del proyecto es el repositorio, no el contexto de la conversación del modelo.
+La memoria permanente del proyecto es el repositorio, no el contexto de la conversación del modelo. Las revisiones curriculares publicadas son inmutables; toda regla publicada debe conservar evidencia y estado epistemológico.
 
 La autoridad se ordena así:
 
@@ -73,5 +103,7 @@ La autoridad se ordena así:
 5. documentación/ADRs,
 6. estado del roadmap,
 7. conversación del agente.
+
+Antes de cambios estructurales, lea `AGENTS.md`, `docs/state/CURRENT_STATE.md`, `docs/state/ROADMAP_STATUS.json`, `docs/state/OPEN_DECISIONS.md` y la especificación del área correspondiente.
 
 Si una conversación contradice una fuente oficial o un test de invariantes, la conversación pierde.

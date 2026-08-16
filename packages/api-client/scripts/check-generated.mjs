@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const schema = "artifacts/openapi.json";
-const generated = "packages/api-client/src/generated.ts";
+const schema = fileURLToPath(new URL("../../../artifacts/openapi.json", import.meta.url));
+const generated = fileURLToPath(new URL("../src/generated.ts", import.meta.url));
 if (!existsSync(generated)) {
   console.error(`Missing generated client: ${generated}`);
   process.exit(1);

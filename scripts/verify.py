@@ -31,24 +31,31 @@ def run(label: str, cmd: list[str], cwd: Path | None = None, required: bool = Tr
 def main() -> int:
     ok = True
     ok &= run("curriculum invariants", [sys.executable, "scripts/validate_curriculum.py"])
-
     api = ROOT / "apps/api"
     web = ROOT / "apps/web"
 
     if (api / "pyproject.toml").exists():
         if shutil.which("uv"):
-            ok &= run("backend tests", ["uv", "run", "pytest"], api)
-            ok &= run("backend ruff", ["uv", "run", "ruff", "check", "."], api)
-            ok &= run("backend format check", ["uv", "run", "ruff", "format", "--check", "."], api)
+            ok &= run(
+                "OpenAPI freshness",
+                ["uv", "run", "--frozen", "python", "..\\..\\scripts\\check_openapi.py"],
+                api,
+            )
+            ok &= run("backend Django checks", ["uv", "run", "--frozen", "python", "manage.py", "check"], api)
+            ok &= run("backend tests", ["uv", "run", "--frozen", "pytest"], api)
+            ok &= run("backend ruff", ["uv", "run", "--frozen", "ruff", "check", "."], api)
+            ok &= run("backend format check", ["uv", "run", "--frozen", "ruff", "format", "--check", "."], api)
+            ok &= run("backend typecheck", ["uv", "run", "--frozen", "mypy", "config", "modules", "tests"], api)
         else:
             print("ERROR: backend exists but uv is missing")
             ok = False
 
     if (web / "package.json").exists():
-        if shutil.which("pnpm"):
-            ok &= run("frontend lint", ["pnpm", "lint"], web)
-            ok &= run("frontend typecheck", ["pnpm", "typecheck"], web)
-            ok &= run("frontend unit tests", ["pnpm", "test", "--", "--run"], web)
+        pnpm = shutil.which("pnpm") or shutil.which("pnpm.cmd")
+        if pnpm:
+            ok &= run("frontend lint", [pnpm, "lint"], web)
+            ok &= run("frontend typecheck", [pnpm, "typecheck"], web)
+            ok &= run("frontend unit tests", [pnpm, "test", "--", "--run"], web)
         else:
             print("ERROR: frontend exists but pnpm is missing")
             ok = False

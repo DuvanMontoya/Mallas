@@ -4,12 +4,26 @@ on:
   push:
     branches: [main]
 jobs:
-  verify-control-repository:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.11.19
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project apps/api --frozen
+      - run: uv run --project apps/api python apps/api/manage.py migrate --check
+      - run: uv run --project apps/api python apps/api/manage.py makemigrations --check --dry-run
       - run: python scripts/verify.py
-# P00 expands this workflow with backend/frontend matrices after lockfiles exist.
+      - run: pnpm --dir apps/web build

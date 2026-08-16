@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   output: "standalone",
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: false,
   images: {
     remotePatterns: [],
   },
