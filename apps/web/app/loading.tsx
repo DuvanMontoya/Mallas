@@ -1,7 +1,11 @@
 export default function Loading() {
   return (
-    <main className="page-shell" aria-busy="true" aria-live="polite">
-      <div className="loading-card">Cargando tu espacio académico…</div>
-    </main>
+    <div className="page-shell" aria-busy="true" aria-live="polite" role="status">
+      <div className="loading-card">
+        <span className="loading-mark" aria-hidden="true" />
+        <p className="eyebrow">Espacio académico</p>
+        <p>Cargando tu espacio académico…</p>
+      </div>
+    </div>
   );
 }

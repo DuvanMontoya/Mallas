@@ -41,7 +41,37 @@ def main() -> int:
                 ["uv", "run", "--frozen", "python", "..\\..\\scripts\\check_openapi.py"],
                 api,
             )
+            ok &= run(
+                "OpenAPI breaking-diff self-check",
+                [
+                    sys.executable,
+                    "scripts/check_openapi_breaking.py",
+                    "--base",
+                    "artifacts/openapi.json",
+                    "--current",
+                    "artifacts/openapi.json",
+                ],
+            )
             ok &= run("backend Django checks", ["uv", "run", "--frozen", "python", "manage.py", "check"], api)
+            ok &= run(
+                "backend migration graph",
+                [
+                    "uv",
+                    "run",
+                    "--frozen",
+                    "python",
+                    "manage.py",
+                    "makemigrations",
+                    "--check",
+                    "--dry-run",
+                ],
+                api,
+            )
+            ok &= run(
+                "backend migration state",
+                ["uv", "run", "--frozen", "python", "manage.py", "migrate", "--check"],
+                api,
+            )
             ok &= run("backend tests", ["uv", "run", "--frozen", "pytest"], api)
             ok &= run("backend ruff", ["uv", "run", "--frozen", "ruff", "check", "."], api)
             ok &= run("backend format check", ["uv", "run", "--frozen", "ruff", "format", "--check", "."], api)
@@ -53,6 +83,10 @@ def main() -> int:
     if (web / "package.json").exists():
         pnpm = shutil.which("pnpm") or shutil.which("pnpm.cmd")
         if pnpm:
+            ok &= run(
+                "generated API client freshness",
+                [pnpm, "--dir", "packages/api-client", "verify"],
+            )
             ok &= run("frontend lint", [pnpm, "lint"], web)
             ok &= run("frontend typecheck", [pnpm, "typecheck"], web)
             ok &= run("frontend unit tests", [pnpm, "test", "--", "--run"], web)

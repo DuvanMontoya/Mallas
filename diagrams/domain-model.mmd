@@ -1,21 +1,35 @@
 classDiagram
+  User "1" --> "0..1" StudentProfile
   Institution "1" --> "*" Campus
   Campus "1" --> "*" Faculty
   Faculty "1" --> "*" Program
+  Institution "1" --> "*" Course
   Program "1" --> "*" CurriculumPlan
   CurriculumPlan "1" --> "*" CurriculumRevision
   CurriculumRevision "1" --> "*" RequirementGroup
+  RequirementGroup "0..1" --> "*" RequirementGroup : parent/children
   CurriculumRevision "1" --> "*" PlanMembership
   Course "1" --> "*" CourseVersion
-  Course "1" --> "*" PlanMembership
+  CourseVersion "1" --> "*" PlanMembership
   RequirementGroup "1" --> "*" PlanMembership
-  PlanMembership --> Requirement
   Requirement --> Evidence
-  Evidence --> NormativeDocument
-  Course "1" --> "*" CourseOffering
+  Evidence "*" --> "1" SourceSnapshot
+  SourceSnapshot "*" --> "1" NormativeDocument
+  NormativeDocument "1" --> "*" NormRelation : source/target
+  Institution "1" --> "*" AcademicTerm
+  AcademicTerm "1" --> "*" CourseOffering
+  CourseVersion "1" --> "*" CourseOffering
   CourseOffering "1" --> "*" Section
-  Student "1" --> "*" StudentCourseAttempt
-  Student "1" --> "*" PlanScenario
+  Section "1" --> "*" Meeting
+  StudentProfile "1" --> "*" ProgramEnrollment
+  ProgramEnrollment "1" --> "*" CourseAttempt
+  CourseVersion "1" --> "*" CourseAttempt
+  ProgramEnrollment "1" --> "*" AcademicRecognition
+  ProgramEnrollment "1" --> "*" AcademicException
+  ProgramEnrollment "1" --> "*" PlanScenario
   PlanScenario "1" --> "*" PlannedCourse
-  DegreeAudit --> CurriculumRevision
-  DegreeAudit --> Student
+  PlanScenario "1" --> "0..1" PlanningPreference
+  ProgramEnrollment "1" --> "*" DegreeAuditRun
+  DegreeAuditRun "1" --> "1" DegreeAuditResult
+  DegreeAuditResult "1" --> "*" CreditAllocation
+  PlanScenario "1" --> "*" OptimizationRun

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://curriculum.local/schemas/curriculum.schema.json",
+  "title": "Curriculum source baseline",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "identity",
+    "revision",
+    "components",
+    "groups",
+    "courses",
+    "memberships",
+    "enrollment_requirements",
+    "graduation_requirements",
+    "source_documents",
+    "known_ambiguities"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "minLength": 1},
+    "identity": {
+      "type": "object",
+      "required": ["institution", "campus", "faculty", "program", "program_code", "total_required_credits"],
+      "properties": {
+        "institution": {"type": "string"},
+        "campus": {"type": "string"},
+        "faculty": {"type": "string"},
+        "program": {"type": "string"},
+        "program_code": {"type": "string"},
+        "total_required_credits": {"type": "integer", "minimum": 0}
+      }
+    },
+    "revision": {
+      "type": "object",
+      "required": ["revision_code", "effective_from"],
+      "properties": {
+        "revision_code": {"type": "string", "minLength": 1},
+        "effective_from": {"type": "string", "format": "date"}
+      }
+    },
+    "components": {"type": "array", "minItems": 1},
+    "groups": {"type": "array", "minItems": 1},
+    "courses": {"type": "array", "minItems": 1},
+    "memberships": {"type": "array"},
+    "enrollment_requirements": {"type": "array"},
+    "graduation_requirements": {"type": "array"},
+    "source_documents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "local_path", "sha256"],
+        "properties": {
+          "id": {"type": "string"},
+          "local_path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}
+        }
+      }
+    },
+    "known_ambiguities": {"type": "array"}
+  }
+}

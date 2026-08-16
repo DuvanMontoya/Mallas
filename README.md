@@ -67,7 +67,9 @@ La API publica health checks en `/api/v1/health/live` y `/api/v1/health/ready`, 
 
 ## Verificación
 
-La verificación canónica ejecuta invariantes de currículo, frescura de OpenAPI, checks y tests Django, Ruff, mypy, lint, typecheck y tests unitarios del frontend:
+La verificación canónica ejecuta invariantes de currículo, frescura de OpenAPI,
+frescura exacta del cliente generado, checks y tests Django, Ruff, mypy, lint,
+typecheck y tests unitarios del frontend:
 
 ```bash
 python scripts/verify.py
@@ -79,7 +81,14 @@ Para regenerar y comprobar el cliente TypeScript:
 
 ```bash
 python scripts/export_openapi.py
+pnpm --dir packages/api-client generate
 pnpm run verify:api
+```
+
+Para auditar compatibilidad con una revisión base de Git:
+
+```bash
+python scripts/check_openapi_breaking.py --base-revision <git-base-sha>
 ```
 
 Para ejecutar todo el stack local:

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import User
+from .models import AuditEvent, RateLimitBucket, RoleAssignment, User
 
 
 @admin.register(User)
@@ -18,3 +18,42 @@ class IdentityUserAdmin(UserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "password1", "password2")}),)
+
+
+@admin.register(RoleAssignment)
+class RoleAssignmentAdmin(admin.ModelAdmin):
+    list_display = ["user", "role", "institution", "program", "active", "valid_from", "valid_to"]
+    list_filter = ["role", "active"]
+    search_fields = ["user__email"]
+
+
+@admin.register(AuditEvent)
+class AuditEventAdmin(admin.ModelAdmin):
+    list_display = ["created_at", "action", "actor", "object_type", "object_id"]
+    list_filter = ["action", "object_type"]
+    search_fields = ["object_id", "request_id"]
+    readonly_fields = [field.name for field in AuditEvent._meta.fields]
+
+    def has_add_permission(self, request: object) -> bool:
+        return False
+
+    def has_change_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
+
+
+@admin.register(RateLimitBucket)
+class RateLimitBucketAdmin(admin.ModelAdmin):
+    list_display = ["action", "key_hash", "window_started_at", "attempts"]
+    readonly_fields = [field.name for field in RateLimitBucket._meta.fields]
+
+    def has_add_permission(self, request: object) -> bool:
+        return False
+
+    def has_change_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: object, obj: object | None = None) -> bool:
+        return False

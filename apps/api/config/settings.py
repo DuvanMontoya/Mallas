@@ -4,14 +4,21 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent.parent
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "local-development-secret-key-change-this-before-production-2026",
-)
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in {"1", "true", "yes"}
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG=false.")
+    SECRET_KEY = "insecure-development-key-only-never-use-in-production"
+if not DEBUG and len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must contain at least 50 characters when DJANGO_DEBUG=false."
+    )
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -20,6 +27,11 @@ ALLOWED_HOSTS = [
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
     if origin.strip()
 ]
 
@@ -47,13 +59,16 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "modules.identity.middleware.OriginAndSecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "modules.identity.middleware.PasswordChangeSessionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+CSRF_FAILURE_VIEW = "modules.common.api.csrf_failure"
 
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [
@@ -118,20 +133,57 @@ AUTH_USER_MODEL = "identity.User"
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_NAME = "curriculum_session"
+SESSION_COOKIE_AGE = int(os.environ.get("SESSION_COOKIE_AGE", str(60 * 60 * 8)))
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+    os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "false").lower() == "true"
+)
+SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "false").lower() == "true"
 SECURE_SSL_REDIRECT = (
     os.environ.get("SECURE_SSL_REDIRECT", "false" if DEBUG else "true").lower() == "true"
 )
+if os.environ.get("SECURE_PROXY_SSL_HEADER", "").lower() == "true":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+TRUST_PROXY_HEADERS = os.environ.get("TRUST_PROXY_HEADERS", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+
+CONTENT_SECURITY_POLICY = os.environ.get(
+    "CONTENT_SECURITY_POLICY",
+    "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'",
+)
+PUBLIC_APP_URL = os.environ.get(
+    "PUBLIC_APP_URL", os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@curriculum.local")
+PRIVATE_IMPORT_STORAGE_ROOT = os.environ.get(
+    "PRIVATE_IMPORT_STORAGE_ROOT", str(PROJECT_ROOT / "var" / "private-imports")
+)
+EMAIL_VERIFICATION_REQUIRED = os.environ.get(
+    "AUTH_EMAIL_VERIFICATION_REQUIRED", "false" if DEBUG else "true"
+).lower() in {"1", "true", "yes"}
+AUTH_RATE_LIMIT_PER_MINUTE = int(os.environ.get("AUTH_RATE_LIMIT_PER_MINUTE", "5"))
+AUTH_RATE_LIMIT_IP_PER_MINUTE = int(os.environ.get("AUTH_RATE_LIMIT_IP_PER_MINUTE", "30"))
+PASSWORD_RESET_TIMEOUT = int(os.environ.get("PASSWORD_RESET_TIMEOUT", str(60 * 60)))
 
 API_TITLE = "Curriculum Navigator API"
 API_VERSION = "1.0.0"
 APP_VERSION = "0.1.0"
+API_PROBLEM_BASE_URL = os.environ.get(
+    "API_PROBLEM_BASE_URL", "https://api.curriculum-navigator.local/problems"
+)
 
 LOGGING = {
     "version": 1,

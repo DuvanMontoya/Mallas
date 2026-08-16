@@ -26,4 +26,7 @@ jobs:
       - run: uv run --project apps/api python apps/api/manage.py migrate --check
       - run: uv run --project apps/api python apps/api/manage.py makemigrations --check --dry-run
       - run: python scripts/verify.py
+      - name: Check OpenAPI breaking changes against pull request base
+        if: github.event_name == 'pull_request'
+        run: python scripts/check_openapi_breaking.py --base-revision "${{ github.event.pull_request.base.sha }}"
       - run: pnpm --dir apps/web build

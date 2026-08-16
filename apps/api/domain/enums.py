@@ -1,15 +1,23 @@
 from __future__ import annotations
 
-from enum import Enum
-from typing import TypeVar
+from enum import Enum, StrEnum
 
 
-class InstitutionStatus(str, Enum):
+class InstitutionStatus(StrEnum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
 
-class RevisionStatus(str, Enum):
+class UserRole(StrEnum):
+    STUDENT = "STUDENT"
+    ADVISOR = "ADVISOR"
+    EDITOR = "EDITOR"
+    REVIEWER = "REVIEWER"
+    ANALYST = "ANALYST"
+    ADMIN = "ADMIN"
+
+
+class RevisionStatus(StrEnum):
     DRAFT = "DRAFT"
     IN_REVIEW = "IN_REVIEW"
     APPROVED = "APPROVED"
@@ -18,26 +26,26 @@ class RevisionStatus(str, Enum):
     RETIRED = "RETIRED"
 
 
-class RequirementGroupKind(str, Enum):
+class RequirementGroupKind(StrEnum):
     COMPONENT = "COMPONENT"
     GROUP = "GROUP"
     GRADUATION = "GRADUATION"
 
 
-class MembershipRole(str, Enum):
+class MembershipRole(StrEnum):
     MANDATORY = "MANDATORY"
     ELECTIVE_OPTION = "ELECTIVE_OPTION"
     FREE_ELECTIVE_OPTION = "FREE_ELECTIVE_OPTION"
     EXTERNAL_REFERENCE = "EXTERNAL_REFERENCE"
 
 
-class CountPolicy(str, Enum):
+class CountPolicy(StrEnum):
     COURSE = "COURSE"
     CREDITS = "CREDITS"
     ONCE = "ONCE"
 
 
-class EpistemicStatus(str, Enum):
+class EpistemicStatus(StrEnum):
     VERIFIED = "VERIFIED"
     DERIVED = "DERIVED"
     INFERRED_PENDING_REVIEW = "INFERRED_PENDING_REVIEW"
@@ -46,14 +54,14 @@ class EpistemicStatus(str, Enum):
     SUPERSEDED = "SUPERSEDED"
 
 
-class SourceStatus(str, Enum):
+class SourceStatus(StrEnum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
     SUPERSEDED = "SUPERSEDED"
     UNKNOWN = "UNKNOWN"
 
 
-class NormRelationType(str, Enum):
+class NormRelationType(StrEnum):
     AMENDS = "AMENDS"
     REPEALS = "REPEALS"
     ADDS = "ADDS"
@@ -61,7 +69,7 @@ class NormRelationType(str, Enum):
     SUPERSEDES = "SUPERSEDES"
 
 
-class RequirementPurpose(str, Enum):
+class RequirementPurpose(StrEnum):
     ENROLLMENT_PREREQUISITE = "ENROLLMENT_PREREQUISITE"
     COREQUISITE = "COREQUISITE"
     GROUP_COMPLETION = "GROUP_COMPLETION"
@@ -70,28 +78,28 @@ class RequirementPurpose(str, Enum):
     SUBSTITUTION = "SUBSTITUTION"
 
 
-class TermStatus(str, Enum):
+class TermStatus(StrEnum):
     PLANNED = "PLANNED"
     OPEN = "OPEN"
     CLOSED = "CLOSED"
     COMPLETED = "COMPLETED"
 
 
-class OfferingStatus(str, Enum):
+class OfferingStatus(StrEnum):
     PLANNED = "PLANNED"
     PUBLISHED = "PUBLISHED"
     CANCELLED = "CANCELLED"
     COMPLETED = "COMPLETED"
 
 
-class SectionModality(str, Enum):
+class SectionModality(StrEnum):
     IN_PERSON = "IN_PERSON"
     ONLINE = "ONLINE"
     HYBRID = "HYBRID"
     UNKNOWN = "UNKNOWN"
 
 
-class EnrollmentStatus(str, Enum):
+class EnrollmentStatus(StrEnum):
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     SUSPENDED = "SUSPENDED"
@@ -99,7 +107,7 @@ class EnrollmentStatus(str, Enum):
     NEEDS_REVIEW = "NEEDS_REVIEW"
 
 
-class AttemptStatus(str, Enum):
+class AttemptStatus(StrEnum):
     PLANNED = "PLANNED"
     ENROLLED = "ENROLLED"
     PASSED = "PASSED"
@@ -112,21 +120,21 @@ class AttemptStatus(str, Enum):
     ANNULLED = "ANNULLED"
 
 
-class AttemptOrigin(str, Enum):
+class AttemptOrigin(StrEnum):
     SIA = "SIA"
     MANUAL = "MANUAL"
     IMPORT = "IMPORT"
     RECOGNITION = "RECOGNITION"
 
 
-class RecognitionType(str, Enum):
+class RecognitionType(StrEnum):
     EQUIVALENCE = "EQUIVALENCE"
     HOMOLOGATION = "HOMOLOGATION"
     TRANSFER = "TRANSFER"
     SUBSTITUTION = "SUBSTITUTION"
 
 
-class ExceptionStatus(str, Enum):
+class ExceptionStatus(StrEnum):
     REQUESTED = "REQUESTED"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
@@ -134,29 +142,56 @@ class ExceptionStatus(str, Enum):
     REVOKED = "REVOKED"
 
 
-class ImportStatus(str, Enum):
+class ImportStatus(StrEnum):
     RECEIVED = "RECEIVED"
     VALIDATING = "VALIDATING"
+    PREVIEW = "PREVIEW"
     VALIDATED = "VALIDATED"
     REJECTED = "REJECTED"
     APPLIED = "APPLIED"
 
 
-class ScenarioStatus(str, Enum):
+class ImportArtifactStatus(StrEnum):
+    STORED = "STORED"
+    REJECTED = "REJECTED"
+
+
+class CandidateStatus(StrEnum):
+    PENDING = "PENDING"
+    VALID = "VALID"
+    CONFLICT = "CONFLICT"
+    ERROR = "ERROR"
+    RESOLVED = "RESOLVED"
+    SKIPPED = "SKIPPED"
+
+
+class ReconciliationDecision(StrEnum):
+    PENDING = "PENDING"
+    ACCEPT = "ACCEPT"
+    EXTERNAL = "EXTERNAL"
+    SKIP = "SKIP"
+
+
+class ProposalStatus(StrEnum):
+    DRAFT = "DRAFT"
+    IN_REVIEW = "IN_REVIEW"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    APPLIED = "APPLIED"
+    WITHDRAWN = "WITHDRAWN"
+
+
+class ScenarioStatus(StrEnum):
     ACTIVE = "ACTIVE"
     ARCHIVED = "ARCHIVED"
 
 
-class ScenarioCourseSource(str, Enum):
+class ScenarioCourseSource(StrEnum):
     USER = "USER"
     OPTIMIZER = "OPTIMIZER"
 
 
-EnumT = TypeVar("EnumT", bound=Enum)
-
-
-def enum_choices(enum_type: type[EnumT]) -> list[tuple[str, str]]:
+def enum_choices[EnumT: Enum](enum_type: type[EnumT]) -> list[tuple[str, str]]:
     """Return stable Django-style choices without importing Django."""
 
     return [(member.value, member.name.replace("_", " ").title()) for member in enum_type]
-

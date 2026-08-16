@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "revision": "2514-AC496-2023",
+  "cases": [
+    {
+      "id": "empty_history_external_unknown",
+      "history_mode": "empty",
+      "external_requirements": {},
+      "expected": "UNSATISFIED",
+      "assert_required_credits": 141
+    },
+    {
+      "id": "complete_plan_all_courses_with_credits",
+      "history_mode": "all_courses_with_credits",
+      "external_requirements": {
+        "FOREIGN_LANGUAGE_B1_OR_RECOGNIZED_EQUIVALENT": true
+      },
+      "expected": "SATISFIED",
+      "assert_applied_credits": 141
+    },
+    {
+      "id": "complete_plan_external_unknown",
+      "history_mode": "all_courses_with_credits",
+      "external_requirements": {},
+      "expected": "UNKNOWN",
+      "assert_applied_credits": 141
+    },
+    {
+      "id": "four_credit_course_fills_three_credit_bucket",
+      "history": [
+        {
+          "course_code": "2015180",
+          "status": "PASSED",
+          "attempt_id": "attempt-2015180",
+          "credits_earned": 4
+        }
+      ],
+      "external_requirements": {
+        "FOREIGN_LANGUAGE_B1_OR_RECOGNIZED_EQUIVALENT": false
+      },
+      "expected": "UNSATISFIED",
+      "assert_earned_credits": 4,
+      "assert_applied_credits": 3,
+      "assert_unapplied_credits": 1
+    }
+  ]
+}

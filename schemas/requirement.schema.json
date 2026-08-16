@@ -12,7 +12,19 @@
           "$ref": "#/$defs/any"
         },
         {
+          "$ref": "#/$defs/not"
+        },
+        {
           "$ref": "#/$defs/coursePassed"
+        },
+        {
+          "$ref": "#/$defs/courseInProgress"
+        },
+        {
+          "$ref": "#/$defs/coursePassedOrInProgress"
+        },
+        {
+          "$ref": "#/$defs/corequisite"
         },
         {
           "$ref": "#/$defs/creditsGroup"
@@ -30,7 +42,16 @@
           "$ref": "#/$defs/groupCompleted"
         },
         {
+          "$ref": "#/$defs/mandatoryCoursesCompleted"
+        },
+        {
+          "$ref": "#/$defs/minimumGrade"
+        },
+        {
           "$ref": "#/$defs/external"
+        },
+        {
+          "$ref": "#/$defs/equivalentCoursePassed"
         },
         {
           "$ref": "#/$defs/unknown"
@@ -77,6 +98,15 @@
         }
       }
     },
+    "not": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "child"],
+      "properties": {
+        "type": {"const": "NOT"},
+        "child": {"$ref": "#/$defs/rule"}
+      }
+    },
     "coursePassed": {
       "type": "object",
       "additionalProperties": false,
@@ -92,6 +122,33 @@
           "type": "string",
           "minLength": 1
         }
+      }
+    },
+    "courseInProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "course_code"],
+      "properties": {
+        "type": {"const": "COURSE_IN_PROGRESS"},
+        "course_code": {"type": "string", "minLength": 1}
+      }
+    },
+    "coursePassedOrInProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "course_code"],
+      "properties": {
+        "type": {"const": "COURSE_PASSED_OR_IN_PROGRESS"},
+        "course_code": {"type": "string", "minLength": 1}
+      }
+    },
+    "corequisite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "course_code"],
+      "properties": {
+        "type": {"const": "COREQUISITE"},
+        "course_code": {"type": "string", "minLength": 1}
       }
     },
     "creditsGroup": {
@@ -221,6 +278,25 @@
         }
       }
     },
+    "mandatoryCoursesCompleted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "course_codes"],
+      "properties": {
+        "type": {"const": "MANDATORY_COURSES_COMPLETED"},
+        "course_codes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "minimumGrade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "course_code", "minimum_grade"],
+      "properties": {
+        "type": {"const": "MINIMUM_GRADE"},
+        "course_code": {"type": "string", "minLength": 1},
+        "minimum_grade": {"type": ["string", "integer", "number"]}
+      }
+    },
     "external": {
       "type": "object",
       "additionalProperties": false,
@@ -235,6 +311,21 @@
         "key": {
           "type": "string"
         }
+      }
+    },
+    "equivalentCoursePassed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "equivalence_key"],
+      "anyOf": [
+        {"required": ["course_code"]},
+        {"required": ["course_codes"]}
+      ],
+      "properties": {
+        "type": {"const": "EQUIVALENT_COURSE_PASSED"},
+        "equivalence_key": {"type": "string", "minLength": 1},
+        "course_code": {"type": "string", "minLength": 1},
+        "course_codes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
       }
     },
     "unknown": {

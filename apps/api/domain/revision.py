@@ -18,4 +18,3 @@ def canonical_content_hash(content: Mapping[str, object]) -> str:
 def assert_revision_content_mutable(status: str, changed: bool) -> None:
     if status == RevisionStatus.PUBLISHED.value and changed:
         raise PublishedRevisionImmutableError("Published curriculum revisions are immutable")
-

@@ -54,6 +54,7 @@ Este kit incluye configuración V1 actual en `codex.json` y una guía de migraci
 - Pydantic 2.13.4
 - Hypothesis 6.165.9
 - OR-Tools 9.15.6755
+- pypdf 6.10.0 (PDF text extraction adapter; OCR remains outside the authority boundary)
 - Ruff 0.16.3
 - mypy 2.3.1
 - Next.js 16.3.1
@@ -67,3 +68,12 @@ Este kit incluye configuración V1 actual en `codex.json` y una guía de migraci
 ## Regla de oro
 
 `latest stable verified > version guessed from model memory`.
+
+## PDF candidate extraction
+
+P06 fija `pypdf==6.10.0`, la versión disponible en el runtime verificado para
+esta sesión. Se usa únicamente para abrir PDFs y extraer texto candidato; el
+resultado conserva página/lineage y requiere preview/confirmación humana. La
+documentación oficial de pypdf advierte que la extracción no es OCR y puede
+fallar en PDFs escaneados, por lo que una extracción vacía o de baja confianza
+queda sin resolver en vez de convertirse en historia académica.

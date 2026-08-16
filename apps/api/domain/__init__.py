@@ -2,4 +2,3 @@
 
 This package deliberately has no Django, settings, ORM, network, or LLM imports.
 """
-

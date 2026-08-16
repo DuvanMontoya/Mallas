@@ -1,8 +1,14 @@
 import createClient from "openapi-fetch";
 
-import type { paths } from "./generated";
+import type { components, paths } from "./generated";
 
-export const createApiClient = (baseUrl = "http://localhost:8000") =>
-  createClient<paths>({ baseUrl });
+export const getApiBaseUrl = () =>
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
+    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+export const createApiClient = (baseUrl = getApiBaseUrl()) =>
+  createClient<paths>({ baseUrl, credentials: "include" });
 
 export type ApiPaths = paths;
+export type ApiComponents = components;

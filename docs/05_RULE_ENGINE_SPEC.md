@@ -97,3 +97,25 @@ La UI traduce:
 - no LLM;
 - explicación estable;
 - hash canónico del AST.
+
+## Implementación P03
+
+El núcleo ejecutable vive en `apps/api/domain/rules/` y no importa Django, ORM,
+red ni LLM. `ast.py` define el AST discriminado versionado (`1.0.0`), parser
+estricto, serializer canónico y hash; `evaluator.py` recibe únicamente un
+`AuditContext` inmutable de hechos y devuelve un árbol `EvaluationResult` con
+estado, progreso, claves de explicación, hechos y evidencias; `graph.py` hace
+análisis de dependencias directas y ciclos.
+
+La serialización persistible de un AST incluye `schema_version` y `rule`.
+Los AST de los baselines históricos pueden conservarse en su forma de nodo
+original, pero sus `Requirement` persistidos registran `ast_schema_version` y
+`ast_hash`. Los porcentajes se comparan como enteros (`approved * denominator
+>= total * numerator`) y el umbral mínimo de 4/5 de 141 se calcula mediante
+división entera exacta.
+
+La semántica de composición es Kleene fuerte: en `ALL`, `UNSATISFIED` domina a
+`UNKNOWN`; si no hay un falso pero falta un hecho, el resultado es `UNKNOWN`.
+En `ANY`, `SATISFIED` domina; si no hay un verdadero y existe un desconocido,
+el resultado es `UNKNOWN`. `NOT_APPLICABLE` sólo aparece cuando el contexto lo
+marca explícitamente.

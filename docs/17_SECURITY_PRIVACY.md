@@ -56,3 +56,45 @@ Amenazas:
 ## Roles
 
 Ver `docs/18_AUTHORIZATION_MATRIX.md`.
+
+## Implementación P05
+
+La aplicación usa sesión first-party de Django con cookie `HttpOnly`,
+`SameSite=Lax` y `Secure` fuera de DEBUG. Las operaciones mutables de
+identidad usan la comprobación CSRF de Ninja; el frontend obtiene el token en
+`GET /api/v1/auth/csrf`. `OriginAndSecurityMiddleware` permite sólo los
+orígenes configurados, responde preflight explícito y emite CSP, Permissions
+Policy, COOP y CORP.
+
+`identity.User` conserva la cuenta separada de `StudentProfile` y expone
+login/logout, `/me`, reset de contraseña y verificación de correo. Los enlaces
+usan tokens Django con expiración; el reset marca el cambio de contraseña y
+`PasswordChangeSessionMiddleware` invalida sesiones anteriores. Las respuestas
+de reset no enumeran cuentas.
+
+`RoleAssignment` permite roles con alcance global, institucional o de programa;
+`StudentAdvisorAssignment` es la delegación explícita para consultar historia
+ajena. Las políticas de autorización están centralizadas en
+`modules.identity.application.authorization`; no se decide ownership en el
+frontend. Editor puede trabajar drafts, Reviewer/Admin pueden publicar y una
+revisión publicada no puede editarse.
+
+`AuditEvent` es append-only en modelo, admin y trigger de PostgreSQL. En SQLite, usado
+para desarrollo/tests, la protección de modelo/admin cubre las rutas de aplicación; la
+integridad de producción se asegura con el trigger PostgreSQL. Los eventos
+no guardan email, contraseña, token ni IP en claro; los identificadores y la IP
+se almacenan como digest con la clave de configuración. `RateLimitBucket` usa
+ventanas transaccionales en la base para compartir límites entre workers.
+
+Los archivos de historia se validan antes de persistir, se almacenan fuera de media
+pública bajo `PRIVATE_IMPORT_STORAGE_ROOT`, no se ejecutan y sólo se exponen después de
+comprobar ownership/RBAC del enrollment. Se rechazan extensiones no permitidas,
+excesos de tamaño, firmas de ejecutables/archivos comprimidos, firmas PDF incoherentes,
+NUL y texto no UTF-8. La extracción PDF es text-only y sus resultados siempre requieren
+confirmación humana.
+
+La frontera de MFA está documentada en ADR-0012: P05 no incorpora una
+dependencia de TOTP/WebAuthn sin política de enrolamiento/recuperación
+verificada; los controles temporales de separación de funciones, CSRF,
+cookies, rate limiting, ownership y auditoría protegen la publicación hasta el
+hardening dedicado.

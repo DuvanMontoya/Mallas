@@ -12,4 +12,3 @@ class UUIDTimestampedModel(models.Model):
 
     class Meta:
         abstract = True
-

@@ -10,6 +10,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@curriculum-navigator/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@dnd-kit/core':
         specifier: 6.3.1
         version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

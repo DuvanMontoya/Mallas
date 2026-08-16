@@ -16,77 +16,101 @@
     {
       "id": "P01",
       "name": "Architecture & domain skeleton",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P00"
       ],
-      "prompt": "prompts/02_DOMAIN_AND_BACKEND_FOUNDATION.md"
+      "prompt": "prompts/02_DOMAIN_AND_BACKEND_FOUNDATION.md",
+      "completed_at": "2026-08-16T01:02:00-05:00",
+      "verification": "python scripts/verify.py; SQLite/PostgreSQL clean migrations; PostgreSQL trigger test; deploy check; Ruff/mypy/frontend checks",
+      "notes": "Domain/persistence skeleton and ERD implemented. Specialized reviewer tools unavailable; manual read-only architecture/code review completed."
     },
     {
       "id": "P02",
       "name": "Curriculum source ingestion & governance",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P01"
       ],
-      "prompt": "prompts/03_CURRICULUM_INGESTION.md"
+      "prompt": "prompts/03_CURRICULUM_INGESTION.md",
+      "completed_at": "2026-08-16T01:30:00-05:00",
+      "verification": "validate_curriculum; idempotent import twice; SQLite verify; PostgreSQL migrate/check/full pytest; Ruff/format/mypy/frontend checks",
+      "notes": "Baseline 2514 imported as DRAFT with verified PDF hash, page evidence, semantic ChangeProposal, human report and preserved UNKNOWNs. Reviewer subagents unavailable; manual read-only review completed."
     },
     {
       "id": "P03",
       "name": "Rule AST & evaluator",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P01"
       ],
-      "prompt": "prompts/04_RULE_ENGINE.md"
+      "prompt": "prompts/04_RULE_ENGINE.md",
+      "completed_at": "2026-08-16T01:49:00-05:00",
+      "verification": "24 SQLite tests + 1 expected trigger skip; 25 PostgreSQL tests; Ruff/format/mypy/frontend; golden/Hypothesis; exact percentage and benchmark",
+      "notes": "Pure versioned AST/evaluator and cycle analysis implemented. Specialized reviewers unavailable; manual read-only review completed."
     },
     {
       "id": "P04",
       "name": "Degree audit & credit allocation",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P03"
       ],
-      "prompt": "prompts/05_DEGREE_AUDIT.md"
+      "prompt": "prompts/05_DEGREE_AUDIT.md",
+      "completed_at": "2026-08-16T02:14:00-05:00",
+      "verification": "7 focused audit tests; scripts/verify.py with 31 passed + 1 SQLite trigger skip; PostgreSQL migrate/check and 32 full tests; Ruff/format/mypy/frontend checks",
+      "notes": "Pure deterministic audit context/ledger/result, golden 2514 plan, recognition/exception support, reproducible persistence and no-double-count allocation implemented. Specialized reviewers unavailable; manual read-only architecture/code/curriculum review completed."
     },
     {
       "id": "P05",
       "name": "Identity, auth, RBAC & audit log",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P01"
       ],
-      "prompt": "prompts/06_IDENTITY_SECURITY.md"
+      "prompt": "prompts/06_IDENTITY_SECURITY.md",
+      "completed_at": "2026-08-16T02:54:00-05:00",
+      "verification": "41 SQLite tests + 1 expected curricular-trigger skip; 42 PostgreSQL tests; identity focused 10; migrations/check/deploy; OpenAPI/client; Ruff/format/mypy/frontend; scripts/verify.py",
+      "notes": "First-party Django sessions, CSRF/CORS/CSP, purpose-specific password/email tokens, ownership/RBAC, editor/reviewer separation, append-only audit events with PostgreSQL/SQLite triggers, shared rate limits and negative security tests implemented. MFA is an explicit P23 boundary in ADR-0012. Specialized reviewers unavailable; manual read-only security/architecture/code review completed. No automatic Git commit created."
     },
     {
       "id": "P06",
       "name": "Student history & imports",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P04",
         "P05"
       ],
-      "prompt": "prompts/07_STUDENT_HISTORY_IMPORTS.md"
+      "prompt": "prompts/07_STUDENT_HISTORY_IMPORTS.md",
+      "completed_at": "2026-08-16T03:35:00-05:00",
+      "verification": "12 focused SQLite + 12 focused PostgreSQL; 53 SQLite + 1 expected skip; 54 PostgreSQL; migrations/check; Ruff/format/mypy; OpenAPI/client regeneration",
+      "notes": "Private CSV/JSON/PDF history import, candidate reconciliation, explicit conflict/external decisions, evidence lineage, manual CRUD, ownership and transactional audit recalculation implemented. Specialized reviewers unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P07",
       "name": "OpenAPI & generated TypeScript client",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P04",
         "P05"
       ],
-      "prompt": "prompts/08_API_CONTRACT.md"
+      "prompt": "prompts/08_API_CONTRACT.md",
+      "completed_at": "2026-08-16T04:15:37-05:00",
+      "verification": "19 focused SQLite tests; 60 SQLite + 1 expected skip; 61 PostgreSQL; OpenAPI/client freshness; breaking-diff self-check; migrations/check; Ruff/format/mypy/ESLint/TypeScript/Vitest; manual architecture/code/security review",
+      "notes": "Bounded-context routers, ProblemDetails envelope, correlation IDs, session auth/CSRF docs, deterministic pagination/filter/sort, ETag/If-Match concurrency, idempotent imports, generated openapi-typescript/openapi-fetch client, stale CI check and breaking-diff checker implemented. Specialized reviewers unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P08",
       "name": "Frontend foundation & design system",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P00",
         "P07"
       ],
-      "prompt": "prompts/09_FRONTEND_FOUNDATION.md"
+      "prompt": "prompts/09_FRONTEND_FOUNDATION.md",
+      "completed_at": "2026-08-16T04:58:41-05:00",
+      "verification": "pnpm install --frozen-lockfile; frontend typecheck/lint; 4 files and 6 Vitest/axe tests; Next production build; Playwright 4/4 desktop/mobile; python scripts/verify.py; manual UX/code review",
+      "notes": "Responsive role-aware App Router shell, auth/CSRF entry point connected to generated API client, semantic light/dark tokens, domain-neutral design-system components, i18n catalogs, URL-state pattern, loading/error/empty boundaries and accessibility automation implemented. Specialized reviewers unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P09",
