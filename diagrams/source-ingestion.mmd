@@ -1,0 +1,13 @@
+flowchart TD
+  A[Official source discovered] --> B[Archive exact bytes]
+  B --> C[Hash + metadata]
+  C --> D[Structured extraction candidate]
+  D --> E[Schema validation]
+  E --> F[Semantic diff]
+  F --> G[Deterministic invariants]
+  G --> H{Ambiguity?}
+  H -- yes --> I[UNKNOWN / pending review]
+  H -- no --> J[Reviewer approval]
+  I --> J
+  J --> K[Publish immutable revision]
+  K --> L[Impact analysis + affected audits]

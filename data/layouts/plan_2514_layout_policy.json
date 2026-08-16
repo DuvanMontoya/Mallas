@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "plan": "2514",
+  "normative": false,
+  "policy": "Do not label a semester placement as official unless an official source explicitly supplies it.",
+  "available_layouts": [
+    {
+      "id": "dependency-depth",
+      "description": "Columns derived from prerequisite depth; not semesters."
+    },
+    {
+      "id": "suggested-path",
+      "description": "Generated planner path under constraints; clearly labeled suggested."
+    },
+    {
+      "id": "user-scenario",
+      "description": "Student-authored semester plan."
+    },
+    {
+      "id": "component-lanes",
+      "description": "Lanes by component/group with contextual dependency highlights."
+    }
+  ]
+}

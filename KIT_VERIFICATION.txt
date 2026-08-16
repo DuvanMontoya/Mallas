@@ -1,0 +1,7 @@
+OK: curriculum baseline invariants validated
+courses=102 memberships=97 requirements=73
+
+=== curriculum invariants ===
+
+=== RESULT ===
+PASS

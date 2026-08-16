@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "rangeStrategy": "pin",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchDepTypes": ["major"],
+      "automerge": false
+    }
+  ]
+}

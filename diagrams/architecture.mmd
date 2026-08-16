@@ -1,0 +1,15 @@
+flowchart LR
+  U[Student / Advisor / Curriculum Editor] --> WEB[Next.js Web]
+  WEB --> API[Django API]
+  API --> APP[Application Services]
+  APP --> RULES[Pure Rule Engine]
+  APP --> AUDIT[Degree Audit]
+  APP --> PLAN[Planning]
+  APP --> OPT[CP-SAT Optimizer]
+  APP --> GOV[Curriculum Governance]
+  API --> DB[(PostgreSQL)]
+  GOV --> SOURCES[(Archived Official Sources)]
+  APP --> JOBS[Job Port]
+  JOBS --> WORKER[Production Job Adapter]
+  API --> OBS[OpenTelemetry]
+  WEB --> OBS

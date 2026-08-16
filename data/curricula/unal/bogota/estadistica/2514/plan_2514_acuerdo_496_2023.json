@@ -1,0 +1,2411 @@
+{
+  "schema_version": "1.0.0",
+  "identity": {
+    "institution": "Universidad Nacional de Colombia",
+    "campus": "Bogotá",
+    "faculty": "Facultad de Ciencias",
+    "program": "Estadística",
+    "program_code": "2514",
+    "snies": "32",
+    "degree_name": "Estadístico(a)",
+    "estimated_terms": 9,
+    "total_required_credits": 141
+  },
+  "revision": {
+    "revision_code": "2514-AC496-2023",
+    "effective_from": "2023-05-09",
+    "status": "SOURCE_BASELINE",
+    "note": "Dataset de arranque para revisión humana; no representa una publicación interna de la futura plataforma."
+  },
+  "components": [
+    {
+      "id": "FOUNDATION",
+      "name": "Fundamentación",
+      "required_credits": 52,
+      "mandatory_credits": 36,
+      "elective_credits": 16
+    },
+    {
+      "id": "DISCIPLINARY",
+      "name": "Formación Disciplinar o Profesional",
+      "required_credits": 61,
+      "mandatory_credits": 20,
+      "elective_credits": 41
+    },
+    {
+      "id": "FREE_ELECTIVE",
+      "name": "Libre Elección",
+      "required_credits": 28,
+      "mandatory_credits": 0,
+      "elective_credits": 28
+    }
+  ],
+  "groups": [
+    {
+      "id": "FUND_MATH_STATS",
+      "name": "Fundamentación Matemático-Estadística",
+      "component": "FOUNDATION",
+      "required_credits": 36
+    },
+    {
+      "id": "FUND_SCIENCE",
+      "name": "Fundamentación de Ciencias",
+      "component": "FOUNDATION",
+      "required_credits": 3
+    },
+    {
+      "id": "COMP_MATH",
+      "name": "Complementación Matemática",
+      "component": "FOUNDATION",
+      "required_credits": 4
+    },
+    {
+      "id": "PROGRAMMING",
+      "name": "Programación",
+      "component": "FOUNDATION",
+      "required_credits": 3
+    },
+    {
+      "id": "COMMUNICATION",
+      "name": "Comunicación",
+      "component": "FOUNDATION",
+      "required_credits": 3
+    },
+    {
+      "id": "DATA_FLOW",
+      "name": "Guarda y Flujo de Datos",
+      "component": "FOUNDATION",
+      "required_credits": 3
+    },
+    {
+      "id": "STAT_CORE",
+      "name": "Núcleo Estadístico",
+      "component": "DISCIPLINARY",
+      "required_credits": 36
+    },
+    {
+      "id": "STAT_APPLICATION",
+      "name": "Aplicación Estadística",
+      "component": "DISCIPLINARY",
+      "required_credits": 6
+    },
+    {
+      "id": "STAT_COMPLEMENT",
+      "name": "Complementación Estadística",
+      "component": "DISCIPLINARY",
+      "required_credits": 4
+    },
+    {
+      "id": "METHODOLOGY",
+      "name": "Metodología",
+      "component": "DISCIPLINARY",
+      "required_credits": 3
+    },
+    {
+      "id": "STAT_CONSOLIDATION",
+      "name": "Consolidación Estadística",
+      "component": "DISCIPLINARY",
+      "required_credits": 12
+    },
+    {
+      "id": "FREE_ELECTIVE",
+      "name": "Libre Elección",
+      "component": "FREE_ELECTIVE",
+      "required_credits": 28
+    }
+  ],
+  "courses": [
+    {
+      "code": "1000001",
+      "name": "Matemáticas básicas",
+      "credits": null
+    },
+    {
+      "code": "1000004",
+      "name": "Cálculo diferencial",
+      "credits": null
+    },
+    {
+      "code": "1000019",
+      "name": "Fundamentos de mecánica",
+      "credits": null
+    },
+    {
+      "code": "2016046",
+      "name": "Mercados I",
+      "credits": null
+    },
+    {
+      "code": "2016610",
+      "name": "Sistemas de costos",
+      "credits": null
+    },
+    {
+      "code": "2015168",
+      "name": "Fundamentos de matemáticas",
+      "credits": 4
+    },
+    {
+      "code": "2015181",
+      "name": "Sistemas Numéricos",
+      "credits": 4
+    },
+    {
+      "code": "2016377",
+      "name": "Cálculo diferencial en una variable",
+      "credits": 4
+    },
+    {
+      "code": "2015556",
+      "name": "Cálculo integral en una variable",
+      "credits": 4
+    },
+    {
+      "code": "2015162",
+      "name": "Cálculo vectorial",
+      "credits": 4
+    },
+    {
+      "code": "2015555",
+      "name": "Álgebra lineal básica",
+      "credits": 4
+    },
+    {
+      "code": "2016378",
+      "name": "Álgebra matricial",
+      "credits": 4
+    },
+    {
+      "code": "2015178",
+      "name": "Probabilidad",
+      "credits": 4
+    },
+    {
+      "code": "2016379",
+      "name": "Inferencia estadística",
+      "credits": 4
+    },
+    {
+      "code": "1000009",
+      "name": "Biología general",
+      "credits": 3
+    },
+    {
+      "code": "1000010",
+      "name": "Biología molecular y celular",
+      "credits": 3
+    },
+    {
+      "code": "1000011",
+      "name": "Fundamentos de ecología",
+      "credits": 3
+    },
+    {
+      "code": "1000013",
+      "name": "Probabilidad y estadística fundamental",
+      "credits": 3
+    },
+    {
+      "code": "1000012",
+      "name": "Bioestadística fundamental",
+      "credits": 3
+    },
+    {
+      "code": "1000014",
+      "name": "Estadística social fundamental",
+      "credits": 3
+    },
+    {
+      "code": "2015172",
+      "name": "Geometría elemental",
+      "credits": 4
+    },
+    {
+      "code": "2025819",
+      "name": "Introducción a la teoría de conjuntos",
+      "credits": 4
+    },
+    {
+      "code": "1000008",
+      "name": "Geometría vectorial y analítica",
+      "credits": 4
+    },
+    {
+      "code": "2025963",
+      "name": "Matemáticas discretas I",
+      "credits": 4
+    },
+    {
+      "code": "1000024",
+      "name": "Principios de química",
+      "credits": 3
+    },
+    {
+      "code": "1000034",
+      "name": "Química orgánica I",
+      "credits": 3
+    },
+    {
+      "code": "1000041",
+      "name": "Química básica",
+      "credits": 3
+    },
+    {
+      "code": "1000040",
+      "name": "Introducción a la ciencia de materiales",
+      "credits": 3
+    },
+    {
+      "code": "2015176",
+      "name": "Mecánica newtoniana",
+      "credits": 4
+    },
+    {
+      "code": "1000018",
+      "name": "Fundamentos de física moderna",
+      "credits": 3
+    },
+    {
+      "code": "2015155",
+      "name": "Introducción al análisis real",
+      "credits": 4
+    },
+    {
+      "code": "2015152",
+      "name": "Grupos y anillos",
+      "credits": 4
+    },
+    {
+      "code": "2016342",
+      "name": "Cálculo de ecuaciones diferenciales ordinarias",
+      "credits": 4
+    },
+    {
+      "code": "2015177",
+      "name": "Modelos matemáticos",
+      "credits": 4
+    },
+    {
+      "code": "2015161",
+      "name": "Análisis estocástico",
+      "credits": 4
+    },
+    {
+      "code": "2015180",
+      "name": "Programación y métodos numéricos",
+      "credits": 4
+    },
+    {
+      "code": "2001839",
+      "name": "Programación de computadores",
+      "credits": 3
+    },
+    {
+      "code": "2016374",
+      "name": "Programación en lenguajes estadísticos",
+      "credits": 4
+    },
+    {
+      "code": "2015970",
+      "name": "Métodos numéricos",
+      "credits": 3
+    },
+    {
+      "code": "2015150",
+      "name": "Análisis numérico",
+      "credits": 4
+    },
+    {
+      "code": "2016375",
+      "name": "Programación orientada a objetos",
+      "credits": 3
+    },
+    {
+      "code": "2015709",
+      "name": "Comunicación oral y escrita",
+      "credits": 3
+    },
+    {
+      "code": "2016343",
+      "name": "Español funcional",
+      "credits": 3
+    },
+    {
+      "code": "2016353",
+      "name": "Bases de datos",
+      "credits": 3
+    },
+    {
+      "code": "2016699",
+      "name": "Estructura de datos",
+      "credits": 3
+    },
+    {
+      "code": "2025982",
+      "name": "Sistemas de información",
+      "credits": 3
+    },
+    {
+      "code": "2016366",
+      "name": "Estadística descriptiva y exploratoria",
+      "credits": 4
+    },
+    {
+      "code": "2016360",
+      "name": "Análisis de regresión",
+      "credits": 4
+    },
+    {
+      "code": "2016365",
+      "name": "Estadística descriptiva multivariada",
+      "credits": 4
+    },
+    {
+      "code": "2016369",
+      "name": "Muestreo estadístico",
+      "credits": 4
+    },
+    {
+      "code": "2016368",
+      "name": "Métodos no paramétricos",
+      "credits": 4
+    },
+    {
+      "code": "2016361",
+      "name": "Análisis multivariado",
+      "credits": 4
+    },
+    {
+      "code": "2016364",
+      "name": "Estadística bayesiana",
+      "credits": 4
+    },
+    {
+      "code": "2016367",
+      "name": "Estadística espacial",
+      "credits": 4
+    },
+    {
+      "code": "2016362",
+      "name": "Diseño de experimentos",
+      "credits": 4
+    },
+    {
+      "code": "2016370",
+      "name": "Series del tiempo univariadas",
+      "credits": 4
+    },
+    {
+      "code": "2016363",
+      "name": "Diseño y desarrollo de encuestas",
+      "credits": 4
+    },
+    {
+      "code": "2016328",
+      "name": "Modelos de sobrevivencia univariados",
+      "credits": 3
+    },
+    {
+      "code": "2016327",
+      "name": "Modelos de sobrevivencia multivariados",
+      "credits": 3
+    },
+    {
+      "code": "2016318",
+      "name": "Demografía",
+      "credits": 3
+    },
+    {
+      "code": "2016332",
+      "name": "Teoría estadística del riesgo",
+      "credits": 3
+    },
+    {
+      "code": "2016320",
+      "name": "Epidemiología",
+      "credits": 3
+    },
+    {
+      "code": "2016317",
+      "name": "Control estadístico de calidad",
+      "credits": 3
+    },
+    {
+      "code": "2016329",
+      "name": "Muestreo en poblaciones biológicas",
+      "credits": 3
+    },
+    {
+      "code": "2016331",
+      "name": "Teoría de respuesta al ítem",
+      "credits": 3
+    },
+    {
+      "code": "2016321",
+      "name": "Finanzas y modelos de inversión",
+      "credits": 3
+    },
+    {
+      "code": "2016314",
+      "name": "Cálculo actuarial",
+      "credits": 3
+    },
+    {
+      "code": "2016055",
+      "name": "Tópicos de econometría I",
+      "credits": 3
+    },
+    {
+      "code": "2016054",
+      "name": "Tópicos de econometría II",
+      "credits": 3
+    },
+    {
+      "code": "2016120",
+      "name": "Estrategia de mercados",
+      "credits": 3
+    },
+    {
+      "code": "2016316",
+      "name": "Control de calidad y sistemas de gestión",
+      "credits": 3
+    },
+    {
+      "code": "2025995",
+      "name": "Introducción a los sistemas Inteligentes",
+      "credits": 3
+    },
+    {
+      "code": "2016325",
+      "name": "Minería de datos",
+      "credits": 3
+    },
+    {
+      "code": "2016603",
+      "name": "Investigación de operaciones I",
+      "credits": 3
+    },
+    {
+      "code": "2016324",
+      "name": "Investigación de operaciones II",
+      "credits": 3
+    },
+    {
+      "code": "2016607",
+      "name": "Modelamiento y simulación",
+      "credits": 3
+    },
+    {
+      "code": "2016313",
+      "name": "Análisis de datos categóricos",
+      "credits": 4
+    },
+    {
+      "code": "2016333",
+      "name": "Análisis de correspondencias",
+      "credits": 4
+    },
+    {
+      "code": "2016334",
+      "name": "Análisis de datos longitudinales",
+      "credits": 4
+    },
+    {
+      "code": "2016339",
+      "name": "Procesos estocásticos",
+      "credits": 4
+    },
+    {
+      "code": "2016338",
+      "name": "Muestreo asistido por modelos",
+      "credits": 4
+    },
+    {
+      "code": "2016340",
+      "name": "Series del tiempo multivariadas",
+      "credits": 4
+    },
+    {
+      "code": "2016341",
+      "name": "Tópicos avanzados de diseño experimental",
+      "credits": 4
+    },
+    {
+      "code": "2016335",
+      "name": "Computación estadística",
+      "credits": 4
+    },
+    {
+      "code": "2023826",
+      "name": "Métodos de clasificación",
+      "credits": 4
+    },
+    {
+      "code": "2018623",
+      "name": "Modelos lineales generalizados",
+      "credits": 4
+    },
+    {
+      "code": "2018627",
+      "name": "Teoría de diseño de experimentos",
+      "credits": 4
+    },
+    {
+      "code": "2018630",
+      "name": "Teoría estadística no paramétrica",
+      "credits": 4
+    },
+    {
+      "code": "2018631",
+      "name": "Teoría de muestreo",
+      "credits": 4
+    },
+    {
+      "code": "2018626",
+      "name": "Teoría de series de tiempo univariadas",
+      "credits": 4
+    },
+    {
+      "code": "2016028",
+      "name": "Diseño, gestión y evaluación de proyectos",
+      "credits": 4
+    },
+    {
+      "code": "2016600",
+      "name": "Gestión tecnológica",
+      "credits": 3
+    },
+    {
+      "code": "2015701",
+      "name": "Gerencia de recursos humanos",
+      "credits": 3
+    },
+    {
+      "code": "2015703",
+      "name": "Ingeniería económica",
+      "credits": 3
+    },
+    {
+      "code": "2015803",
+      "name": "Indicadores sociales",
+      "credits": 3
+    },
+    {
+      "code": "2016355",
+      "name": "Estadística y sociedad",
+      "credits": 3
+    },
+    {
+      "code": "2024393",
+      "name": "Formulación y gerencia de proyectos",
+      "credits": 4
+    },
+    {
+      "code": "2015314",
+      "name": "Trabajo de grado",
+      "credits": 8
+    },
+    {
+      "code": "2015315",
+      "name": "Trabajo de grado – Asignaturas de posgrado",
+      "credits": 8
+    },
+    {
+      "code": "2016345",
+      "name": "Seminario de estadística",
+      "credits": 2
+    },
+    {
+      "code": "2016344",
+      "name": "Consultoría estadística",
+      "credits": 2
+    },
+    {
+      "code": "2028081",
+      "name": "Práctica Estudiantil Estadística",
+      "credits": 10
+    }
+  ],
+  "memberships": [
+    {
+      "course_code": "2015168",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015181",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016377",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015556",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015162",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015555",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016378",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015178",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016379",
+      "group": "FUND_MATH_STATS",
+      "mandatory": true,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000009",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000010",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000011",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000013",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000012",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000014",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015172",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2025819",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000008",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2025963",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000024",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000034",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000041",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000040",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015176",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 2,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "1000018",
+      "group": "FUND_SCIENCE",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015155",
+      "group": "COMP_MATH",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015152",
+      "group": "COMP_MATH",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016342",
+      "group": "COMP_MATH",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015177",
+      "group": "COMP_MATH",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015161",
+      "group": "COMP_MATH",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015180",
+      "group": "PROGRAMMING",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2001839",
+      "group": "PROGRAMMING",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016374",
+      "group": "PROGRAMMING",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015970",
+      "group": "PROGRAMMING",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015150",
+      "group": "PROGRAMMING",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016375",
+      "group": "PROGRAMMING",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015709",
+      "group": "COMMUNICATION",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016343",
+      "group": "COMMUNICATION",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016353",
+      "group": "DATA_FLOW",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016699",
+      "group": "DATA_FLOW",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2025982",
+      "group": "DATA_FLOW",
+      "mandatory": false,
+      "source_page": 3,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016366",
+      "group": "STAT_CORE",
+      "mandatory": true,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016360",
+      "group": "STAT_CORE",
+      "mandatory": true,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016365",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016369",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016368",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016361",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016364",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016367",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016362",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016370",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016363",
+      "group": "STAT_CORE",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016328",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016327",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016318",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016332",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016320",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016317",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016329",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016331",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016321",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016314",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016055",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016054",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016120",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016316",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2025995",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016325",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 4,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016603",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016324",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016607",
+      "group": "STAT_APPLICATION",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016313",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016333",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016334",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016339",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016338",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016340",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016341",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016335",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2023826",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2018623",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2018627",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2018630",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2018631",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2018626",
+      "group": "STAT_COMPLEMENT",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016028",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016600",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015701",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015703",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015803",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016355",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2024393",
+      "group": "METHODOLOGY",
+      "mandatory": false,
+      "source_page": 5,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015314",
+      "group": "STAT_CONSOLIDATION",
+      "mandatory": false,
+      "source_page": 6,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2015315",
+      "group": "STAT_CONSOLIDATION",
+      "mandatory": false,
+      "source_page": 6,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016345",
+      "group": "STAT_CONSOLIDATION",
+      "mandatory": true,
+      "source_page": 6,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2016344",
+      "group": "STAT_CONSOLIDATION",
+      "mandatory": true,
+      "source_page": 6,
+      "status": "VERIFIED"
+    },
+    {
+      "course_code": "2028081",
+      "group": "FREE_ELECTIVE",
+      "mandatory": false,
+      "source_page": 6,
+      "status": "VERIFIED"
+    }
+  ],
+  "enrollment_requirements": [
+    {
+      "owner_course_code": "2015168",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "1000001"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2015181",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015168"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2016377",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "1000001"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2015556",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016377"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2015162",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015556"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2015555",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "1000001"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2016378",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015555"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2015178",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015556"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2016379",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015178"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "1000013",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "ANY",
+        "children": [
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "1000004"
+          },
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2016377"
+          }
+        ]
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "1000012",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "1000001"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2025819",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015168"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      }
+    },
+    {
+      "owner_course_code": "2015176",
+      "purpose": "COREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016377"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 2
+      },
+      "note": "La tabla marca Cálculo diferencial en una variable como correquisito."
+    },
+    {
+      "owner_course_code": "1000018",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "ALL",
+        "children": [
+          {
+            "type": "ANY",
+            "children": [
+              {
+                "type": "COURSE_PASSED",
+                "course_code": "2015176"
+              },
+              {
+                "type": "COURSE_PASSED",
+                "course_code": "1000019"
+              }
+            ]
+          },
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2016377"
+          }
+        ]
+      },
+      "epistemic_status": "INFERRED_PENDING_REVIEW",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      },
+      "note": "La tabla visual agrupa 'Mecánica newtoniana o Fundamentos de mecánica y Cálculo diferencial en una variable'. La agrupación lógica se conserva como candidato y requiere revisión humana antes de publicar.",
+      "raw_source_text": "Mecánica newtoniana o Fundamentos de mecánica y Cálculo diferencial en una variable"
+    },
+    {
+      "owner_course_code": "2015155",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015181"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2015152",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2025819"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2016342",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "ALL",
+        "children": [
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2015555"
+          },
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2015556"
+          }
+        ]
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2015161",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016339"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2015180",
+      "purpose": "COREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015555"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2016374",
+      "purpose": "COREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015555"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2015970",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015162"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2015150",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015155"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2016353",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_GROUP",
+        "group": "PROGRAMMING",
+        "operator": ">=",
+        "value": 3
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2016699",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_GROUP",
+        "group": "PROGRAMMING",
+        "operator": ">=",
+        "value": 3
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2025982",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_GROUP",
+        "group": "PROGRAMMING",
+        "operator": ">=",
+        "value": 3
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 3
+      }
+    },
+    {
+      "owner_course_code": "2016360",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016365",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016378"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016369",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016368",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016361",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "ALL",
+        "children": [
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2016379"
+          },
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2016378"
+          }
+        ]
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016364",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016367",
+      "purpose": "DEPENDENCY_TYPE_UNKNOWN",
+      "ast": {
+        "type": "UNKNOWN",
+        "reason": "La tabla muestra Análisis de regresión 2016360 pero la celda de tipo de requisito no aparece explícita."
+      },
+      "epistemic_status": "UNKNOWN",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      },
+      "raw_source_text": "Estadística espacial 2016367 ... Análisis de regresión 2016360"
+    },
+    {
+      "owner_course_code": "2016362",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016370",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016363",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "ALL",
+        "children": [
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2016369"
+          },
+          {
+            "type": "CREDITS_IN_GROUP",
+            "group": "PROGRAMMING",
+            "operator": ">=",
+            "value": 3
+          }
+        ]
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016328",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016327",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016328"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016318",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016332",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016320",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016317",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016329",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "ANY",
+        "children": [
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "2016379"
+          },
+          {
+            "type": "COURSE_PASSED",
+            "course_code": "1000012"
+          }
+        ]
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016331",
+      "purpose": "DEPENDENCY_TYPE_UNKNOWN",
+      "ast": {
+        "type": "UNKNOWN",
+        "reason": "La tabla muestra Análisis de regresión 2016360 sin etiqueta visible de tipo de requisito."
+      },
+      "epistemic_status": "UNKNOWN",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      },
+      "raw_source_text": "Teoría de respuesta al ítem 2016331 ... Análisis de regresión 2016360"
+    },
+    {
+      "owner_course_code": "2016321",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016342"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016314",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015178"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016055",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016054",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016055"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016120",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016046"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016316",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 4
+      }
+    },
+    {
+      "owner_course_code": "2016603",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016324",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016603"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016607",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016379"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016313",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016333",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016365"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016334",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016361"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016339",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2015178"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016338",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016369"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016340",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016370"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016341",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016362"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016335",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_GROUP",
+        "group": "PROGRAMMING",
+        "operator": ">=",
+        "value": 3
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2023826",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016365"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2018623",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016360"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2016600",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_COMPONENT",
+        "component": "DISCIPLINARY",
+        "operator": ">=",
+        "value": 20
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2015701",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_COMPONENT",
+        "component": "DISCIPLINARY",
+        "operator": ">=",
+        "value": 20
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2015703",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "COURSE_PASSED",
+        "course_code": "2016610"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      }
+    },
+    {
+      "owner_course_code": "2015803",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "UNKNOWN",
+        "reason": "La tabla indica 'Prerrequisito' pero no identifica nombre/código del requisito."
+      },
+      "epistemic_status": "UNKNOWN",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      },
+      "raw_source_text": "Indicadores sociales 2015803 ... Prerrequisito"
+    },
+    {
+      "owner_course_code": "2016355",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "UNKNOWN",
+        "reason": "La tabla indica 'Prerrequisito' pero no identifica nombre/código del requisito."
+      },
+      "epistemic_status": "UNKNOWN",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      },
+      "raw_source_text": "Estadística y sociedad 2016355 ... Prerrequisito"
+    },
+    {
+      "owner_course_code": "2024393",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "UNKNOWN",
+        "reason": "La tabla indica 'Prerrequisito' pero no identifica nombre/código del requisito."
+      },
+      "epistemic_status": "UNKNOWN",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 5
+      },
+      "raw_source_text": "Formulación y gerencia de proyectos 2024393 ... Prerrequisito"
+    },
+    {
+      "owner_course_code": "2015314",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "PERCENTAGE_OF_PLAN",
+        "numerator": 4,
+        "denominator": 5
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 6
+      },
+      "note": "80% del total de créditos del plan."
+    },
+    {
+      "owner_course_code": "2015315",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "PERCENTAGE_OF_PLAN",
+        "numerator": 4,
+        "denominator": 5
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 6
+      },
+      "note": "80% del total de créditos del plan."
+    },
+    {
+      "owner_course_code": "2016345",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_COMPONENT",
+        "component": "DISCIPLINARY",
+        "operator": ">=",
+        "value": 39
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 6
+      }
+    },
+    {
+      "owner_course_code": "2016344",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "CREDITS_IN_COMPONENT",
+        "component": "DISCIPLINARY",
+        "operator": ">=",
+        "value": 39
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 6
+      }
+    },
+    {
+      "owner_course_code": "2028081",
+      "purpose": "PREREQUISITE",
+      "ast": {
+        "type": "GROUP_COMPLETED",
+        "group": "STAT_CORE"
+      },
+      "epistemic_status": "VERIFIED",
+      "evidence": {
+        "document": "ACUERDO_496_2023",
+        "page": 6
+      }
+    }
+  ],
+  "graduation_requirements": [
+    {
+      "id": "FOREIGN_LANGUAGE_SUFFICIENCY",
+      "name": "Suficiencia en lengua extranjera",
+      "kind": "EXTERNAL_REQUIREMENT",
+      "credits": 0,
+      "ast": {
+        "type": "EXTERNAL_REQUIREMENT",
+        "key": "FOREIGN_LANGUAGE_B1_OR_RECOGNIZED_EQUIVALENT"
+      },
+      "epistemic_status": "VERIFIED_AT_INSTITUTION_LEVEL",
+      "note": "La página oficial de Admisiones indica B1 como obligación y requisito de grado; debe versionarse separadamente del Acuerdo 496 y de los 141 créditos.",
+      "source_url": "https://admisiones.unal.edu.co/otras-pruebas/prueba-de-ingles-pregrado/"
+    }
+  ],
+  "source_documents": [
+    {
+      "id": "ACUERDO_496_2023",
+      "title": "Acuerdo 496 de 2023 — Plan 2514 Estadística",
+      "local_path": "sources/unal/estadistica/ACUERDO_496_2023_PLAN_2514_ESTADISTICA.pdf",
+      "sha256": "9253909e4208304dd0eb141b5c388956d0008bafe4e7b9033f2aabd5225e8bad",
+      "pages": 6,
+      "epistemic_status": "VERIFIED"
+    }
+  ],
+  "known_ambiguities": [
+    {
+      "course_code": "1000018",
+      "issue": "Agrupación lógica del requisito de Fundamentos de física moderna requiere revisión humana.",
+      "status": "INFERRED_PENDING_REVIEW"
+    },
+    {
+      "course_code": "2016367",
+      "issue": "Dependencia con Análisis de regresión visible, pero tipo de requisito no está rotulado claramente.",
+      "status": "UNKNOWN"
+    },
+    {
+      "course_code": "2016331",
+      "issue": "Dependencia con Análisis de regresión visible, pero tipo de requisito no está rotulado claramente.",
+      "status": "UNKNOWN"
+    },
+    {
+      "course_code": "2015803",
+      "issue": "Se lee Prerrequisito sin nombre/código del requisito.",
+      "status": "UNKNOWN"
+    },
+    {
+      "course_code": "2016355",
+      "issue": "Se lee Prerrequisito sin nombre/código del requisito.",
+      "status": "UNKNOWN"
+    },
+    {
+      "course_code": "2024393",
+      "issue": "Se lee Prerrequisito sin nombre/código del requisito.",
+      "status": "UNKNOWN"
+    }
+  ]
+}

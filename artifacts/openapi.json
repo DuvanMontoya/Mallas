@@ -1,0 +1,53 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Curriculum Navigator API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Liveness",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "service", "version"],
+                  "properties": {
+                    "status": { "type": "string" },
+                    "service": { "type": "string" },
+                    "version": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Readiness",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "service", "database"],
+                  "properties": {
+                    "status": { "type": "string" },
+                    "service": { "type": "string" },
+                    "database": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

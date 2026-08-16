@@ -1,0 +1,12 @@
+flowchart LR
+  I[Internet] --> RP[Reverse proxy / TLS]
+  RP --> WEB[Next.js]
+  RP --> API[Django]
+  API --> DB[(PostgreSQL)]
+  API --> OBJ[(Object storage / archived sources)]
+  API --> JOB[Job workers]
+  WEB --> OTEL[Telemetry]
+  API --> OTEL
+  JOB --> OTEL
+  DB --> BK[Encrypted backups]
+  OBJ --> BK

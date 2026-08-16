@@ -1,0 +1,21 @@
+classDiagram
+  Institution "1" --> "*" Campus
+  Campus "1" --> "*" Faculty
+  Faculty "1" --> "*" Program
+  Program "1" --> "*" CurriculumPlan
+  CurriculumPlan "1" --> "*" CurriculumRevision
+  CurriculumRevision "1" --> "*" RequirementGroup
+  CurriculumRevision "1" --> "*" PlanMembership
+  Course "1" --> "*" CourseVersion
+  Course "1" --> "*" PlanMembership
+  RequirementGroup "1" --> "*" PlanMembership
+  PlanMembership --> Requirement
+  Requirement --> Evidence
+  Evidence --> NormativeDocument
+  Course "1" --> "*" CourseOffering
+  CourseOffering "1" --> "*" Section
+  Student "1" --> "*" StudentCourseAttempt
+  Student "1" --> "*" PlanScenario
+  PlanScenario "1" --> "*" PlannedCourse
+  DegreeAudit --> CurriculumRevision
+  DegreeAudit --> Student

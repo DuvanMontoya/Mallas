@@ -1,0 +1,19 @@
+{
+  "name": "curriculum-navigator",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=24.19.0 <25"
+  },
+  "scripts": {
+    "dev": "pnpm --dir apps/web dev",
+    "build": "pnpm --dir apps/web build",
+    "lint": "pnpm --dir apps/web lint",
+    "typecheck": "pnpm --dir apps/web typecheck",
+    "test": "pnpm --dir apps/web test",
+    "e2e": "pnpm --dir apps/web e2e",
+    "generate:api": "pnpm --dir packages/api-client generate",
+    "verify:api": "pnpm --dir packages/api-client verify"
+  }
+}

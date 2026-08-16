@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://curriculum.local/schemas/requirement.schema.json",
+  "title": "Curriculum Requirement AST",
+  "$defs": {
+    "rule": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/all"
+        },
+        {
+          "$ref": "#/$defs/any"
+        },
+        {
+          "$ref": "#/$defs/coursePassed"
+        },
+        {
+          "$ref": "#/$defs/creditsGroup"
+        },
+        {
+          "$ref": "#/$defs/creditsComponent"
+        },
+        {
+          "$ref": "#/$defs/totalCredits"
+        },
+        {
+          "$ref": "#/$defs/percentage"
+        },
+        {
+          "$ref": "#/$defs/groupCompleted"
+        },
+        {
+          "$ref": "#/$defs/external"
+        },
+        {
+          "$ref": "#/$defs/unknown"
+        }
+      ]
+    },
+    "all": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "children"
+      ],
+      "properties": {
+        "type": {
+          "const": "ALL"
+        },
+        "children": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/rule"
+          }
+        }
+      }
+    },
+    "any": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "children"
+      ],
+      "properties": {
+        "type": {
+          "const": "ANY"
+        },
+        "children": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/rule"
+          }
+        }
+      }
+    },
+    "coursePassed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "course_code"
+      ],
+      "properties": {
+        "type": {
+          "const": "COURSE_PASSED"
+        },
+        "course_code": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "creditsGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "group",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "CREDITS_IN_GROUP"
+        },
+        "group": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            ">=",
+            ">",
+            "=",
+            "<=",
+            "<"
+          ]
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "creditsComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "component",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "CREDITS_IN_COMPONENT"
+        },
+        "component": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            ">=",
+            ">",
+            "=",
+            "<=",
+            "<"
+          ]
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "totalCredits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "TOTAL_CREDITS"
+        },
+        "operator": {
+          "enum": [
+            ">=",
+            ">",
+            "=",
+            "<=",
+            "<"
+          ]
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "percentage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "numerator",
+        "denominator"
+      ],
+      "properties": {
+        "type": {
+          "const": "PERCENTAGE_OF_PLAN"
+        },
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "groupCompleted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "group"
+      ],
+      "properties": {
+        "type": {
+          "const": "GROUP_COMPLETED"
+        },
+        "group": {
+          "type": "string"
+        }
+      }
+    },
+    "external": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "key"
+      ],
+      "properties": {
+        "type": {
+          "const": "EXTERNAL_REQUIREMENT"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "unknown": {
+      "type": "object",
+      "required": [
+        "type",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "const": "UNKNOWN"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "raw_source_text": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/rule"
+}

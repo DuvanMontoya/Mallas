@@ -1,0 +1,31 @@
+# 02 — Glosario de dominio
+
+- **Programa:** carrera o programa curricular.
+- **Plan:** identidad de un plan de estudios, p. ej. 2514.
+- **Revisión curricular:** versión temporal y publicable del plan.
+- **Componente:** gran categoría de créditos, p. ej. Fundamentación.
+- **Agrupación:** bucket normativo interno de asignaturas/requisitos.
+- **Asignatura/Course:** identidad académica estable por código cuando aplica.
+- **CourseVersion:** atributos de una asignatura vigentes durante un intervalo.
+- **Membresía:** relación de una asignatura con una revisión/agrupación.
+- **Obligatoria:** asignatura requerida explícitamente.
+- **Optativa/elegible:** asignatura que puede satisfacer una agrupación.
+- **Libre elección:** créditos seleccionables dentro de reglas institucionales.
+- **Prerrequisito:** condición que debe cumplirse antes de la inscripción.
+- **Correquisito:** condición que puede cumplirse simultáneamente según norma.
+- **Requisito compuesto:** regla `ALL`, `ANY`, créditos, porcentaje, etc.
+- **Historia académica:** intentos reales del estudiante.
+- **Intento:** instancia de una asignatura en un período con estado/nota.
+- **Equivalencia:** relación académica reconocida entre cursos.
+- **Homologación/convalidación:** reconocimiento individual o institucional según decisión.
+- **Excepción/Waiver:** autorización individual que altera evaluación sin cambiar plan global.
+- **Auditoría:** cálculo de cumplimiento para una revisión + historia + excepciones.
+- **Oferta:** disponibilidad de un curso en un período.
+- **Sección:** grupo específico con horario/docente/cupo si existe dato.
+- **Malla:** disposición visual de cursos.
+- **Grafo:** proyección de dependencias/requisitos.
+- **Escenario:** plan futuro hipotético del estudiante.
+- **Evidencia:** fragmento verificable de una fuente.
+- **Norma:** documento oficial que crea/modifica/deroga reglas.
+- **Snapshot:** copia inmutable de una fuente recuperada.
+- **Revisión publicada:** versión inmutable usada para auditorías.

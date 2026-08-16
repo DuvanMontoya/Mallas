@@ -1,0 +1,35 @@
+{
+  "$schema": "https://codex.ai/config.json",
+  "permission": {
+    "read": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "lsp": "allow",
+    "skill": "allow",
+    "task": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "edit": "allow",
+    "external_directory": "ask",
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "git branch*": "allow",
+      "python scripts/verify.py*": "allow",
+      "python scripts/validate_curriculum.py*": "allow",
+      "pytest*": "allow",
+      "uv run pytest*": "allow",
+      "uv run ruff*": "allow",
+      "pnpm test*": "allow",
+      "pnpm lint*": "allow",
+      "pnpm typecheck*": "allow",
+      "git push*": "deny",
+      "git reset --hard*": "deny",
+      "rm -rf /*": "deny"
+    }
+  }
+}

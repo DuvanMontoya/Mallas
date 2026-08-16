@@ -1,0 +1,10 @@
+flowchart TD
+  A[Student academic history] --> N[Normalize attempts/equivalences]
+  R[Published CurriculumRevision] --> C[Build AuditContext]
+  N --> C
+  C --> E[Evaluate requirement AST]
+  E --> ALLOC[Allocate credits without unauthorized double counting]
+  ALLOC --> O[Explainable DegreeAudit]
+  O --> X[Component/group progress]
+  O --> Y[Eligible / blocked / unknown]
+  O --> Z[Evidence and reasons]

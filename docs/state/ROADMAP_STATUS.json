@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0.0",
+  "product_scope": "FULL",
+  "rule": "No phase changes to done until its acceptance gates and verification pass.",
+  "phases": [
+    {
+      "id": "P00",
+      "name": "Toolchain & repository bootstrap",
+      "status": "pending",
+      "depends_on": [],
+      "prompt": "prompts/01_TOOLCHAIN_AND_BOOTSTRAP.md"
+    },
+    {
+      "id": "P01",
+      "name": "Architecture & domain skeleton",
+      "status": "pending",
+      "depends_on": [
+        "P00"
+      ],
+      "prompt": "prompts/02_DOMAIN_AND_BACKEND_FOUNDATION.md"
+    },
+    {
+      "id": "P02",
+      "name": "Curriculum source ingestion & governance",
+      "status": "pending",
+      "depends_on": [
+        "P01"
+      ],
+      "prompt": "prompts/03_CURRICULUM_INGESTION.md"
+    },
+    {
+      "id": "P03",
+      "name": "Rule AST & evaluator",
+      "status": "pending",
+      "depends_on": [
+        "P01"
+      ],
+      "prompt": "prompts/04_RULE_ENGINE.md"
+    },
+    {
+      "id": "P04",
+      "name": "Degree audit & credit allocation",
+      "status": "pending",
+      "depends_on": [
+        "P03"
+      ],
+      "prompt": "prompts/05_DEGREE_AUDIT.md"
+    },
+    {
+      "id": "P05",
+      "name": "Identity, auth, RBAC & audit log",
+      "status": "pending",
+      "depends_on": [
+        "P01"
+      ],
+      "prompt": "prompts/06_IDENTITY_SECURITY.md"
+    },
+    {
+      "id": "P06",
+      "name": "Student history & imports",
+      "status": "pending",
+      "depends_on": [
+        "P04",
+        "P05"
+      ],
+      "prompt": "prompts/07_STUDENT_HISTORY_IMPORTS.md"
+    },
+    {
+      "id": "P07",
+      "name": "OpenAPI & generated TypeScript client",
+      "status": "pending",
+      "depends_on": [
+        "P04",
+        "P05"
+      ],
+      "prompt": "prompts/08_API_CONTRACT.md"
+    },
+    {
+      "id": "P08",
+      "name": "Frontend foundation & design system",
+      "status": "pending",
+      "depends_on": [
+        "P00",
+        "P07"
+      ],
+      "prompt": "prompts/09_FRONTEND_FOUNDATION.md"
+    },
+    {
+      "id": "P09",
+      "name": "Student dashboard & audit UX",
+      "status": "pending",
+      "depends_on": [
+        "P06",
+        "P08"
+      ],
+      "prompt": "prompts/10_DASHBOARD_AUDIT_UX.md"
+    },
+    {
+      "id": "P10",
+      "name": "Interactive curriculum map",
+      "status": "pending",
+      "depends_on": [
+        "P08",
+        "P09"
+      ],
+      "prompt": "prompts/11_CURRICULUM_MAP.md"
+    },
+    {
+      "id": "P11",
+      "name": "Dependency graph & unlock analysis",
+      "status": "pending",
+      "depends_on": [
+        "P03",
+        "P08"
+      ],
+      "prompt": "prompts/12_DEPENDENCY_GRAPH.md"
+    },
+    {
+      "id": "P12",
+      "name": "Academic terms, offerings, sections, schedules",
+      "status": "pending",
+      "depends_on": [
+        "P07"
+      ],
+      "prompt": "prompts/13_OFFERINGS_SCHEDULES.md"
+    },
+    {
+      "id": "P13",
+      "name": "Planner scenarios",
+      "status": "pending",
+      "depends_on": [
+        "P10",
+        "P12"
+      ],
+      "prompt": "prompts/14_PLANNER.md"
+    },
+    {
+      "id": "P14",
+      "name": "Constraint optimizer",
+      "status": "pending",
+      "depends_on": [
+        "P13",
+        "P04"
+      ],
+      "prompt": "prompts/15_OPTIMIZER.md"
+    },
+    {
+      "id": "P15",
+      "name": "Curriculum backoffice & semantic diff",
+      "status": "pending",
+      "depends_on": [
+        "P02",
+        "P05",
+        "P08"
+      ],
+      "prompt": "prompts/16_ADMIN_GOVERNANCE.md"
+    },
+    {
+      "id": "P16",
+      "name": "Revision publication & impact analysis",
+      "status": "pending",
+      "depends_on": [
+        "P15",
+        "P04"
+      ],
+      "prompt": "prompts/17_PUBLICATION_IMPACT.md"
+    },
+    {
+      "id": "P17",
+      "name": "Notifications",
+      "status": "pending",
+      "depends_on": [
+        "P12",
+        "P16"
+      ],
+      "prompt": "prompts/18_NOTIFICATIONS.md"
+    },
+    {
+      "id": "P18",
+      "name": "Student analytics",
+      "status": "pending",
+      "depends_on": [
+        "P09",
+        "P13"
+      ],
+      "prompt": "prompts/19_ANALYTICS.md"
+    },
+    {
+      "id": "P19",
+      "name": "Institutional analytics & privacy controls",
+      "status": "pending",
+      "depends_on": [
+        "P18",
+        "P05"
+      ],
+      "prompt": "prompts/19_ANALYTICS.md"
+    },
+    {
+      "id": "P20",
+      "name": "Observability & operational tooling",
+      "status": "pending",
+      "depends_on": [
+        "P05"
+      ],
+      "prompt": "prompts/20_OBSERVABILITY.md"
+    },
+    {
+      "id": "P21",
+      "name": "Performance & scale hardening",
+      "status": "pending",
+      "depends_on": [
+        "P14",
+        "P20"
+      ],
+      "prompt": "prompts/21_PERFORMANCE.md"
+    },
+    {
+      "id": "P22",
+      "name": "Accessibility & cross-device hardening",
+      "status": "pending",
+      "depends_on": [
+        "P10",
+        "P13"
+      ],
+      "prompt": "prompts/22_ACCESSIBILITY_E2E.md"
+    },
+    {
+      "id": "P23",
+      "name": "Security hardening & threat remediation",
+      "status": "pending",
+      "depends_on": [
+        "P15",
+        "P20"
+      ],
+      "prompt": "prompts/23_SECURITY_HARDENING.md"
+    },
+    {
+      "id": "P24",
+      "name": "CI/CD, backup, restore, deployment",
+      "status": "pending",
+      "depends_on": [
+        "P20",
+        "P23"
+      ],
+      "prompt": "prompts/24_DEPLOYMENT_DR.md"
+    },
+    {
+      "id": "P25",
+      "name": "Full-system production audit",
+      "status": "pending",
+      "depends_on": [
+        "P21",
+        "P22",
+        "P24"
+      ],
+      "prompt": "prompts/25_FULL_SYSTEM_AUDIT.md"
+    },
+    {
+      "id": "P26",
+      "name": "Continuous dependency & normative maintenance",
+      "status": "pending",
+      "depends_on": [
+        "P25"
+      ],
+      "prompt": "prompts/26_CONTINUOUS_MAINTENANCE.md"
+    }
+  ]
+}

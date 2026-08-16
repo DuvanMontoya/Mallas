@@ -1,0 +1,9 @@
+flowchart LR
+  H[Academic history] --> EL[Eligibility]
+  R[Curriculum revision] --> EL
+  O[Term offerings + sections] --> F[Feasible choices]
+  EL --> F
+  P[Student constraints/preferences] --> OPT[CP-SAT]
+  F --> OPT
+  OPT --> S[Ranked plan scenarios]
+  S --> EX[Explanation + tradeoffs]

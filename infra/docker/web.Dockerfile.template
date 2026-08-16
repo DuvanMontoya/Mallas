@@ -1,0 +1,3 @@
+# TEMPLATE ONLY — P24 must create the production Dockerfile after Next version is resolved.
+# Requirements: standalone/production output when appropriate, non-root runtime,
+# deterministic pnpm install, no secrets baked into image.

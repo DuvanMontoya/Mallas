@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0.0",
+  "cases": [
+    {
+      "id": "probability_requires_integral",
+      "focus_course": "2015178",
+      "facts": {
+        "passed_courses": []
+      },
+      "expected": "UNSATISFIED"
+    },
+    {
+      "id": "probability_satisfied",
+      "focus_course": "2015178",
+      "facts": {
+        "passed_courses": [
+          "2015556"
+        ]
+      },
+      "expected": "SATISFIED"
+    },
+    {
+      "id": "data_flow_3_programming_credits",
+      "focus_course": "2016353",
+      "facts": {
+        "group_credits": {
+          "PROGRAMMING": 3
+        }
+      },
+      "expected": "SATISFIED"
+    },
+    {
+      "id": "programming_overage_satisfies_threshold",
+      "focus_course": "2016353",
+      "facts": {
+        "group_credits": {
+          "PROGRAMMING": 4
+        }
+      },
+      "expected": "SATISFIED",
+      "assertion": "4 earned in a >=3 condition satisfies it; allocation of the extra credit is a separate audit question."
+    },
+    {
+      "id": "work_degree_112_not_80pct",
+      "focus_course": "2015314",
+      "facts": {
+        "total_plan_credits": 141,
+        "approved_credits": 112
+      },
+      "expected": "UNSATISFIED"
+    },
+    {
+      "id": "work_degree_113_meets_80pct",
+      "focus_course": "2015314",
+      "facts": {
+        "total_plan_credits": 141,
+        "approved_credits": 113
+      },
+      "expected": "SATISFIED"
+    },
+    {
+      "id": "practice_requires_core_complete_32",
+      "focus_course": "2028081",
+      "facts": {
+        "group_credits": {
+          "STAT_CORE": 32
+        },
+        "group_required": {
+          "STAT_CORE": 36
+        }
+      },
+      "expected": "UNSATISFIED"
+    },
+    {
+      "id": "practice_requires_core_complete_36",
+      "focus_course": "2028081",
+      "facts": {
+        "group_credits": {
+          "STAT_CORE": 36
+        },
+        "group_required": {
+          "STAT_CORE": 36
+        }
+      },
+      "expected": "SATISFIED"
+    },
+    {
+      "id": "survey_requires_both",
+      "focus_course": "2016363",
+      "facts": {
+        "passed_courses": [
+          "2016369"
+        ],
+        "group_credits": {
+          "PROGRAMMING": 0
+        }
+      },
+      "expected": "UNSATISFIED"
+    },
+    {
+      "id": "survey_satisfied",
+      "focus_course": "2016363",
+      "facts": {
+        "passed_courses": [
+          "2016369"
+        ],
+        "group_credits": {
+          "PROGRAMMING": 3
+        }
+      },
+      "expected": "SATISFIED"
+    },
+    {
+      "id": "biology_sampling_any_path",
+      "focus_course": "2016329",
+      "facts": {
+        "passed_courses": [
+          "1000012"
+        ]
+      },
+      "expected": "SATISFIED"
+    },
+    {
+      "id": "unknown_methodology_remains_unknown",
+      "focus_course": "2015803",
+      "facts": {
+        "passed_courses": []
+      },
+      "expected": "UNKNOWN"
+    }
+  ]
+}

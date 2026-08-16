@@ -1,0 +1,19 @@
+{
+  "name": "@curriculum-navigator/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../../artifacts/openapi.json -o src/generated.ts",
+    "verify": "node scripts/check-generated.mjs"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0"
+  }
+}

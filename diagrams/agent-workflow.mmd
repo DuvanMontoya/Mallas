@@ -1,0 +1,14 @@
+flowchart TD
+  A[New codex session] --> B[Read AGENTS + state]
+  B --> C[Inspect git + current phase]
+  C --> D[Load relevant Skill]
+  D --> E[Read specs + official docs if version-sensitive]
+  E --> F[Plan coherent change]
+  F --> G[Implement + tests]
+  G --> H[Focused verification]
+  H --> I[Independent reviewer subagent]
+  I --> J{High/Critical findings?}
+  J -- yes --> G
+  J -- no --> K[scripts/verify.py]
+  K --> L[Update roadmap/state/ADR]
+  L --> M[Next ready phase]
