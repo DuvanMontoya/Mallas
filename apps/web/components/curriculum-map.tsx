@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ChevronRight, Printer, RotateCcw, X } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, ChevronRight, Printer, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -353,6 +353,94 @@ function ComponentLanesLayout({ courses, components, groups, selected, onSelect 
   );
 }
 
+function DecisionCourseTile({ course, selected, onSelect }: { course: MapCourse; selected: MapCourse | null; onSelect: (code: string) => void }) {
+  const context = courseContext(course, selected);
+  return (
+    <button className={`decision-course decision-course-${toneFor(course.personal_status)} decision-context-${context}`} type="button" data-course-code={course.code} aria-pressed={context === "selected"} onClick={() => onSelect(course.code)}>
+      <span className="decision-course-topline"><span>{course.code}</span><StatusBadge tone={toneFor(course.personal_status)} label={statusLabel(course.personal_status)} /></span>
+      <strong>{course.name}</strong>
+      <small>{course.credits === null ? "Créditos por verificar" : `${course.credits} créditos`}{course.group_labels[0] ? ` · ${course.group_labels[0]}` : ""}</small>
+    </button>
+  );
+}
+
+function StudentDecisionHeader({ map, counts, onStatus }: { map: CurriculumMap; counts: Record<string, number>; onStatus: (status: string) => void }) {
+  const summaries = [
+    ["PASSED", "Aprobadas", "Lo que ya cerraste"],
+    ["IN_PROGRESS", "En curso", "Tu carga actual"],
+    ["ELIGIBLE", "Matriculables", "Regla verificada"],
+    ["BLOCKED", "Bloqueadas", "Aún tienen requisitos"],
+    ["UNKNOWN", "Por revisar", "Falta evidencia o contexto"],
+  ] as const;
+  return (
+    <section className="decision-header" aria-labelledby="decision-map-title">
+      <div className="decision-header-copy">
+        <p className="eyebrow accent">Estadística · Plan {map.revision.plan_code}</p>
+        <h1 id="decision-map-title">Tu malla, en una sola vista.</h1>
+        <p>{map.personal.available ? "Distingue lo aprobado, lo que cursas, lo que puedes matricular y lo que todavía está bloqueado." : "Explora la estructura del plan. Inicia sesión con una matrícula vinculada para ver decisiones personales."}</p>
+      </div>
+      <div className="decision-status-strip" aria-label="Resumen del estado de asignaturas">
+        {summaries.map(([status, label, helper]) => <button key={status} type="button" onClick={() => onStatus(status)} className={`decision-stat decision-stat-${toneFor(status)}`}><span>{label}</span><strong>{counts[status] ?? 0}</strong><small>{helper}</small></button>)}
+      </div>
+    </section>
+  );
+}
+
+function EnrollmentDecision({ courses, selected, onSelect, onShowUnknown }: { courses: MapCourse[]; selected: MapCourse | null; onSelect: (code: string) => void; onShowUnknown: () => void }) {
+  const eligible = courses.filter((course) => course.personal_status === "ELIGIBLE");
+  const inProgress = courses.filter((course) => course.personal_status === "IN_PROGRESS");
+  return (
+    <section className="enrollment-decision panel" aria-labelledby="enrollment-decision-title">
+      <div className="enrollment-decision-copy">
+        <p className="eyebrow">Tu siguiente decisión</p>
+        <h2 id="enrollment-decision-title">Qué puedes matricular ahora</h2>
+        <p>{eligible.length ? `${eligible.length} asignaturas tienen elegibilidad confirmada con las reglas y la historia disponibles.` : "No hay una elegibilidad confirmada todavía. Esto no significa que no puedas matricular: hay reglas o datos pendientes de verificar."}</p>
+        <div className="enrollment-decision-actions">
+          {eligible.length ? <Link className="button button-primary" href="/planner">Armar mi próximo período <ArrowRight size={15} aria-hidden="true" /></Link> : <button className="button button-secondary" type="button" onClick={onShowUnknown}>Ver qué falta verificar</button>}
+          <Link className="text-link" href="/history">Corregir mi historia</Link>
+        </div>
+      </div>
+      <div className="enrollment-course-list">
+        {eligible.slice(0, 6).map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}
+        {!eligible.length && inProgress.length ? <div className="enrollment-current"><span>Ahora estás cursando</span>{inProgress.map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}</div> : null}
+        {!eligible.length && !inProgress.length ? <div className="decision-empty"><strong>Primero necesitamos una historia confiable.</strong><span>Registra o importa tus asignaturas para calcular la elegibilidad sin adivinar.</span></div> : null}
+      </div>
+    </section>
+  );
+}
+
+function MandatoryJourney({ courses, selected, onSelect }: { courses: MapCourse[]; selected: MapCourse | null; onSelect: (code: string) => void }) {
+  const mandatory = courses.filter((course) => course.membership_roles.includes("MANDATORY"));
+  const depths = [...new Set(mandatory.map((course) => course.dependency_depth).filter((depth): depth is number => depth !== null))].sort((a, b) => a - b);
+  const unknownDepth = mandatory.filter((course) => course.dependency_depth === null);
+  return (
+    <section className="decision-section mandatory-journey" aria-labelledby="mandatory-journey-title">
+      <div className="decision-section-heading"><div><p className="eyebrow">Ruta principal</p><h2 id="mandatory-journey-title">Las obligatorias que sostienen el plan</h2><p>El orden muestra dependencias, no semestres oficiales. Lee de izquierda a derecha.</p></div><span className="decision-count">{mandatory.length} obligatorias</span></div>
+      <div className="mandatory-track">
+        {depths.map((depth) => <section className="mandatory-stage" key={depth} aria-labelledby={`mandatory-stage-${depth}`}><div className="mandatory-stage-heading"><span>{String(depth + 1).padStart(2, "0")}</span><h3 id={`mandatory-stage-${depth}`}>Momento {depth + 1}</h3></div><div className="mandatory-stage-courses">{mandatory.filter((course) => course.dependency_depth === depth).map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}</div></section>)}
+        {unknownDepth.length ? <section className="mandatory-stage mandatory-stage-unknown"><div className="mandatory-stage-heading"><span>?</span><h3>Orden por verificar</h3></div><div className="mandatory-stage-courses">{unknownDepth.map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}</div></section> : null}
+      </div>
+    </section>
+  );
+}
+
+function ChoicePools({ courses, groups, selected, onSelect }: { courses: MapCourse[]; groups: MapGroup[]; selected: MapCourse | null; onSelect: (code: string) => void }) {
+  const optionCourses = courses.filter((course) => !course.membership_roles.includes("MANDATORY") && course.group_codes.length);
+  return (
+    <section className="decision-section choice-pools" aria-labelledby="choice-pools-title">
+      <div className="decision-section-heading"><div><p className="eyebrow">Elecciones del plan</p><h2 id="choice-pools-title">Escoge dentro de cada agrupación</h2><p>No debes cursar todas estas asignaturas. Cada bloque es un banco de opciones para completar los créditos exigidos.</p></div><span className="decision-count">{optionCourses.length} opciones</span></div>
+      <div className="choice-pool-grid">
+        {groups.map((group) => {
+          const groupCourses = optionCourses.filter((course) => course.group_codes.includes(group.code));
+          if (!groupCourses.length) return null;
+          const activeCount = groupCourses.filter((course) => ["PASSED", "IN_PROGRESS", "ELIGIBLE"].includes(course.personal_status)).length;
+          return <details className="choice-pool panel" key={group.code} open={activeCount > 0}><summary><span><strong>{group.label}</strong><small>Completa {group.required_credits} créditos dentro de este bloque</small></span><span>{groupCourses.length} opciones</span></summary><div className="choice-pool-courses">{groupCourses.map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}</div></details>;
+        })}
+      </div>
+    </section>
+  );
+}
+
 function LayoutContextNotice({ layout }: { layout: NonNullable<CurriculumMap["layout_policy"]["available_layouts"][number]> | undefined }) {
   if (!layout || layout.id === "dependency-depth" || layout.id === "component-lanes") return null;
   if (layout.id === "suggested-path") {
@@ -433,6 +521,11 @@ export function CurriculumMapPage({ map, failureMessage, printMode = false }: { 
     });
   }, [map, preferences]);
   const selected = visibleCourses.find((course) => course.code === preferences.selected) ?? null;
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const course of map?.courses ?? []) counts[course.personal_status] = (counts[course.personal_status] ?? 0) + 1;
+    return counts;
+  }, [map]);
   useEffect(() => {
     const selectedCode = selected?.code ?? null;
     if (selectedCode && selectedCode !== previousSelectedRef.current) {
@@ -457,21 +550,28 @@ export function CurriculumMapPage({ map, failureMessage, printMode = false }: { 
 
   return (
     <div className={`curriculum-map-page${printMode ? " curriculum-map-print" : ""}`} data-layout={layout?.id ?? defaultLayout}>
-      {!printMode ? <section className="curriculum-map-hero panel"><div><p className="eyebrow accent">Malla curricular · {map.revision.program_code}</p><h1>Explora el plan sin convertir el dibujo en una regla.</h1><p>Esta vista separa la revisión curricular, el layout visual y tu posible escenario. Las columnas derivadas no son semestres oficiales.</p></div><div className="curriculum-map-hero-meta"><StatusBadge tone={map.revision.status === "PUBLISHED" ? "passed" : "unknown"} label={map.revision.status === "PUBLISHED" ? "Revisión publicada" : "Revisión en proceso editorial"} /><span>{map.revision.revision_code}</span><span>{map.revision.total_required_credits} créditos requeridos</span></div></section> : null}
-      {map.warnings.length && !printMode ? <div className="curriculum-map-alerts">{map.warnings.map((warning) => <Alert key={warning} tone="info"><strong>{warning === "CURRICULUM_REVISION_NOT_PUBLISHED" ? "La revisión no está publicada." : warning === "LAYOUTS_ARE_NOT_NORMATIVE" ? "Los layouts son ayudas visuales no normativas." : warning === "OFFERING_PERIOD_NOT_SELECTED" ? "La oferta no se infiere sin seleccionar un período." : warning}</strong></Alert>)}</div> : null}
-      {!printMode ? <section className="curriculum-map-toolbar panel"><div className="field-group"><label htmlFor="curriculum-layout">Layout de visualización</label><select id="curriculum-layout" value={layout?.id ?? defaultLayout} onChange={(event) => updatePreference("layout", event.target.value)}>{map.layout_policy.available_layouts.map((item) => <option key={item.id} value={item.id}>{item.label} · no normativo</option>)}</select></div><div className="curriculum-toolbar-actions"><button className="button button-secondary" type="button" onClick={() => window.print()}><Printer size={15} aria-hidden="true" /> Imprimir vista</button><Link className="button button-secondary" href={map.links.print}>Vista para imprimir</Link></div></section> : null}
-      {!printMode ? <FilterBar map={map} preferences={preferences} visibleCount={visibleCourses.length} onChange={updatePreference} onReset={reset} /> : null}
-      <MapLegend />
-      <section className="curriculum-map-layout" aria-label="Malla curricular interactiva">
-        <div className="curriculum-map-main">
-          {!printMode && preferences.selected && !selected ? <Alert tone="info"><strong>La asignatura seleccionada quedó fuera de los filtros.</strong> Restablece los filtros para volver a mostrarla.</Alert> : null}
-          <LayoutContextNotice layout={layout} />
-          {layout?.id === "component-lanes" ? <ComponentLanesLayout courses={visibleCourses} components={map.components} groups={map.groups} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : <DependencyDepthLayout courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} />}
-          {!visibleCourses.length ? <section className="panel curriculum-map-empty"><EmptyState title="Ningún curso coincide" description="Ajusta o restablece los filtros para recuperar el contexto de la malla." action={<Button variant="secondary" type="button" onClick={reset}>Restablecer filtros</Button>} /></section> : null}
-        </div>
-        {selected ? <CourseDetailPanel course={selected} map={map} onSelect={(code) => updatePreference("selected", code)} headingRef={courseDetailHeadingRef} /> : <aside className="curriculum-selection-hint panel"><p className="eyebrow">Selección contextual</p><h2>Elige una asignatura</h2><p>La malla mantiene las tarjetas y resalta sólo sus dependencias y desbloqueos directos. Las demás relaciones viven en la vista de grafo.</p><span className="hint-arrow" aria-hidden="true">↗</span></aside>}
+      {!printMode ? <StudentDecisionHeader map={map} counts={statusCounts} onStatus={(status) => updatePreference("status", status)} /> : null}
+      {!printMode ? <EnrollmentDecision courses={map.courses} selected={selected} onSelect={(code) => updatePreference("selected", code)} onShowUnknown={() => updatePreference("status", "UNKNOWN")} /> : null}
+      {!printMode && preferences.selected && !selected ? <Alert tone="info"><strong>La asignatura seleccionada quedó fuera del filtro actual.</strong> Restablece la exploración para volver a mostrarla.</Alert> : null}
+      {!printMode ? <MandatoryJourney courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : <DependencyDepthLayout courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} />}
+      {!printMode ? <ChoicePools courses={visibleCourses} groups={map.groups} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : null}
+      {!printMode ? (
+        <details className="curriculum-explorer panel">
+          <summary><span><strong>Explorar y filtrar el plan completo</strong><small>Búsqueda, estado, agrupación, otras vistas, impresión y procedencia</small></span><span>{visibleCourses.length}/{map.courses.length}</span></summary>
+          <div className="curriculum-explorer-body">
+            <section className="curriculum-map-toolbar"><div className="field-group"><label htmlFor="curriculum-layout">Vista de exploración</label><select id="curriculum-layout" value={layout?.id ?? defaultLayout} onChange={(event) => updatePreference("layout", event.target.value)}>{map.layout_policy.available_layouts.map((item) => <option key={item.id} value={item.id}>{item.label} · no normativo</option>)}</select></div><div className="curriculum-toolbar-actions"><button className="button button-secondary" type="button" onClick={() => window.print()}><Printer size={15} aria-hidden="true" /> Imprimir</button><Link className="button button-secondary" href={map.links.print}>Vista de impresión</Link></div></section>
+            <FilterBar map={map} preferences={preferences} visibleCount={visibleCourses.length} onChange={updatePreference} onReset={reset} />
+            <MapLegend />
+            <LayoutContextNotice layout={layout} />
+            <div className="curriculum-legacy-view">{layout?.id === "component-lanes" ? <ComponentLanesLayout courses={visibleCourses} components={map.components} groups={map.groups} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : <DependencyDepthLayout courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} />}</div>
+          </div>
+        </details>
+      ) : null}
+      <section className={`curriculum-map-layout${selected ? " has-selection" : ""}`} aria-label="Detalle contextual de la malla">
+        <div className="curriculum-map-main">{!visibleCourses.length ? <section className="panel curriculum-map-empty"><EmptyState title="Ningún curso coincide" description="Ajusta o restablece los filtros para recuperar el contexto de la malla." action={<Button variant="secondary" type="button" onClick={reset}>Restablecer filtros</Button>} /></section> : null}</div>
+        {selected ? <CourseDetailPanel course={selected} map={map} onSelect={(code) => updatePreference("selected", code)} headingRef={courseDetailHeadingRef} /> : null}
       </section>
-      <footer className="curriculum-map-footer"><span>Fuente: {map.revision.revision_code} · {map.revision.status}</span><Link href={map.links.sources}>Ver procedencia</Link><span>{map.personal?.available ? "Estados personales calculados por backend" : "Sin estado personal en esta sesión"}</span></footer>
+      <footer className="curriculum-map-footer"><span><StatusBadge tone={map.revision.status === "PUBLISHED" ? "passed" : "unknown"} label={map.revision.status === "PUBLISHED" ? "Revisión publicada" : "Revisión en proceso editorial"} /> {map.revision.revision_code} · {map.revision.total_required_credits} créditos</span><Link href={map.links.sources}>Ver procedencia</Link><span>{map.personal?.available ? "Estados calculados con tu historia" : "Sin estado personal en esta sesión"}</span></footer>
     </div>
   );
 }

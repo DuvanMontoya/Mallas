@@ -37,17 +37,17 @@ type NavigationItem = {
 };
 
 const publicNavigation: NavigationItem[] = [
-  { href: "/", label: messages["es-CO"].home, shortLabel: "Inicio", icon: LayoutDashboard },
   { href: "/curriculum", label: messages["es-CO"].curriculum, shortLabel: "Malla", icon: Map },
-  { href: "/graph", label: messages["es-CO"].graph, shortLabel: "Grafo", icon: Network },
   { href: "/offerings", label: messages["es-CO"].offerings, shortLabel: "Oferta", icon: BookOpen },
+  { href: "/graph", label: messages["es-CO"].graph, shortLabel: "Grafo", icon: Network },
+  { href: "/", label: messages["es-CO"].home, shortLabel: "Inicio", icon: LayoutDashboard },
 ];
 
 const studentNavigation: NavigationItem[] = [
-  { href: "/audit", label: messages["es-CO"].audit, shortLabel: "Auditoría", icon: ClipboardCheck },
-  { href: "/analytics", label: messages["es-CO"].analytics, shortLabel: "Analítica", icon: BarChart3 },
   { href: "/planner", label: messages["es-CO"].planner, shortLabel: "Plan", icon: CalendarClock },
+  { href: "/audit", label: messages["es-CO"].audit, shortLabel: "Auditoría", icon: ClipboardCheck },
   { href: "/history", label: messages["es-CO"].history, shortLabel: "Historia", icon: History },
+  { href: "/analytics", label: messages["es-CO"].analytics, shortLabel: "Analítica", icon: BarChart3 },
 ];
 
 const editorialNavigation: NavigationItem[] = [
@@ -100,7 +100,9 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
   // Student is the default product persona and older accounts can legitimately
   // have no explicit STUDENT assignment. Editorial-only accounts must opt in.
   const canSeeStudentWorkspace = Boolean(session.user?.student_profile_id) || (session.user?.roles.includes("STUDENT") ?? false);
-  const visibleNavigation = canSeeStudentWorkspace ? [...publicNavigation, ...studentNavigation] : publicNavigation;
+  const visibleNavigation = canSeeStudentWorkspace
+    ? [publicNavigation[0], studentNavigation[0], publicNavigation[1], studentNavigation[1], studentNavigation[2], publicNavigation[3], publicNavigation[2], studentNavigation[3]]
+    : publicNavigation;
   const allVisibleNavigation = canSeeEditorial ? [...visibleNavigation, ...editorialNavigation] : visibleNavigation;
 
   useEffect(() => {
@@ -161,7 +163,8 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
           <span><strong>{messages["es-CO"].brandName}</strong><span>{messages["es-CO"].brandProduct}</span></span>
         </Link>
         <nav className="main-nav" aria-label={messages["es-CO"].navigationLabel}>
-          <NavigationLinks items={visibleNavigation} pathname={pathname} />
+          <NavigationLinks items={visibleNavigation.slice(0, 5)} pathname={pathname} />
+          {visibleNavigation.length > 5 ? <div className="nav-section"><p className="nav-section-label">Más herramientas</p><NavigationLinks items={visibleNavigation.slice(5)} pathname={pathname} /></div> : null}
           {canSeeEditorial ? (
             <div className="nav-section">
               <p className="nav-section-label">Editorial</p>
