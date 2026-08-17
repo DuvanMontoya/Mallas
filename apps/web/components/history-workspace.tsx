@@ -60,10 +60,14 @@ export function HistoryWorkspace({
   enrollmentId,
   studentName,
   attemptsPage,
+  courseOptions = [],
+  termOptions = [],
 }: {
   enrollmentId: string;
   studentName: string;
   attemptsPage: HistoryAttemptPage;
+  courseOptions?: Array<{ code: string; name: string }>;
+  termOptions?: string[];
 }) {
   const router = useRouter();
   const [attempts, setAttempts] = useState(attemptsPage.items);
@@ -182,13 +186,6 @@ export function HistoryWorkspace({
         </div>
       </section>
 
-      <section className="history-summary-strip" aria-label="Resumen de historia">
-        <span><strong>{summary.total}</strong> intentos vigentes</span>
-        <span><strong>{summary.passed}</strong> aprobados o reconocidos</span>
-        <span><strong>{summary.inProgress}</strong> en curso</span>
-        <span><strong>{summary.credits}</strong> créditos reportados</span>
-      </section>
-
       {error ? <Alert tone="error">{error}</Alert> : null}
       {message ? <Alert tone="success">{message}</Alert> : null}
 
@@ -223,11 +220,12 @@ export function HistoryWorkspace({
             <div><p className="eyebrow">{selected ? "Corrección trazable" : "Entrada manual"}</p><h2 id="history-editor-title">{selected ? `Editar ${selected.course_code}` : "Agregar un intento"}</h2></div>
             {selected ? <button className="icon-button" type="button" onClick={resetForm} aria-label="Cancelar edición"><RotateCcw size={16} aria-hidden="true" /></button> : null}
           </div>
-          <p className="muted-copy">{selected ? "Sólo se cambian campos permitidos; el intento original permanece en la auditoría." : "Usa códigos exactos del plan y del período. Los duplicados no se sobrescriben."}</p>
+          <p className="muted-copy">{selected ? "Sólo se cambian campos permitidos; el intento original permanece en la auditoría." : "Selecciona datos del plan cuando estén disponibles. Los duplicados no se sobrescriben."}</p>
           <form className="history-form" onSubmit={submit}>
             {!selected ? <>
-              <label className="field-group"><span>Código de asignatura</span><input value={courseCode} onChange={(event) => setCourseCode(event.target.value)} placeholder="Ej. 1000003" required /></label>
-              <label className="field-group"><span>Período académico</span><input value={termCode} onChange={(event) => setTermCode(event.target.value)} placeholder="Ej. 2026-2S" required /></label>
+              <label className="field-group"><span>Asignatura del plan</span><input list="history-course-options" value={courseCode} onChange={(event) => setCourseCode(event.target.value)} placeholder="Busca por código" autoComplete="off" required /></label>
+              <datalist id="history-course-options">{courseOptions.map((course) => <option key={course.code} value={course.code}>{course.name}</option>)}</datalist>
+              <label className="field-group"><span>Período académico</span>{termOptions.length ? <select value={termCode} onChange={(event) => setTermCode(event.target.value)} required><option value="">Selecciona un período</option>{termOptions.map((term) => <option key={term} value={term}>{term}</option>)}</select> : <input value={termCode} onChange={(event) => setTermCode(event.target.value)} placeholder="Ej. 2026-2S" required />}</label>
               <label className="field-group"><span>Número de intento</span><input type="number" min="1" max="99" value={attemptNumber} onChange={(event) => setAttemptNumber(event.target.value)} required /></label>
             </> : null}
             <label className="field-group"><span>Estado oficial</span><select value={status} onChange={(event) => setStatus(event.target.value)}>{ATTEMPT_STATUSES.map((item) => <option key={item} value={item}>{statusLabel(item)}</option>)}</select></label>

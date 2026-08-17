@@ -364,23 +364,22 @@ function DecisionCourseTile({ course, selected, onSelect }: { course: MapCourse;
   );
 }
 
-function StudentDecisionHeader({ map, counts, onStatus }: { map: CurriculumMap; counts: Record<string, number>; onStatus: (status: string) => void }) {
+function StudentDecisionHeader({ map, counts, activeStatus, onStatus }: { map: CurriculumMap; counts: Record<string, number>; activeStatus: string; onStatus: (status: string) => void }) {
   const summaries = [
-    ["PASSED", "Aprobadas", "Lo que ya cerraste"],
-    ["IN_PROGRESS", "En curso", "Tu carga actual"],
-    ["ELIGIBLE", "Matriculables", "Regla verificada"],
-    ["BLOCKED", "Bloqueadas", "Aún tienen requisitos"],
-    ["UNKNOWN", "Por revisar", "Falta evidencia o contexto"],
+    ["PASSED", "Aprobadas"],
+    ["IN_PROGRESS", "En curso"],
+    ["ELIGIBLE", "Matriculables"],
+    ["BLOCKED", "Bloqueadas"],
+    ["UNKNOWN", "Por revisar"],
   ] as const;
   return (
     <section className="decision-header" aria-labelledby="decision-map-title">
       <div className="decision-header-copy">
         <p className="eyebrow accent">Estadística · Plan {map.revision.plan_code}</p>
-        <h1 id="decision-map-title">Tu malla, en una sola vista.</h1>
-        <p>{map.personal.available ? "Distingue lo aprobado, lo que cursas, lo que puedes matricular y lo que todavía está bloqueado." : "Explora la estructura del plan. Inicia sesión con una matrícula vinculada para ver decisiones personales."}</p>
+        <h1 id="decision-map-title">Malla curricular</h1>
       </div>
       <div className="decision-status-strip" aria-label="Resumen del estado de asignaturas">
-        {summaries.map(([status, label, helper]) => <button key={status} type="button" onClick={() => onStatus(status)} className={`decision-stat decision-stat-${toneFor(status)}`}><span>{label}</span><strong>{counts[status] ?? 0}</strong><small>{helper}</small></button>)}
+        {summaries.map(([status, label]) => <button key={status} type="button" aria-pressed={activeStatus === status} onClick={() => onStatus(activeStatus === status ? "" : status)} className={`decision-stat decision-stat-${toneFor(status)}${activeStatus === status ? " is-active" : ""}`}><span>{label}</span><strong>{counts[status] ?? 0}</strong></button>)}
       </div>
     </section>
   );
@@ -392,7 +391,7 @@ function EnrollmentDecision({ courses, selected, onSelect, onShowUnknown }: { co
   return (
     <section className="enrollment-decision panel" aria-labelledby="enrollment-decision-title">
       <div className="enrollment-decision-copy">
-        <p className="eyebrow">Tu siguiente decisión</p>
+        <p className="eyebrow">Opciones matriculables · No dependen del filtro</p>
         <h2 id="enrollment-decision-title">Qué puedes matricular ahora</h2>
         <p>{eligible.length ? `${eligible.length} asignaturas tienen elegibilidad confirmada con las reglas y la historia disponibles.` : "No hay una elegibilidad confirmada todavía. Esto no significa que no puedas matricular: hay reglas o datos pendientes de verificar."}</p>
         <div className="enrollment-decision-actions">
@@ -409,17 +408,17 @@ function EnrollmentDecision({ courses, selected, onSelect, onShowUnknown }: { co
   );
 }
 
-function MandatoryJourney({ courses, selected, onSelect }: { courses: MapCourse[]; selected: MapCourse | null; onSelect: (code: string) => void }) {
+function MandatoryJourney({ courses, selected, onSelect, onClearFilter }: { courses: MapCourse[]; selected: MapCourse | null; onSelect: (code: string) => void; onClearFilter: () => void }) {
   const mandatory = courses.filter((course) => course.membership_roles.includes("MANDATORY"));
   const depths = [...new Set(mandatory.map((course) => course.dependency_depth).filter((depth): depth is number => depth !== null))].sort((a, b) => a - b);
   const unknownDepth = mandatory.filter((course) => course.dependency_depth === null);
   return (
     <section className="decision-section mandatory-journey" aria-labelledby="mandatory-journey-title">
-      <div className="decision-section-heading"><div><p className="eyebrow">Ruta principal</p><h2 id="mandatory-journey-title">Las obligatorias que sostienen el plan</h2><p>El orden muestra dependencias, no semestres oficiales. Lee de izquierda a derecha.</p></div><span className="decision-count">{mandatory.length} obligatorias</span></div>
-      <div className="mandatory-track">
+      <div className="decision-section-heading"><div><p className="eyebrow">Ruta principal</p><h2 id="mandatory-journey-title">Las obligatorias que sostienen el plan</h2><p id="mandatory-track-help">El orden representa dependencias, no semestres oficiales. Desplázate horizontalmente para recorrer la ruta.</p></div><span className="decision-count">{mandatory.length} obligatorias</span></div>
+      {!mandatory.length ? <EmptyState title="No hay obligatorias con este filtro" description="Quita el filtro de estado para recuperar la ruta principal completa." action={<Button variant="secondary" type="button" onClick={onClearFilter}>Ver toda la ruta</Button>} /> : <div className="mandatory-track" aria-describedby="mandatory-track-help" tabIndex={0}>
         {depths.map((depth) => <section className="mandatory-stage" key={depth} aria-labelledby={`mandatory-stage-${depth}`}><div className="mandatory-stage-heading"><span>{String(depth + 1).padStart(2, "0")}</span><h3 id={`mandatory-stage-${depth}`}>Momento {depth + 1}</h3></div><div className="mandatory-stage-courses">{mandatory.filter((course) => course.dependency_depth === depth).map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}</div></section>)}
         {unknownDepth.length ? <section className="mandatory-stage mandatory-stage-unknown"><div className="mandatory-stage-heading"><span>?</span><h3>Orden por verificar</h3></div><div className="mandatory-stage-courses">{unknownDepth.map((course) => <DecisionCourseTile key={course.code} course={course} selected={selected} onSelect={onSelect} />)}</div></section> : null}
-      </div>
+      </div>}
     </section>
   );
 }
@@ -550,10 +549,10 @@ export function CurriculumMapPage({ map, failureMessage, printMode = false }: { 
 
   return (
     <div className={`curriculum-map-page${printMode ? " curriculum-map-print" : ""}`} data-layout={layout?.id ?? defaultLayout}>
-      {!printMode ? <StudentDecisionHeader map={map} counts={statusCounts} onStatus={(status) => updatePreference("status", status)} /> : null}
-      {!printMode ? <EnrollmentDecision courses={map.courses} selected={selected} onSelect={(code) => updatePreference("selected", code)} onShowUnknown={() => updatePreference("status", "UNKNOWN")} /> : null}
+      {!printMode ? <StudentDecisionHeader map={map} counts={statusCounts} activeStatus={preferences.status} onStatus={(status) => updatePreference("status", status)} /> : null}
       {!printMode && preferences.selected && !selected ? <Alert tone="info"><strong>La asignatura seleccionada quedó fuera del filtro actual.</strong> Restablece la exploración para volver a mostrarla.</Alert> : null}
-      {!printMode ? <MandatoryJourney courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : <DependencyDepthLayout courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} />}
+      {!printMode ? <MandatoryJourney courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} onClearFilter={() => updatePreference("status", "")} /> : <DependencyDepthLayout courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} />}
+      {!printMode ? <EnrollmentDecision courses={map.courses} selected={selected} onSelect={(code) => updatePreference("selected", code)} onShowUnknown={() => updatePreference("status", "UNKNOWN")} /> : null}
       {!printMode ? <ChoicePools courses={visibleCourses} groups={map.groups} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : null}
       {!printMode ? (
         <details className="curriculum-explorer panel">

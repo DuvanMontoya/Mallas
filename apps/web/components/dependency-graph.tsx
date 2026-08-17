@@ -285,7 +285,7 @@ export function DependencyGraphExplorer({ graph, failureMessage }: { graph: Depe
           <h1>{graph.focus ? graph.focus.course_code : "Dependencias"}</h1>
           <label className="graph-primary-search"><span className="sr-only">Buscar curso o condición</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Busca por código o nombre, por ejemplo Cálculo" /></label>
         </div>
-        <div className="dependency-graph-meta"><strong>{graph.nodes.filter((node) => node.kind === "COURSE").length}</strong><span>asignaturas conectadas</span><small>Revisión {graph.revision.revision_code}</small></div>
+        <div className="dependency-graph-meta"><strong>{graph.nodes.filter((node) => node.kind === "COURSE").length}</strong><span>asignaturas conectadas</span><small>Distribución visual no normativa · revisión {graph.revision.revision_code}</small></div>
       </section>
       {graph.warnings.some((warning) => ["CURRICULUM_DEPENDENCY_CYCLE", "GRAPH_FOCUS_NOT_FOUND"].includes(warning)) ? <div className="dependency-graph-alerts">{graph.warnings.filter((warning) => ["CURRICULUM_DEPENDENCY_CYCLE", "GRAPH_FOCUS_NOT_FOUND"].includes(warning)).map((warning) => <Alert key={warning}><strong>{warning === "CURRICULUM_DEPENDENCY_CYCLE" ? "Hay una relación circular que el equipo curricular debe revisar." : "La asignatura solicitada no pertenece a esta revisión."}</strong></Alert>)}</div> : null}
       <details className="graph-explorer-controls panel">
@@ -311,7 +311,7 @@ export function DependencyGraphExplorer({ graph, failureMessage }: { graph: Depe
       <p className="sr-only" role="status" aria-live="polite" data-testid="graph-focus-announcement">{graph.focus ? `Foco seleccionado: ${graph.focus.course_code}, ${graph.focus.course_name}.` : "No hay un curso seleccionado en el grafo."}</p>
       <details className="graph-explorer-controls panel"><summary><span><b>Alternativa textual accesible</b><small>Las mismas relaciones en una lista navegable</small></span></summary><TextualAlternative graph={graph} visibleNodeIds={visibleNodeIds} onSelect={selectCourse} /></details>
       <details className="graph-explorer-controls panel"><summary><span><b>Integridad de la revisión</b><small>Comprobación técnica de relaciones circulares</small></span><span className="tag tag-outline">{graph.cycles.length} ciclos</span></summary><section className="dependency-graph-cycles" aria-labelledby="dependency-cycles-title">
-        <div className="section-heading"><div><p className="eyebrow">Gobernanza</p><h2 id="dependency-cycles-title">Ciclos de dependencia</h2></div><span className="tag tag-outline">{graph.cycles.length} detectados</span></div>
+        <div className="section-heading"><div><p className="eyebrow">Gobernanza</p><h2 id="dependency-cycles-title">Ciclos de dependencia</h2></div></div>
         {graph.cycles.length ? <ul className="graph-cycle-list">{graph.cycles.map((cycle) => <li key={cycle.cycle_id}><StatusBadge tone="blocked" label={cycle.severity} /><strong>{cycle.course_codes.join(" → ")}</strong><span>{cycle.explanation}</span></li>)}</ul> : <p className="muted-copy">No se detectaron ciclos en esta revisión. Si una revisión futura los contiene, se muestran como incidencia para revisión administrativa.</p>}
       </section></details>
       <footer className="dependency-graph-footer"><Link href={graph.links.curriculum}>Volver a la malla</Link><Link href={graph.links.sources}>Ver procedencia</Link><span>Proyección determinista · sin edición desde la vista estudiante</span></footer>

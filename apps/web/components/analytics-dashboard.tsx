@@ -119,9 +119,7 @@ export function AnalyticsDashboard({ analytics, failure }: { analytics: StudentA
             </div>
             <div className="analytics-metric-grid">
               <MetricCard label="Créditos aplicados" value={`${number(credits.applied)} / ${number(credits.required)}`} detail="Asignados a requisitos" />
-              <MetricCard label="Créditos restantes" value={String(number(credits.remaining))} detail="Según la revisión publicada" />
               <MetricCard label="Requisitos pendientes" value={String(number(requirements.remaining_count))} detail={`${number(requirements.unknown_count)} por verificar`} />
-              <MetricCard label="Estado del motor" value={statusLabel(record(analytics.snapshot).status)} detail={`Motor ${text(record(analytics.snapshot).engine_version)}`} />
             </div>
             <div className="analytics-progress-wrap">
               <div className="analytics-progress-label"><strong>{progress}%</strong><span>avance por créditos aplicados</span></div>

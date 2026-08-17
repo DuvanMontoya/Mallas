@@ -16,56 +16,13 @@ async function requestHeaders() {
   }
 }
 
-function EmptyDashboardHome() {
-  return (
-    <>
-      <section className="metric-row" aria-label="Resumen académico">
-        <article className="metric-card panel">
-          <div className="metric-label">Estado de tu historia</div>
-          <div className="metric-value metric-value-neutral">—</div>
-          <p className="metric-footnote">La auditoría se activa con hechos verificables.</p>
-        </article>
-        <article className="metric-card panel metric-highlight">
-          <div className="metric-label">Próxima decisión</div>
-          <div className="metric-value metric-value-neutral">Ver</div>
-          <p className="metric-footnote">Explora requisitos y bloqueos explicables.</p>
-          <span className="tag tag-neutral">Sin inferencias</span>
-        </article>
-        <article className="metric-card panel">
-          <div className="metric-label">Procedencia</div>
-          <div className="metric-value metric-value-neutral">Visible</div>
-          <p className="metric-footnote"><span className="status-dot" aria-hidden="true" /> Cada regla apunta a su evidencia.</p>
-          <Link className="small-link" href="/sources">Ver evidencia</Link>
-        </article>
-      </section>
+type EntryState = "anonymous" | "unavailable" | "enrollment-missing";
 
-      <section className="panel empty-state-panel" aria-labelledby="start-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Primer paso</p>
-            <h2 id="start-title">Construye tu punto de partida</h2>
-          </div>
-          <span className="tag tag-outline">Sin historia todavía</span>
-        </div>
-        <div className="start-grid">
-          <Link className="start-card" href="/curriculum">
-            <span className="start-number">01</span>
-            <span><strong>Explora la malla</strong><small>Conoce la revisión curricular y sus agrupaciones</small></span>
-            <span aria-hidden="true">↗</span>
-          </Link>
-          <Link className="start-card" href="/history/import">
-            <span className="start-number">02</span>
-            <span><strong>Carga tu historia</strong><small>CSV/JSON o registro guiado con vista previa</small></span>
-            <span aria-hidden="true">↗</span>
-          </Link>
-          <Link className="start-card" href="/planner">
-            <span className="start-number">03</span>
-            <span><strong>Crea un escenario</strong><small>Planea sin alterar tu historia real</small></span>
-            <span aria-hidden="true">↗</span>
-          </Link>
-        </div>
-      </section>
-    </>
+function EmptyDashboardHome({ state }: { state: EntryState }) {
+  const unavailable = state === "unavailable";
+  const enrollmentMissing = state === "enrollment-missing";
+  return (
+    <section className="panel compact-entry" aria-labelledby="start-title"><div><p className="eyebrow">{unavailable ? "Servicio temporalmente no disponible" : enrollmentMissing ? "Acceso académico pendiente" : "Plan 2514 · Estadística"}</p><h1 id="start-title">{unavailable ? "No pudimos cargar tu estado académico" : enrollmentMissing ? "Tu cuenta aún no tiene una matrícula vinculada" : "Explora la malla curricular"}</h1><p>{unavailable ? "Tus datos no se modificaron. Puedes reintentar o consultar la malla pública." : enrollmentMissing ? "La vinculación debe resolverla la administración académica; importar un archivo todavía no está habilitado para esta cuenta." : "Consulta obligatorias, opciones y prerrequisitos sin iniciar sesión."}</p></div><div className="compact-entry-actions"><Link className="button button-primary" href={unavailable ? "/" : "/curriculum"}>{unavailable ? "Reintentar" : "Abrir malla"}</Link>{state === "anonymous" ? <Link className="button button-secondary" href="/login">Iniciar sesión</Link> : unavailable ? <Link className="button button-secondary" href="/curriculum">Ver malla pública</Link> : null}</div></section>
   );
 }
 
@@ -76,7 +33,6 @@ function EditorialHome() {
         <div>
           <p className="eyebrow accent">Administración curricular · Plan 2514</p>
           <h1>Administración curricular</h1>
-          <div className="hero-actions"><Link className="button button-primary" href="/curriculum">Revisar la malla publicada <span aria-hidden="true">→</span></Link><Link className="button button-secondary" href="/sources">Abrir bandeja editorial</Link></div>
         </div>
         <aside><span>Principio de trabajo</span><strong>Publicar sólo cuando reglas, impacto y evidencia sean comprensibles.</strong><small>Cada revisión publicada es inmutable y conserva su procedencia.</small></aside>
       </section>
@@ -134,5 +90,12 @@ export default async function HomePage() {
   if (editorialOnly) return <EditorialHome />;
   const overview = await getAcademicOverview({ headers });
 
-  return overview.data ? <StudentDecisionHome overview={overview.data} /> : <div className="content-grid"><EmptyDashboardHome /></div>;
+  if (overview.data) return <StudentDecisionHome overview={overview.data} />;
+  const enrollmentMissing = overview.failure?.problem?.code?.toLocaleLowerCase("es-CO") === "enrollment_not_found";
+  const entryState: EntryState = overview.failure?.unavailable || session.state === "unavailable" || (session.state === "authenticated" && !enrollmentMissing)
+    ? "unavailable"
+    : enrollmentMissing
+      ? "enrollment-missing"
+      : "anonymous";
+  return <div className="content-grid"><EmptyDashboardHome state={entryState} /></div>;
 }

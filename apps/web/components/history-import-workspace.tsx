@@ -21,11 +21,24 @@ import { StatusBadge } from "./ui/status-badge";
 
 type CourseOption = { id: string; code: string; name: string };
 
+const importLabels: Record<string, string> = { PREVIEW: "En revisión", READY: "Listo para aplicar", APPLIED: "Importación aplicada", PENDING: "Pendiente", ACCEPT: "Aceptar", EXTERNAL: "Reconocimiento externo", SKIP: "No aplicar", MATCHED: "Coincidencia encontrada", CONFLICT: "Requiere decisión", ERROR: "Con error" };
+const fieldLabels: Record<string, string> = { course_code: "Código", course_name: "Asignatura", term_code: "Período", grade: "Nota", credits: "Créditos", status: "Estado" };
+
+function importLabel(value: string) { return importLabels[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("es-CO"); }
+
+function issueText(value: unknown) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") {
+    const item = value as Record<string, unknown>;
+    return [item.field ? fieldLabels[String(item.field)] ?? String(item.field) : null, item.message ?? item.detail ?? item.code].filter(Boolean).join(": ") || "Dato por revisar";
+  }
+  return String(value);
+}
+
 function objectSummary(value: Record<string, unknown>) {
   return Object.entries(value)
-    .filter(([, item]) => item !== null && item !== "")
-    .slice(0, 8)
-    .map(([key, item]) => `${key}: ${String(item)}`)
+    .filter(([key, item]) => key in fieldLabels && item !== null && item !== "")
+    .map(([key, item]) => `${fieldLabels[key] ?? key}: ${String(item)}`)
     .join(" · ");
 }
 
@@ -177,24 +190,24 @@ export function HistoryImportWorkspace({
         <>
           <section className="history-import-progress panel" aria-label="Estado del lote">
             <div><span>Archivo</span><strong>{preview.original_filename}</strong></div>
-            <div><span>Estado</span><strong>{preview.status}</strong></div>
+            <div><span>Estado</span><strong>{importLabel(preview.status)}</strong></div>
             <div><span>Candidatos</span><strong>{preview.candidate_count}</strong></div>
             <div><span>Pendientes</span><strong>{preview.unresolved_count}</strong></div>
             <div><span>Errores</span><strong>{preview.error_count}</strong></div>
             <div className="history-progress-meter" role="progressbar" aria-label="Progreso de reconciliación" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span>Revisión {progress}%</span><div aria-hidden="true"><i style={{ width: `${progress}%` }} /></div></div>
           </section>
 
-          {preview.validation_errors.length ? <Alert tone="error"><strong>El lote contiene errores de validación.</strong><pre>{JSON.stringify(preview.validation_errors, null, 2)}</pre></Alert> : null}
+          {preview.validation_errors.length ? <Alert tone="error"><div><strong>Hay datos que deben corregirse.</strong><ul>{preview.validation_errors.map((issue, index) => <li key={index}>{issueText(issue)}</li>)}</ul><details><summary>Detalle técnico</summary><pre>{JSON.stringify(preview.validation_errors, null, 2)}</pre></details></div></Alert> : null}
 
           <section className="history-import-layout">
             <div className="panel history-candidates">
-              <div className="section-heading"><div><p className="eyebrow">Paso 2</p><h2>Candidatos extraídos</h2></div><span className="tag tag-outline">{preview.parser_version}</span></div>
+              <div className="section-heading"><div><p className="eyebrow">Paso 2</p><h2>Registros encontrados</h2></div><span className="tag tag-outline">{preview.candidate_count}</span></div>
               {preview.candidates.length ? <ol className="history-candidate-list">{preview.candidates.map((candidate) => (
                 <li key={candidate.id}>
                   <button type="button" className={selectedId === candidate.id ? "selected" : undefined} aria-pressed={selectedId === candidate.id} aria-controls="history-reconciliation-panel" onClick={() => editCandidate(candidate)}>
                     <span className="history-candidate-number">{candidate.row_number}</span>
                     <span><strong>{String(candidate.normalized_payload.course_code ?? candidate.raw_payload.course_code ?? "Registro sin código")}</strong><small>{objectSummary(candidate.normalized_payload)}</small><small>{candidate.source_locator} · confianza {candidate.confidence}%</small></span>
-                    <StatusBadge tone={candidateTone(candidate)} label={candidate.decision === "PENDING" ? candidate.status : candidate.decision} />
+                    <StatusBadge tone={candidateTone(candidate)} label={importLabel(candidate.decision === "PENDING" ? candidate.status : candidate.decision)} />
                   </button>
                 </li>
               ))}</ol> : <EmptyState title="El archivo no produjo candidatos" description="Comprueba que el formato contenga registros y usa una plantilla compatible." />}
@@ -204,8 +217,8 @@ export function HistoryImportWorkspace({
               <div className="section-heading"><div><p className="eyebrow">Reconciliación</p><h2 id="history-reconciliation-title">{selected ? `Fila ${selected.row_number}` : "Selecciona una fila"}</h2></div></div>
               {!selected ? <EmptyState title="Nada seleccionado" description="Abre un candidato para aceptar, reconocer como externo o excluirlo con una decisión auditable." /> : (
                 <form className="history-form" onSubmit={resolve}>
-                  {selected.parse_errors.length ? <Alert tone="error"><pre>{JSON.stringify(selected.parse_errors, null, 2)}</pre></Alert> : null}
-                  {selected.conflict_details.length ? <Alert tone="info"><pre>{JSON.stringify(selected.conflict_details, null, 2)}</pre></Alert> : null}
+                  {selected.parse_errors.length ? <Alert tone="error"><div><strong>Corrige esta fila</strong><ul>{selected.parse_errors.map((issue, index) => <li key={index}>{issueText(issue)}</li>)}</ul><details><summary>Detalle técnico</summary><pre>{JSON.stringify(selected.parse_errors, null, 2)}</pre></details></div></Alert> : null}
+                  {selected.conflict_details.length ? <Alert tone="info"><div><strong>Elige cómo resolver la coincidencia</strong><ul>{selected.conflict_details.map((issue, index) => <li key={index}>{issueText(issue)}</li>)}</ul><details><summary>Detalle técnico</summary><pre>{JSON.stringify(selected.conflict_details, null, 2)}</pre></details></div></Alert> : null}
                   <label className="field-group"><span>Decisión</span><select value={decision} onChange={(event) => setDecision(event.target.value)}><option value="ACCEPT">Aceptar como intento</option><option value="EXTERNAL">Registrar reconocimiento externo</option><option value="SKIP">No aplicar</option></select></label>
                   {decision === "ACCEPT" || decision === "EXTERNAL" ? <>
                     <label className="field-group"><span>{decision === "EXTERNAL" ? "Asignatura destino" : "Asignatura del plan"}</span><select value={selectedCourseVersionId} onChange={(event) => setSelectedCourseVersionId(event.target.value)} required={decision === "EXTERNAL"}><option value="">Usar coincidencia sugerida</option>{courseOptions.map((course) => <option key={course.id} value={course.id}>{course.code} · {course.name}</option>)}</select></label>

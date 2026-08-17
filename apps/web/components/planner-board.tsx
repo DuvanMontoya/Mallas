@@ -229,6 +229,13 @@ export function PlannerBoard({
       .sort((left, right) => Number(right.personal_status === "ELIGIBLE") - Number(left.personal_status === "ELIGIBLE") || left.code.localeCompare(right.code));
   }, [courseOptions, courseQuery]);
 
+  function changeCourseQuery(next: string) {
+    setCourseQuery(next);
+    const normalized = next.trim().toLocaleLowerCase("es-CO");
+    const matches = courseOptions.filter((course) => !normalized || `${course.code} ${course.name}`.toLocaleLowerCase("es-CO").includes(normalized));
+    if (!matches.some((course) => course.id === selectedCourseId)) setSelectedCourseId(matches[0]?.id ?? "");
+  }
+
   function applyScenario(next: PlanningScenario) {
     setScenarios((current) => current.some((item) => item.id === next.id)
       ? current.map((item) => item.id === next.id ? next : item)
@@ -397,7 +404,7 @@ export function PlannerBoard({
 
       <section className="panel planner-add-panel" aria-labelledby="planner-add-title">
         <div className="section-heading"><div><p className="eyebrow">Añadir a la ruta</p><h2 id="planner-add-title">¿Qué quieres probar?</h2></div><Link className="small-link" href="/curriculum?status=ELIGIBLE">Ver mis matriculables →</Link></div>
-        {courseOptions.length && scenarioTerms.length ? <form className="planner-add-form planner-add-decision" onSubmit={handleAddCourse}><label className="field-group"><span>Buscar asignatura</span><input type="search" value={courseQuery} onChange={(event) => setCourseQuery(event.target.value)} placeholder="Código o nombre" /></label><label className="field-group"><span>Asignatura</span><select value={selectedCourseId} onChange={(event) => setSelectedCourseId(event.target.value)}>{visibleCourseOptions.map((course) => <option key={course.id} value={course.id}>{course.personal_status === "ELIGIBLE" ? "Puedes cursar · " : "Para más adelante · "}{course.code} · {course.name}</option>)}</select></label><label className="field-group"><span>Período</span><select value={selectedTermId} onChange={(event) => setSelectedTermId(event.target.value)}>{scenarioTerms.map((term) => <option key={term.id} value={term.id}>{term.code}</option>)}</select></label><button className="button button-primary" type="submit" disabled={pending || !visibleCourseOptions.length}><Plus size={15} aria-hidden="true" /> Añadir</button></form> : <p className="muted-copy">No hay cursos o períodos verificables disponibles para añadir. Consulta la malla y la oferta antes de completar este escenario.</p>}
+        {courseOptions.length && scenarioTerms.length ? <form className="planner-add-form planner-add-decision" onSubmit={handleAddCourse}><label className="field-group"><span>Buscar asignatura</span><input type="search" value={courseQuery} onChange={(event) => changeCourseQuery(event.target.value)} placeholder="Código o nombre" /></label><label className="field-group"><span>Asignatura</span><select value={selectedCourseId} onChange={(event) => setSelectedCourseId(event.target.value)}>{visibleCourseOptions.map((course) => <option key={course.id} value={course.id}>{course.personal_status === "ELIGIBLE" ? "Puedes cursar · " : "Para más adelante · "}{course.code} · {course.name}</option>)}</select></label><label className="field-group"><span>Período</span><select value={selectedTermId} onChange={(event) => setSelectedTermId(event.target.value)}>{scenarioTerms.map((term) => <option key={term.id} value={term.id}>{term.code}</option>)}</select></label><button className="button button-primary" type="submit" disabled={pending || !visibleCourseOptions.length}><Plus size={15} aria-hidden="true" /> Añadir</button></form> : <p className="muted-copy">No hay cursos o períodos verificables disponibles para añadir. Consulta la malla y la oferta antes de completar este escenario.</p>}
       </section>
 
       <div className="planner-support-grid">

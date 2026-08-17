@@ -108,10 +108,28 @@ describe("planner board", () => {
       scenarios[0].id,
       { time_limit_seconds: 30, unknown_offering_policy: "ALLOW_UNKNOWN", random_seed: 0 },
     ));
-    expect((await screen.findAllByText("OPTIMAL")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Ruta encontrada")).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /comparación contra el escenario actual/i })).toBeInTheDocument();
     expect(screen.getByText(/2000001 · 2027-1S → 2026-2S/i)).toBeInTheDocument();
-    expect(screen.getByText(/unknown_offerings_allowed/i)).toBeInTheDocument();
+    expect(screen.getByText(/se permitieron períodos cuya oferta aún no está publicada/i)).toBeInTheDocument();
+  });
+
+  it("adds the course that remains visible after searching", async () => {
+    const updated = structuredClone(scenarios[0]);
+    updated.version += 1;
+    mocks.addPlannedCourse.mockResolvedValue({ data: updated, failure: null });
+    const target = mapFixture.courses.find((course) => course.code === "1000002")!;
+
+    render(<PlannerBoard initialScenarios={scenarios} initialSelectedId={scenarios[0].id} initialCompare={null} terms={terms} courseOptions={mapFixture.courses} />);
+
+    fireEvent.change(screen.getByRole("searchbox", { name: /buscar asignatura/i }), { target: { value: "Cálculo diferencial" } });
+    expect(screen.getByRole("combobox", { name: /^asignatura$/i })).toHaveValue(target.id);
+    fireEvent.click(screen.getByRole("button", { name: /^añadir$/i }));
+    await waitFor(() => expect(mocks.addPlannedCourse).toHaveBeenCalledWith(
+      scenarios[0].id,
+      { course_version_id: target.id, term_id: terms[0].id, priority: 0, notes: "" },
+      { ifMatch: `"${scenarios[0].version}"` },
+    ));
   });
 
   it("has no serious automated accessibility violations", async () => {

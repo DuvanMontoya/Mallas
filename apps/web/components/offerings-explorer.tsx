@@ -37,7 +37,7 @@ function termStatusLabel(value: string | undefined) {
 }
 
 function decisionStatusLabel(value: string) {
-  return ({ ELIGIBLE: "Puedes cursarla", BLOCKED: "Prerrequisitos pendientes", UNKNOWN: "Por verificar", OFFERED: "Con grupos reportados", NOT_OFFERED: "Sin grupos reportados", SCHEDULABLE: "Compatible", CONFLICT: "Con cruces", NOT_EVALUATED: "Sin comparar" } as Record<string, string>)[value] ?? "Por verificar";
+  return ({ ELIGIBLE: "Puedes cursarla", BLOCKED: "Prerrequisitos pendientes", UNKNOWN: "Por verificar", OFFERED: "Con grupos reportados", NOT_OFFERED: "Sin grupos reportados", SCHEDULABLE: "Compatible", CONFLICT: "Con cruces", NOT_EVALUATED: "Sin comparar", REPORTED_NOT_REAL_TIME: "Reportado, no en tiempo real", REAL_TIME: "Actualizado en tiempo real" } as Record<string, string>)[value] ?? "Por verificar";
 }
 
 function modalityLabel(value: string) {

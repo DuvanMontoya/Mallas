@@ -18,7 +18,7 @@ describe("curriculum map read model and interaction", () => {
   it("opens with the student's decisions and separates mandatory courses from choice pools", () => {
     render(<CurriculumMapPage map={fixture as CurriculumMap} />);
 
-    expect(screen.getByRole("heading", { name: /tu malla, en una sola vista/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /malla curricular/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /qué puedes matricular ahora/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /las obligatorias que sostienen el plan/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /escoge dentro de cada agrupación/i })).toBeInTheDocument();

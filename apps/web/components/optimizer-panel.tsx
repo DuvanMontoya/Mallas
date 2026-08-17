@@ -29,6 +29,24 @@ function statusTone(status: string): StatusTone {
   return "neutral";
 }
 
+function optimizationLabel(status: string) {
+  return ({ QUEUED: "En espera", RUNNING: "Calculando", OPTIMAL: "Ruta encontrada", FEASIBLE: "Ruta posible", INFEASIBLE: "Sin ruta compatible", UNKNOWN: "No se pudo concluir", CANCELLED: "Cancelada", FAILED: "No se pudo calcular" } as Record<string, string>)[status] ?? status.replaceAll("_", " ").toLocaleLowerCase("es-CO");
+}
+
+function assumptionLabel(value: unknown) {
+  return ({ UNKNOWN_OFFERINGS_ALLOWED: "Se permitieron períodos cuya oferta aún no está publicada" } as Record<string, string>)[String(value)] ?? String(value).replaceAll("_", " ").toLocaleLowerCase("es-CO");
+}
+
+function explanationText(value: unknown, fallback: string) {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (!value || typeof value !== "object") return fallback;
+  const item = value as Record<string, unknown>;
+  if (item.detail || item.message) return String(item.detail ?? item.message);
+  if (item.course_code && item.term_code) return `${String(item.course_code)} · ${String(item.term_code)}`;
+  if (item.code) return String(item.code).replaceAll("_", " ").toLocaleLowerCase("es-CO");
+  return fallback;
+}
+
 function proposedCourses(run: OptimizationRun | null): ProposedCourse[] {
   const selected = run?.solution?.selected_courses;
   return Array.isArray(selected) ? selected.filter((item): item is ProposedCourse => {
@@ -89,11 +107,8 @@ export function OptimizerPanel({ scenario }: { scenario: PlanningScenario }) {
           <p className="eyebrow">Ruta sugerida explicable</p>
           <h2 id="planner-optimizer-title">Optimiza este escenario</h2>
         </div>
-        {run ? <StatusBadge tone={statusTone(run.status)} label={run.status} /> : <span className="tag tag-outline">CP-SAT</span>}
+        {run ? <StatusBadge tone={statusTone(run.status)} label={optimizationLabel(run.status)} /> : null}
       </div>
-      <p>
-        El solver respeta decisiones bloqueadas, prerrequisitos, grupos, límites de créditos y oferta. Las ofertas futuras desconocidas quedan declaradas como supuestos; la solución nunca modifica tu historial.
-      </p>
       <div className="planner-optimizer-actions">
         <button className="button button-primary" type="button" onClick={() => void optimize()} disabled={pending || running}>
           <Sparkles size={15} aria-hidden="true" /> {pending ? "Iniciando…" : "Optimizar ruta"}
@@ -103,13 +118,9 @@ export function OptimizerPanel({ scenario }: { scenario: PlanningScenario }) {
       {message ? <Alert tone="error">{message}</Alert> : null}
       {run && !running ? (
         <div className="planner-optimizer-result" aria-live="polite">
-          <div className="planner-optimizer-facts">
-            <span>Resultado <strong>{run.status}</strong></span>
-            <span>Versión <code>{run.solver_version}</code></span>
-            <span>Hash <code>{run.output_hash.slice(0, 12) || "—"}</code></span>
-          </div>
+          <div className="planner-optimizer-facts"><span>Resultado <strong>{optimizationLabel(run.status)}</strong></span><details><summary>Trazabilidad técnica</summary><span>Versión <code>{run.solver_version}</code></span><span>Hash <code>{run.output_hash.slice(0, 12) || "—"}</code></span></details></div>
           {run.status === "INFEASIBLE" ? (
-            <div className="planner-optimizer-explanation"><h3>Restricciones conflictivas</h3><ul>{Array.isArray(run.explanation.conflicts) && run.explanation.conflicts.length ? run.explanation.conflicts.map((item, index) => <li key={index}>{typeof item === "object" && item && "detail" in item ? String(item.detail) : String(item)}</li>) : <li>El conjunto de restricciones duras no tiene solución compatible.</li>}</ul></div>
+            <div className="planner-optimizer-explanation"><h3>Restricciones conflictivas</h3><ul>{Array.isArray(run.explanation.conflicts) && run.explanation.conflicts.length ? run.explanation.conflicts.map((item, index) => <li key={index}>{explanationText(item, "Restricción incompatible con el escenario actual")}</li>) : <li>El conjunto de restricciones duras no tiene solución compatible.</li>}</ul></div>
           ) : null}
           {run.status === "UNKNOWN" ? <Alert tone="info">No hay evidencia suficiente o el límite terminó sin una solución demostrable. Revisa los supuestos antes de usar esta ruta.</Alert> : null}
           {run.status === "OPTIMAL" || run.status === "FEASIBLE" ? (
@@ -117,8 +128,8 @@ export function OptimizerPanel({ scenario }: { scenario: PlanningScenario }) {
               <h3>Comparación contra el escenario actual</h3>
               <div className="planner-optimizer-diff-grid"><div><strong>Añadidos</strong><ul>{added.length ? added.map((course) => <li key={course.course_code}>{course.course_code} · {course.term_code}</li>) : <li>Ninguno</li>}</ul></div><div><strong>Movidos</strong><ul>{moved.length ? moved.map((course) => <li key={course.course_code}>{course.course_code} · {current.get(course.course_code)} → {course.term_code}</li>) : <li>Ninguno</li>}</ul></div><div><strong>Retirados</strong><ul>{removed.length ? removed.map((course) => <li key={course.id}>{course.course_code} · {course.term_code}</li>) : <li>Ninguno</li>}</ul></div></div>
               <h3>Decisiones y supuestos</h3>
-              <ul>{Array.isArray(run.explanation.explanations) && run.explanation.explanations.length ? run.explanation.explanations.map((item, index) => <li key={index}>{typeof item === "object" && item && "course_code" in item ? `${String(item.course_code)}: ${String(item.term_code)}` : String(item)}</li>) : <li>La solución no reportó decisiones.</li>}</ul>
-              {Array.isArray(run.explanation.assumptions) && run.explanation.assumptions.length ? <p className="muted-copy">Supuestos: {run.explanation.assumptions.map(String).join(" · ")}</p> : null}
+              <ul>{Array.isArray(run.explanation.explanations) && run.explanation.explanations.length ? run.explanation.explanations.map((item, index) => <li key={index}>{explanationText(item, "Decisión incluida en la ruta calculada")}</li>) : <li>La solución no reportó decisiones.</li>}</ul>
+              {Array.isArray(run.explanation.assumptions) && run.explanation.assumptions.length ? <p className="muted-copy">Supuestos: {run.explanation.assumptions.map(assumptionLabel).join(" · ")}</p> : null}
             </div>
           ) : null}
         </div>

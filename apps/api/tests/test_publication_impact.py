@@ -193,6 +193,23 @@ class PublicationImpactTests(TestCase):
             )
         )
 
+        # Editors can inspect aggregate publication impact, but individual
+        # enrollment identifiers and audit fingerprints require reviewer access.
+        self.client.force_login(self.editor)
+        editor_impact = self.client.get(
+            f"/api/v1/governance/publications/{receipt.pk}/impact"
+        )
+        self.assertEqual(editor_impact.status_code, 200, editor_impact.content)
+        self.assertEqual(
+            editor_impact.json()["event"]["impact_summary"]["affected_enrollments"], 1
+        )
+        self.assertEqual(editor_impact.json()["event"]["enrollment_impacts"], [])
+        editor_detail = self.client.get(f"/api/v1/governance/proposals/{proposal.pk}")
+        self.assertEqual(editor_detail.status_code, 200, editor_detail.content)
+        self.assertEqual(
+            editor_detail.json()["publication"]["event"]["enrollment_impacts"], []
+        )
+
         with self.assertRaises(PublishedRevisionImmutableError):
             new_revision.total_required_credits = 999
             new_revision.save(update_fields=["total_required_credits", "updated_at"])

@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import HomePage from "../app/page";
 
 describe("home dashboard shell", () => {
-  it("exposes the academic navigation and first-step actions", async () => {
+  it("offers a truthful retry when the private overview is unavailable", async () => {
     render(await HomePage());
-    expect(screen.getByRole("heading", { name: /tu mapa académico/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir auditoría/i })).toHaveAttribute("href", "/audit");
-    expect(screen.getByRole("link", { name: /carga tu historia/i })).toHaveAttribute("href", "/history/import");
+    expect(screen.getByRole("heading", { name: /no pudimos cargar tu estado académico/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /reintentar/i })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: /ver malla pública/i })).toHaveAttribute("href", "/curriculum");
+    expect(screen.queryByRole("link", { name: /importar historia/i })).not.toBeInTheDocument();
   });
 });

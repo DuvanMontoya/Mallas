@@ -30,6 +30,7 @@ from modules.identity.application.audit import record_audit_event
 from modules.identity.application.authorization import (
     active_role_assignments,
     can_edit_revision,
+    can_manage_revision_lifecycle,
     can_publish_revision,
     has_role,
 )
@@ -702,7 +703,12 @@ def get_proposal_detail(actor: Any, proposal_id: UUID | str) -> dict[str, Any]:
             }
             for item in proposal.reviews.all()
         ],
-        "publication": _publication_view(getattr(proposal, "publication", None)),
+        "publication": _publication_view(
+            getattr(proposal, "publication", None),
+            include_private_impacts=can_manage_revision_lifecycle(
+                actor, proposal.candidate_revision
+            ),
+        ),
         "audit_events": [_audit_view(item) for item in events],
     }
 
@@ -729,7 +735,15 @@ def get_publication_impact(actor: Any, publication_id: UUID | str) -> dict[str, 
         raise GovernanceError(
             "The publication has no immutable event record.", code="publication_event_missing"
         ) from exc
-    return {"publication_id": publication.pk, "event": _publication_event_view(event)}
+    return {
+        "publication_id": publication.pk,
+        "event": _publication_event_view(
+            event,
+            include_private_impacts=can_manage_revision_lifecycle(
+                actor, publication.revision
+            ),
+        ),
+    }
 
 
 def _revision_view(revision: CurriculumRevision | None) -> dict[str, Any] | None:
@@ -750,7 +764,9 @@ def _revision_view(revision: CurriculumRevision | None) -> dict[str, Any] | None
     }
 
 
-def _publication_view(publication: Publication | None) -> dict[str, Any] | None:
+def _publication_view(
+    publication: Publication | None, *, include_private_impacts: bool = True
+) -> dict[str, Any] | None:
     if publication is None:
         return None
     event = getattr(publication, "publication_event", None)
@@ -763,11 +779,15 @@ def _publication_view(publication: Publication | None) -> dict[str, Any] | None:
         "source_set_hash": publication.source_set_hash,
         "validation_report": publication.validation_report,
         "confirmation": publication.confirmation,
-        "event": _publication_event_view(event),
+        "event": _publication_event_view(
+            event, include_private_impacts=include_private_impacts
+        ),
     }
 
 
-def _publication_event_view(event: PublicationEvent | None) -> dict[str, Any] | None:
+def _publication_event_view(
+    event: PublicationEvent | None, *, include_private_impacts: bool = True
+) -> dict[str, Any] | None:
     if event is None:
         return None
     impacts = list(event.enrollment_impacts.all())
@@ -783,7 +803,13 @@ def _publication_event_view(event: PublicationEvent | None) -> dict[str, Any] | 
         "changed_groups": event.changed_groups,
         "changed_requirements": event.changed_requirements,
         "impact_summary": event.impact_summary,
-        "recompute_plan": event.recompute_plan,
+        "recompute_plan": event.recompute_plan
+        if include_private_impacts
+        else {
+            "status": event.recompute_plan.get("status", "UNKNOWN"),
+            "job_count": len(event.recompute_plan.get("jobs", [])),
+            "jobs": [],
+        },
         "notification_plan": event.notification_plan,
         "enrollment_impacts": [
             {
@@ -799,7 +825,9 @@ def _publication_event_view(event: PublicationEvent | None) -> dict[str, Any] | 
                 "requires_revision_decision": item.requires_revision_decision,
             }
             for item in impacts
-        ],
+        ]
+        if include_private_impacts
+        else [],
     }
 
 

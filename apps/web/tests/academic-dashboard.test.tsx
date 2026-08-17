@@ -10,10 +10,10 @@ describe("academic dashboard read model", () => {
   it("presents backend statuses, UNKNOWN and the credit-only disclaimer", () => {
     render(<AcademicDashboard overview={fixture as AcademicOverview} />);
 
-    expect(screen.getByRole("heading", { name: /tu avance real/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /créditos por completar/i })).toBeInTheDocument();
     expect(screen.getByText(/este porcentaje sólo describe créditos aplicados/i)).toBeInTheDocument();
-    expect(screen.getByText(/por verificar · graduation:foreign_language_b1/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir curso y requisitos/i })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: /graduation:foreign_language_b1/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /1000003.*álgebra lineal/i })).toHaveAttribute(
       "href",
       "/curriculum?selected=1000003",
     );

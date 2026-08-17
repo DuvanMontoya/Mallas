@@ -175,7 +175,7 @@ export function AcademicDashboard({
           <h1 id="dashboard-title">{remainingCredits} créditos por completar</h1>
           <span>{missing.length} obligatorias pendientes · {overview.unknowns.length} datos por verificar</span>
         </div>
-        <div className="audit-progress-orbit" aria-label={`${overall.credit_progress_percent}% de créditos aplicados`}>
+        <div className="audit-progress-orbit" role="progressbar" aria-label="Créditos aplicados" aria-valuemin={0} aria-valuemax={overall.required_credits} aria-valuenow={overall.applied_credits}>
           <strong>{overall.credit_progress_percent}%</strong>
           <span>{overall.applied_credits} de {overall.required_credits}</span>
         </div>
@@ -202,6 +202,7 @@ export function AcademicDashboard({
           <strong>{missing.length}</strong>
           <span>siguen siendo parte de tu ruta base</span>
           <ul>{firstMissing.map((course) => <li key={course.code}><Link href={course.href}><b>{course.code}</b>{course.name}</Link></li>)}</ul>
+          {missing.length > firstMissing.length ? <details><summary>Ver las {missing.length} obligatorias pendientes</summary><ul>{missing.map((course) => <li key={course.code}><Link href={course.href}><b>{course.code}</b>{course.name}</Link></li>)}</ul></details> : null}
         </article>
         <article className="audit-next-card audit-next-review">
           <p className="eyebrow">Necesitan confirmación</p>

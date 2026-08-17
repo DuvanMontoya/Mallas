@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 
 import { HistoryWorkspace } from "@/components/history-workspace";
 import { SessionRequired } from "@/components/session-required";
-import { getAcademicOverview, getHistoryAttempts, getSessionSnapshot } from "@/lib/api";
+import { getAcademicOverview, getAcademicTerms, getCurriculumMap, getHistoryAttempts, getSessionSnapshot } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,11 @@ export default async function HistoryPage() {
   if (!enrollment) {
     return <SessionRequired nextPath="/history" title="No hay una matrícula seleccionada" description="Esta cuenta no tiene una matrícula propia disponible. El acceso administrativo a otra persona requiere un flujo explícito y auditado." showSignIn={false} />;
   }
-  const firstAttempts = await getHistoryAttempts({ enrollmentId: enrollment.id, limit: 100, sort: "term", headers });
+  const [firstAttempts, mapResult, termsResult] = await Promise.all([
+    getHistoryAttempts({ enrollmentId: enrollment.id, limit: 100, sort: "term", headers }),
+    getCurriculumMap({ enrollmentId: enrollment.id, headers }),
+    getAcademicTerms({ headers }),
+  ]);
   if (!firstAttempts.data) {
     return <SessionRequired nextPath="/history" title="No fue posible abrir la historia" description={firstAttempts.failure?.problem?.detail ?? "La API no devolvió un registro académico verificable."} showSignIn={false} />;
   }
@@ -34,5 +38,5 @@ export default async function HistoryPage() {
   }
   attemptsPage.limit = attemptsPage.items.length;
   attemptsPage.next_offset = null;
-  return <HistoryWorkspace enrollmentId={enrollment.id} studentName={enrollment.student_name} attemptsPage={attemptsPage} />;
+  return <HistoryWorkspace enrollmentId={enrollment.id} studentName={enrollment.student_name} attemptsPage={attemptsPage} courseOptions={(mapResult.data?.courses ?? []).map((course) => ({ code: course.code, name: course.name }))} termOptions={(termsResult.data?.items ?? []).map((term) => term.code)} />;
 }
