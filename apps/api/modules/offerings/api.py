@@ -6,7 +6,7 @@ from datetime import date, datetime, time
 from typing import Any
 from uuid import UUID
 
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router, Schema, Status
@@ -23,6 +23,10 @@ from modules.offerings.application.services import (
     build_schedule_evaluation,
 )
 from modules.offerings.models import AcademicTerm, CourseOffering, Meeting, Section
+from modules.student_records.application.history import (
+    HistoryMutationError,
+    get_enrollment_for_view,
+)
 
 
 class OfferingSourceView(Schema):
@@ -187,11 +191,44 @@ def academic_terms(
     response: HttpResponse,
     institution_id: UUID | None = None,
     campus_code: str | None = None,
+    enrollment_id: UUID | None = None,
 ) -> dict[str, Any]:
-    del request
     query = AcademicTerm.objects.select_related("campus", "source_snapshot__document").order_by(
         "-starts_at", "code"
     )
+    if enrollment_id is not None:
+        actor = getattr(request, "auth", None) or getattr(request, "user", None)
+        try:
+            enrollment = get_enrollment_for_view(actor, enrollment_id)
+        except HistoryMutationError as error:
+            raise_problem(
+                status=403 if error.code == "history_forbidden" else 404,
+                code=error.code.upper(),
+                title="Academic terms unavailable",
+                detail=str(error),
+            )
+        scoped_institution_id = enrollment.student.institution_id
+        scoped_campus = enrollment.program.faculty.campus
+        if institution_id is not None and institution_id != scoped_institution_id:
+            raise_problem(
+                status=400,
+                code="TERM_SCOPE_MISMATCH",
+                title="Academic term scope mismatch",
+                detail="institution_id must match the authorized enrollment institution.",
+            )
+        if campus_code and campus_code != scoped_campus.code:
+            raise_problem(
+                status=400,
+                code="TERM_SCOPE_MISMATCH",
+                title="Academic term scope mismatch",
+                detail="campus_code must match the authorized enrollment campus.",
+            )
+        query = query.filter(institution_id=scoped_institution_id).filter(
+            Q(campus_id=scoped_campus.pk) | Q(campus__isnull=True)
+        )
+        response["Cache-Control"] = "private, no-store"
+        institution_id = None
+        campus_code = None
     if institution_id is not None:
         query = query.filter(institution_id=institution_id)
     if campus_code:

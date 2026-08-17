@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from domain.enums import (
     CandidateStatus,
@@ -12,6 +15,10 @@ from domain.enums import (
     enum_choices,
 )
 from modules.common.models import UUIDTimestampedModel
+
+
+def history_raw_payload_expiry() -> datetime:
+    return timezone.now() + timedelta(days=settings.HISTORY_RAW_PAYLOAD_RETENTION_DAYS)
 
 
 class ImportBatch(UUIDTimestampedModel):
@@ -165,6 +172,8 @@ class CandidateRecord(UUIDTimestampedModel):
     source_locator = models.CharField(max_length=240)
     candidate_fingerprint = models.CharField(max_length=64)
     raw_payload = models.JSONField(default=dict)
+    raw_payload_expires_at = models.DateTimeField(default=history_raw_payload_expiry)
+    raw_payload_purged_at = models.DateTimeField(null=True, blank=True)
     normalized_payload = models.JSONField(default=dict)
     parse_errors = models.JSONField(default=list, blank=True)
     warnings = models.JSONField(default=list, blank=True)
@@ -203,6 +212,10 @@ class CandidateRecord(UUIDTimestampedModel):
         indexes = [
             models.Index(fields=["batch", "status"], name="candidate_batch_status_idx"),
             models.Index(fields=["batch", "candidate_fingerprint"], name="candidate_batch_fp_idx"),
+            models.Index(
+                fields=["raw_payload_purged_at", "raw_payload_expires_at"],
+                name="candidate_raw_retention_idx",
+            ),
         ]
 
     def __str__(self) -> str:

@@ -30,7 +30,10 @@ class HistoryMutationError(RuntimeError):
 def get_enrollment_for_view(actor: Any, enrollment_id: UUID | str) -> ProgramEnrollment:
     try:
         enrollment = ProgramEnrollment.objects.select_related(
-            "student", "student__user", "program", "revision_basis"
+            "student",
+            "student__user",
+            "program__faculty__campus",
+            "revision_basis",
         ).get(pk=enrollment_id)
     except ProgramEnrollment.DoesNotExist as exc:
         raise HistoryMutationError(

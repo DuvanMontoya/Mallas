@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
+from datetime import timedelta
 from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
@@ -11,6 +12,7 @@ from unittest import TestCase
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TransactionTestCase, override_settings
+from django.utils import timezone
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
@@ -25,6 +27,7 @@ from modules.imports.application.history import (
     get_import_batch_for_view,
     resolve_history_candidate,
 )
+from modules.imports.application.retention import purge_expired_candidate_payloads
 from modules.imports.application.storage import ArtifactValidationError, validate_artifact
 from modules.imports.models import ImportBatch, ImportEvidence
 from modules.student_records.application.history import (
@@ -104,6 +107,43 @@ class HistoryParserTests(TestCase):
         self.assertEqual(
             {error["code"] for error in invalid.candidates[0].errors},
             {"course_code_required", "status_invalid"},
+        )
+
+    def test_parser_discards_arbitrary_columns_before_they_can_persist(self) -> None:
+        content = json.dumps(
+            {
+                "schema_version": HISTORY_SCHEMA_VERSION,
+                "records": [
+                    {
+                        "course_code": "STAT101",
+                        "term_code": "2026-1",
+                        "status": "PASSED",
+                        "grade": "4.5",
+                        "student_email": "private@example.test",
+                        "government_id": "123456789",
+                        "nested_profile": {"address": "private"},
+                    }
+                ],
+            }
+        ).encode()
+
+        candidate = parse_history_bytes(
+            content,
+            source_name="history.json",
+            mime_type="application/json",
+        ).candidates[0]
+
+        self.assertEqual(
+            candidate.raw_payload,
+            {
+                "course_code": "STAT101",
+                "term_code": "2026-1",
+                "status": "PASSED",
+                "grade": "4.5",
+            },
+        )
+        self.assertTrue(
+            any(warning["code"] == "extra_columns_discarded" for warning in candidate.warnings)
         )
 
     def test_pdf_parser_creates_review_required_candidates(self) -> None:
@@ -276,6 +316,42 @@ class HistoryImportServiceTests(TransactionTestCase):
         applied = confirm_history_import(actor=self.user, batch_id=preview.batch.pk)
         self.assertEqual(applied.created_attempts, 1)
 
+    def test_raw_payload_is_purged_after_apply_and_expired_previews_are_purgeable(self) -> None:
+        preview = self.create_preview()
+        candidate = preview.batch.candidate_records.get()
+        self.assertTrue(candidate.raw_payload)
+        applied = confirm_history_import(actor=self.user, batch_id=preview.batch.pk)
+        self.assertEqual(applied.created_attempts, 1)
+        candidate.refresh_from_db()
+        self.assertEqual(candidate.raw_payload, {})
+        self.assertIsNotNone(candidate.raw_payload_purged_at)
+
+        second = self.create_preview(
+            content=history_payload(
+                course_code=self.data["course"].code,
+                term_code=self.data["term"].code,
+                status="FAILED",
+            ),
+            filename="expired.json",
+        )
+        expired = second.batch.candidate_records.get()
+        expired.raw_payload_expires_at = timezone.now() - timedelta(seconds=1)
+        expired.save(update_fields=["raw_payload_expires_at", "updated_at"])
+        self.assertEqual(purge_expired_candidate_payloads(), 1)
+        expired.refresh_from_db()
+        self.assertEqual(expired.raw_payload, {})
+        self.assertIsNotNone(expired.raw_payload_purged_at)
+
+    @override_settings(HISTORY_PDF_PARSE_TIMEOUT_SECONDS=0.001)
+    def test_pdf_parser_fails_closed_when_isolated_process_exceeds_timeout(self) -> None:
+        with self.assertRaisesRegex(HistoryImportError, "time or memory budget"):
+            self.create_preview(
+                content=text_pdf_bytes(
+                    f"{self.data['course'].code}  {self.data['term'].code}  PASSED  4.5  4"
+                ),
+                filename="timeout.pdf",
+            )
+
     def test_external_course_code_creates_recognition_and_source_lineage(self) -> None:
         content = json.dumps(
             {
@@ -437,6 +513,62 @@ class HistoryApiTests(TransactionTestCase):
         response = self.client.get("/api/v1/auth/csrf")
         self.assertEqual(response.status_code, 200)
         return {"HTTP_X_CSRFTOKEN": response.json()["csrf_token"]}
+
+    def test_history_cursor_is_stable_when_a_new_attempt_is_inserted_between_pages(self) -> None:
+        original = [
+            CourseAttempt.objects.create(
+                enrollment=self.data["enrollment"],
+                course_version=self.data["course_version"],
+                term=self.data["term"],
+                attempt_number=attempt_number,
+                status=AttemptStatus.PASSED.value,
+                credits_earned=4,
+            )
+            for attempt_number in (1, 2, 3)
+        ]
+        first = self.client.get(
+            "/api/v1/history/attempts",
+            {
+                "enrollment_id": str(self.data["enrollment"].pk),
+                "limit": 2,
+                "sort": "term",
+            },
+        )
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertIsNotNone(first.json()["next_cursor"])
+
+        inserted = CourseAttempt.objects.create(
+            enrollment=self.data["enrollment"],
+            course_version=self.data["course_version"],
+            term=self.data["term"],
+            attempt_number=4,
+            status=AttemptStatus.PASSED.value,
+            credits_earned=4,
+        )
+        second = self.client.get(
+            "/api/v1/history/attempts",
+            {
+                "enrollment_id": str(self.data["enrollment"].pk),
+                "limit": 2,
+                "sort": "term",
+                "cursor": first.json()["next_cursor"],
+            },
+        )
+        self.assertEqual(second.status_code, 200, second.content)
+        returned_ids = {item["id"] for item in [*first.json()["items"], *second.json()["items"]]}
+        self.assertEqual(returned_ids, {str(attempt.pk) for attempt in original})
+        self.assertNotIn(str(inserted.pk), returned_ids)
+        self.assertIsNone(second.json()["next_cursor"])
+
+        invalid = self.client.get(
+            "/api/v1/history/attempts",
+            {
+                "enrollment_id": str(self.data["enrollment"].pk),
+                "cursor": "tampered",
+            },
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(invalid.json()["code"], "HISTORY_CURSOR_INVALID")
 
     def test_api_upload_preview_confirm_and_ownership(self) -> None:
         content = history_payload(

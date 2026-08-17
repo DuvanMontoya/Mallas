@@ -15,6 +15,7 @@ import {
   Map,
   Menu,
   Network,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -52,6 +53,10 @@ const studentNavigation: NavigationItem[] = [
 
 const editorialNavigation: NavigationItem[] = [
   { href: "/sources", label: messages["es-CO"].sources, shortLabel: "Fuentes", icon: FileSearch },
+];
+
+const administrativeNavigation: NavigationItem[] = [
+  { href: "/admin/students", label: "Estudiantes y matrículas", shortLabel: "Personas", icon: Users },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -97,13 +102,14 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
   const [isPending, startTransition] = useTransition();
   const isAuthRoute = pathname === "/login";
   const canSeeEditorial = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) ?? false;
+  const canSeeAdministration = session.user?.roles.includes("ADMIN") ?? false;
   // Student is the default product persona and older accounts can legitimately
   // have no explicit STUDENT assignment. Editorial-only accounts must opt in.
   const canSeeStudentWorkspace = Boolean(session.user?.student_profile_id) || (session.user?.roles.includes("STUDENT") ?? false);
   const visibleNavigation = canSeeStudentWorkspace
     ? [publicNavigation[0], studentNavigation[0], publicNavigation[1], studentNavigation[1], studentNavigation[2], publicNavigation[3], publicNavigation[2], studentNavigation[3]]
     : publicNavigation;
-  const allVisibleNavigation = canSeeEditorial ? [...visibleNavigation, ...editorialNavigation] : visibleNavigation;
+  const allVisibleNavigation = [...visibleNavigation, ...(canSeeEditorial ? editorialNavigation : []), ...(canSeeAdministration ? administrativeNavigation : [])];
 
   useEffect(() => {
     if (isAuthRoute) return;
@@ -171,6 +177,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
               <NavigationLinks items={editorialNavigation} pathname={pathname} />
             </div>
           ) : null}
+          {canSeeAdministration ? <div className="nav-section"><p className="nav-section-label">Administración</p><NavigationLinks items={administrativeNavigation} pathname={pathname} /></div> : null}
         </nav>
         <div className="sidebar-note">
           <CheckCircle2 size={16} aria-hidden="true" />
@@ -242,6 +249,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
         <nav ref={mobileMoreMenuRef} className="mobile-more-menu" id="mobile-more-menu" aria-label="Más opciones de navegación">
           <NavigationLinks items={visibleNavigation.slice(5)} pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} />
           {canSeeEditorial ? <NavigationLinks items={editorialNavigation} pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} /> : null}
+          {canSeeAdministration ? <NavigationLinks items={administrativeNavigation} pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} /> : null}
         </nav>
       ) : null}
       {logoutError ? <Alert tone="error">{logoutError}</Alert> : null}

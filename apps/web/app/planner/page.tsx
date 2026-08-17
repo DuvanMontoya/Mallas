@@ -42,7 +42,7 @@ export default async function PlannerPage({ searchParams }: PlannerPageProps) {
 
   const [scenariosResult, termsResult, mapResult] = await Promise.all([
     getScenarios({ enrollmentId, headers }),
-    getAcademicTerms({ headers }),
+    getAcademicTerms({ enrollmentId, headers }),
     getCurriculumMap({ headers }),
   ]);
   const scenarios = scenariosResult.data?.items ?? [];

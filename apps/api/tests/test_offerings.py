@@ -10,6 +10,7 @@ from domain.offerings.schedule import MeetingWindow, evaluate_schedule
 from modules.curriculum.models import Course, CourseVersion, CurriculumRevision
 from modules.governance.models import SourceSnapshot
 from modules.identity.models import RoleAssignment
+from modules.institutions.models import Campus
 from modules.offerings.application.importer import (
     SourceDescriptor,
     import_offering_payload,
@@ -226,6 +227,61 @@ class OfferingImportAndApiTests(TestCase):
         self.assertEqual(rows[self.context["course"].code]["eligibility_state"], "BLOCKED")
         self.assertEqual(rows["STAT102-offerings"]["offered_state"], "NOT_OFFERED")
         self.assertEqual(rows["STAT102-offerings"]["eligibility_state"], "ELIGIBLE")
+
+    def test_academic_terms_can_be_scoped_to_authorized_enrollment_and_campus(self) -> None:
+        other = foundation(suffix="-other-terms")
+        other_campus = Campus.objects.create(
+            institution=self.institution,
+            code="MED-offerings",
+            name="Medellín",
+        )
+        institution_wide = AcademicTerm.objects.create(
+            institution=self.institution,
+            campus=None,
+            code="2027-1-INSTITUTION",
+            starts_at=datetime.datetime(2027, 1, 1, tzinfo=datetime.UTC),
+            ends_at=datetime.datetime(2027, 6, 30, tzinfo=datetime.UTC),
+        )
+        AcademicTerm.objects.create(
+            institution=self.institution,
+            campus=other_campus,
+            code="2027-1-MED",
+            starts_at=datetime.datetime(2027, 1, 1, tzinfo=datetime.UTC),
+            ends_at=datetime.datetime(2027, 6, 30, tzinfo=datetime.UTC),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            "/api/v1/academic-terms",
+            {"enrollment_id": str(self.enrollment.pk)},
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        ids = {item["id"] for item in response.json()["items"]}
+        self.assertIn(str(self.context["term"].pk), ids)
+        self.assertIn(str(institution_wide.pk), ids)
+        self.assertNotIn(str(other["term"].pk), ids)
+        self.assertNotIn(
+            str(AcademicTerm.objects.get(institution=self.institution, code="2027-1-MED").pk),
+            ids,
+        )
+        self.assertEqual(response["Cache-Control"], "private, no-store")
+
+        anonymous = Client().get(
+            "/api/v1/academic-terms",
+            {"enrollment_id": str(self.enrollment.pk)},
+        )
+        self.assertEqual(anonymous.status_code, 403)
+
+        mismatch = self.client.get(
+            "/api/v1/academic-terms",
+            {
+                "enrollment_id": str(self.enrollment.pk),
+                "institution_id": str(other["institution"].pk),
+            },
+        )
+        self.assertEqual(mismatch.status_code, 400)
+        self.assertEqual(mismatch.json()["code"], "TERM_SCOPE_MISMATCH")
 
     def test_term_crud_requires_scoped_role_and_does_not_publish_curriculum(self) -> None:
         imported = import_offering_payload(

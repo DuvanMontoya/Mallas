@@ -19,7 +19,7 @@ from domain.enums import (
     RecognitionType,
     ReconciliationDecision,
 )
-from domain.history import HistoryFormatError, ParseCandidate, parse_history_bytes
+from domain.history import HistoryFormatError, ParseCandidate, ParseReport, parse_history_bytes
 from modules.audit.application.services import run_degree_audit
 from modules.curriculum.models import CourseVersion
 from modules.identity.application.audit import record_audit_event
@@ -27,8 +27,11 @@ from modules.identity.application.authorization import (
     can_edit_student_history,
     can_view_enrollment,
 )
+from modules.imports.application.parser_isolation import parse_pdf_history_isolated
+from modules.imports.application.retention import purge_applied_batch_payloads
 from modules.imports.application.storage import (
     ArtifactValidationError,
+    ValidatedArtifact,
     artifact_metadata,
     store_artifact,
     validate_artifact,
@@ -296,7 +299,6 @@ def _persist_candidate(
     return candidate
 
 
-@transaction.atomic  # type: ignore[untyped-decorator]
 def create_history_import(
     *,
     actor: Any,
@@ -319,6 +321,40 @@ def create_history_import(
         )
     except ArtifactValidationError as exc:
         raise HistoryImportError(str(exc), code="artifact_invalid") from exc
+    try:
+        report = (
+            parse_pdf_history_isolated(content, source_name=validated.original_filename)
+            if validated.mime_type == "application/pdf"
+            else parse_history_bytes(
+                content,
+                source_name=validated.original_filename,
+                mime_type=validated.mime_type,
+            )
+        )
+    except (ValueError, HistoryFormatError) as exc:
+        raise HistoryImportError(str(exc), code="history_format_invalid") from exc
+    return _persist_history_import(
+        actor=actor,
+        enrollment=enrollment,
+        content=content,
+        validated=validated,
+        report=report,
+        idempotency_key=idempotency_key,
+        request=request,
+    )
+
+
+@transaction.atomic  # type: ignore[untyped-decorator]
+def _persist_history_import(
+    *,
+    actor: Any,
+    enrollment: ProgramEnrollment,
+    content: bytes,
+    validated: ValidatedArtifact,
+    report: ParseReport,
+    idempotency_key: str | None,
+    request: Any | None,
+) -> ImportPreview:
     # Serialize preview creation for one enrollment so the hash/key uniqueness
     # contract remains deterministic under concurrent uploads.
     ProgramEnrollment.objects.select_for_update().get(pk=enrollment.pk)
@@ -351,15 +387,6 @@ def create_history_import(
                 status=CandidateStatus.ERROR.value
             ).count(),
         )
-    try:
-        report = parse_history_bytes(
-            content,
-            source_name=validated.original_filename,
-            mime_type=validated.mime_type,
-        )
-    except (ValueError, HistoryFormatError) as exc:
-        raise HistoryImportError(str(exc), code="history_format_invalid") from exc
-
     batch = ImportBatch.objects.create(
         student=enrollment.student,
         enrollment=enrollment,
@@ -803,6 +830,7 @@ def confirm_history_import(
             "updated_at",
         ]
     )
+    purge_applied_batch_payloads(batch_id=batch.pk, as_of=batch.applied_at)
     record_audit_event(
         request,
         action="HISTORY_IMPORT_APPLIED",

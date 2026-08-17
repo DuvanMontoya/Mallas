@@ -81,6 +81,7 @@ class ObservabilityMiddleware:
                     "/api/v1/dependency-graph",
                     "/api/v1/offerings",
                     "/api/v1/optimization-runs",
+                    "/api/v1/admin/",
                 )
                 if request.path.startswith("/api/v1/health/"):
                     response["Cache-Control"] = "no-store"

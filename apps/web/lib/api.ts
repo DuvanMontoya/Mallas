@@ -354,6 +354,7 @@ export async function getDependencyGraph(options?: {
 export async function getAcademicTerms(options?: {
   institutionId?: string;
   campusCode?: string;
+  enrollmentId?: string;
   headers?: HeadersInit;
 }): Promise<{ data: ApiComponents["schemas"]["AcademicTermCollectionView"] | null; failure: ApiFailure | null }> {
   try {
@@ -363,6 +364,7 @@ export async function getAcademicTerms(options?: {
         query: {
           institution_id: options?.institutionId,
           campus_code: options?.campusCode,
+          enrollment_id: options?.enrollmentId,
         },
       },
     });
@@ -494,6 +496,7 @@ export async function getHistoryAttempts(options: {
   enrollmentId: string;
   limit?: number;
   offset?: number;
+  cursor?: string;
   status?: string;
   sort?: "term" | "course" | "status";
   headers?: HeadersInit;
@@ -506,6 +509,7 @@ export async function getHistoryAttempts(options: {
           enrollment_id: options.enrollmentId,
           limit: options.limit,
           offset: options.offset,
+          cursor: options.cursor,
           status: options.status,
           sort: options.sort,
         },
@@ -1032,6 +1036,55 @@ export async function linkGovernanceRequirementEvidence(
       params: { path: { requirement_id: requirementId } },
       body: { evidence_ids: evidenceIds },
       headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export type StudentAdminCatalog = ApiComponents["schemas"]["StudentAdminCatalogView"];
+export type AdminEnrollment = ApiComponents["schemas"]["AdminEnrollmentView"];
+export type AdminEnrollmentCreatePayload = ApiComponents["schemas"]["AdminEnrollmentCreatePayload"];
+
+export async function getStudentAdminCatalog(options?: {
+  headers?: HeadersInit;
+}): Promise<{ data: StudentAdminCatalog | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/admin/students/catalog", {
+      headers: options?.headers,
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getAdminEnrollments(options?: {
+  search?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: ApiComponents["schemas"]["AdminEnrollmentCollectionView"] | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/admin/students/enrollments", {
+      headers: options?.headers,
+      params: { query: { search: options?.search } },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function createAdminEnrollment(
+  body: AdminEnrollmentCreatePayload,
+): Promise<{ data: AdminEnrollment | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/admin/students/enrollments", {
+      body,
+      headers: await mutationHeaders(),
     });
     if (result.data) return { data: result.data, failure: null };
     return { data: null, failure: failureFromResult(result) };

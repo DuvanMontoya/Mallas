@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, NoReturn
 from uuid import UUID
 
+from django.core import signing
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse
+from django.utils import timezone
 from ninja import Header, Router, Schema
 from ninja.security import django_auth
 
@@ -70,6 +74,150 @@ class AttemptPage(Schema):
     offset: int
     next_offset: int | None
     previous_offset: int | None
+    next_cursor: str | None = None
+
+
+_HISTORY_CURSOR_SALT = "curriculum-navigator.history-attempts.v1"
+
+
+def _cursor_values(attempt: CourseAttempt, sort: str) -> list[str | int]:
+    common = {
+        "term": [
+            attempt.term.starts_at.isoformat(),
+            attempt.course_version.course.code,
+            attempt.attempt_number,
+            str(attempt.pk),
+        ],
+        "course": [
+            attempt.course_version.course.code,
+            attempt.term.starts_at.isoformat(),
+            attempt.attempt_number,
+            str(attempt.pk),
+        ],
+        "status": [
+            attempt.status,
+            attempt.term.starts_at.isoformat(),
+            attempt.course_version.course.code,
+            str(attempt.pk),
+        ],
+    }
+    return common[sort]
+
+
+def _encode_attempt_cursor(
+    attempt: CourseAttempt,
+    *,
+    enrollment_id: UUID,
+    sort: str,
+    status: str | None,
+    snapshot_at: datetime,
+) -> str:
+    return signing.dumps(
+        {
+            "enrollment_id": str(enrollment_id),
+            "sort": sort,
+            "status": status,
+            "snapshot_at": snapshot_at.isoformat(),
+            "values": _cursor_values(attempt, sort),
+        },
+        salt=_HISTORY_CURSOR_SALT,
+        compress=True,
+    )
+
+
+def _decode_attempt_cursor(
+    cursor: str,
+    *,
+    enrollment_id: UUID,
+    sort: str,
+    status: str | None,
+) -> tuple[datetime, list[str | int]]:
+    try:
+        payload = signing.loads(cursor, salt=_HISTORY_CURSOR_SALT)
+        if (
+            not isinstance(payload, dict)
+            or payload.get("enrollment_id") != str(enrollment_id)
+            or payload.get("sort") != sort
+            or payload.get("status") != status
+            or not isinstance(payload.get("values"), list)
+        ):
+            raise ValueError
+        snapshot_at = datetime.fromisoformat(str(payload["snapshot_at"]))
+        if timezone.is_naive(snapshot_at):
+            raise ValueError
+        values = payload["values"]
+        if len(values) != 4:
+            raise ValueError
+        return snapshot_at, values
+    except KeyError, TypeError, ValueError, signing.BadSignature:
+        raise_problem(
+            status=400,
+            code="HISTORY_CURSOR_INVALID",
+            title="Invalid history cursor",
+            detail="The history cursor is invalid or does not match this query.",
+            fields={"cursor": "Restart pagination without a cursor."},
+        )
+
+
+def _after_attempt_cursor(
+    attempts: QuerySet[CourseAttempt], sort: str, values: list[str | int]
+) -> QuerySet[CourseAttempt]:
+    if sort == "term":
+        term_start, course_code, attempt_number, attempt_id = values
+        return attempts.filter(
+            Q(term__starts_at__gt=datetime.fromisoformat(str(term_start)))
+            | Q(
+                term__starts_at=datetime.fromisoformat(str(term_start)),
+                course_version__course__code__gt=str(course_code),
+            )
+            | Q(
+                term__starts_at=datetime.fromisoformat(str(term_start)),
+                course_version__course__code=str(course_code),
+                attempt_number__gt=int(attempt_number),
+            )
+            | Q(
+                term__starts_at=datetime.fromisoformat(str(term_start)),
+                course_version__course__code=str(course_code),
+                attempt_number=int(attempt_number),
+                id__gt=UUID(str(attempt_id)),
+            )
+        )
+    if sort == "course":
+        course_code, term_start, attempt_number, attempt_id = values
+        return attempts.filter(
+            Q(course_version__course__code__gt=str(course_code))
+            | Q(
+                course_version__course__code=str(course_code),
+                term__starts_at__gt=datetime.fromisoformat(str(term_start)),
+            )
+            | Q(
+                course_version__course__code=str(course_code),
+                term__starts_at=datetime.fromisoformat(str(term_start)),
+                attempt_number__gt=int(attempt_number),
+            )
+            | Q(
+                course_version__course__code=str(course_code),
+                term__starts_at=datetime.fromisoformat(str(term_start)),
+                attempt_number=int(attempt_number),
+                id__gt=UUID(str(attempt_id)),
+            )
+        )
+    attempt_status, term_start, course_code, attempt_id = values
+    return attempts.filter(
+        Q(status__gt=str(attempt_status))
+        | Q(status=str(attempt_status), term__starts_at__gt=datetime.fromisoformat(str(term_start)))
+        | Q(
+            status=str(attempt_status),
+            term__starts_at=datetime.fromisoformat(str(term_start)),
+            course_version__course__code__gt=str(course_code),
+        )
+        | Q(
+            status=str(attempt_status),
+            term__starts_at=datetime.fromisoformat(str(term_start)),
+            course_version__course__code=str(course_code),
+            id__gt=UUID(str(attempt_id)),
+        )
+    )
 
 
 def _error(error: HistoryMutationError) -> NoReturn:
@@ -117,6 +265,7 @@ def list_history_attempts(
     enrollment_id: UUID,
     limit: int = 50,
     offset: int = 0,
+    cursor: str | None = None,
     status: str | None = None,
     sort: str = "term",
 ) -> dict[str, Any]:
@@ -135,6 +284,14 @@ def list_history_attempts(
             title="Invalid page offset",
             detail="offset must be zero or greater.",
             fields={"offset": "Use a non-negative integer."},
+        )
+    if cursor and offset:
+        raise_problem(
+            status=400,
+            code="PAGINATION_MODE_INVALID",
+            title="Invalid pagination mode",
+            detail="Use cursor pagination or a legacy offset, not both.",
+            fields={"offset": "Set offset to zero when cursor is present."},
         )
     ordering = {
         "term": ("term__starts_at", "course_version__course__code", "attempt_number", "id"),
@@ -166,12 +323,40 @@ def list_history_attempts(
         _error(error)
     attempts = enrollment.course_attempts.select_related(
         "course_version__course", "term", "import_batch"
-    ).order_by(*ordering)
+    )
     if normalized_status is not None:
         attempts = attempts.filter(status=normalized_status)
-    total = attempts.count()
-    rows = list(attempts[offset : offset + limit])
-    next_offset = offset + limit if offset + limit < total else None
+    if cursor:
+        snapshot_at, cursor_values = _decode_attempt_cursor(
+            cursor,
+            enrollment_id=enrollment.pk,
+            sort=sort,
+            status=normalized_status,
+        )
+    else:
+        snapshot_at = timezone.now()
+        cursor_values = None
+    snapshot_attempts = attempts.filter(created_at__lte=snapshot_at)
+    total = snapshot_attempts.count()
+    page_attempts = snapshot_attempts.order_by(*ordering)
+    if cursor_values is not None:
+        page_attempts = _after_attempt_cursor(page_attempts, sort, cursor_values)
+    start = offset if not cursor else 0
+    page_rows = list(page_attempts[start : start + limit + 1])
+    has_more = len(page_rows) > limit
+    rows = page_rows[:limit]
+    next_cursor = (
+        _encode_attempt_cursor(
+            rows[-1],
+            enrollment_id=enrollment.pk,
+            sort=sort,
+            status=normalized_status,
+            snapshot_at=snapshot_at,
+        )
+        if has_more and rows
+        else None
+    )
+    next_offset = offset + limit if not cursor and offset + limit < total else None
     previous_offset = max(0, offset - limit) if offset > 0 else None
     return {
         "items": [_attempt_view(attempt) for attempt in rows],
@@ -180,6 +365,7 @@ def list_history_attempts(
         "offset": offset,
         "next_offset": next_offset,
         "previous_offset": previous_offset,
+        "next_cursor": next_cursor,
     }
 
 

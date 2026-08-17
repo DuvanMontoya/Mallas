@@ -19,6 +19,28 @@ MAX_RECORDS = 2_000
 MAX_EXCERPT_LENGTH = 1_000
 _COURSE_CODE_PATTERN = re.compile(r"^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9._-]{1,39}$", re.IGNORECASE)
 _TERM_CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9._/-]{1,39}$", re.IGNORECASE)
+_RAW_FIELD_ALIASES: dict[str, tuple[str, ...]] = {
+    "course_code": ("course_code", "code"),
+    "term_code": ("term_code", "term"),
+    "status": ("status",),
+    "grade": ("grade",),
+    "credits_earned": ("credits_earned", "credits"),
+    "attempt_number": ("attempt_number", "attempt"),
+    "course_name": ("course_name", "name"),
+    "external_code": ("external_code", "equivalence_code"),
+    "source_locator": ("source_locator",),
+}
+_RAW_FIELD_LIMITS = {
+    "course_code": 40,
+    "term_code": 40,
+    "status": 24,
+    "grade": 24,
+    "credits_earned": 8,
+    "attempt_number": 8,
+    "course_name": 240,
+    "external_code": 120,
+    "source_locator": 160,
+}
 
 
 class HistoryFormatError(ValueError):
@@ -102,6 +124,24 @@ def _integer(value: Any, *, field: str, minimum: int = 0, maximum: int = 255) ->
     return parsed
 
 
+def _minimize_raw_payload(raw_payload: Mapping[str, Any]) -> tuple[dict[str, str], int]:
+    """Keep only bounded academic fields; arbitrary upload columns never persist."""
+
+    source = {str(key): value for key, value in raw_payload.items()}
+    minimized: dict[str, str] = {}
+    consumed: set[str] = set()
+    for canonical, aliases in _RAW_FIELD_ALIASES.items():
+        for alias in aliases:
+            if alias not in source:
+                continue
+            consumed.add(alias)
+            value = _text(source[alias])
+            if value:
+                minimized[canonical] = value[: _RAW_FIELD_LIMITS[canonical]]
+            break
+    return minimized, len(set(source) - consumed)
+
+
 def _normalize_row(
     raw_payload: Mapping[str, Any],
     *,
@@ -111,10 +151,17 @@ def _normalize_row(
     confidence: int,
     source_metadata: Mapping[str, Any] | None = None,
 ) -> ParseCandidate:
-    raw = {str(key): value for key, value in raw_payload.items()}
+    raw, discarded_field_count = _minimize_raw_payload(raw_payload)
     normalized: dict[str, Any] = {}
     errors: list[dict[str, str]] = []
     warnings: list[dict[str, str]] = []
+    if discarded_field_count:
+        warnings.append(
+            {
+                "code": "extra_columns_discarded",
+                "message": f"{discarded_field_count} unsupported column(s) were discarded before storage",
+            }
+        )
 
     course_code = _text(raw.get("course_code") or raw.get("code"))
     if not course_code:
