@@ -50,8 +50,9 @@ describe("planner board", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: /planea sin alterar tu historia real/i })).toBeInTheDocument();
-    expect(screen.getByText(/privado por defecto/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: scenarios[0].name })).toBeInTheDocument();
+    expect(screen.getByText(/borrador privado/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ver mis matriculables/i })).toHaveAttribute("href", "/curriculum?status=ELIGIBLE");
     const moveSelect = screen.getByRole("combobox", { name: /mover 1000003 a otro período/i });
     expect(moveSelect).toHaveValue(terms[0].id);
     fireEvent.change(moveSelect, { target: { value: terms[1].id } });

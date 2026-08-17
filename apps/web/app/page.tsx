@@ -71,16 +71,16 @@ function EmptyDashboardHome() {
 
 function EditorialHome() {
   return (
-    <div className="content-grid">
-      <section className="hero panel">
+    <div className="editorial-home">
+      <section className="editorial-command">
         <div>
-          <p className="eyebrow accent">Gobernanza curricular · plan 2514</p>
-          <h1>La malla publicada,<br /><em>antes que el backoffice.</em></h1>
-          <p className="hero-copy">Inspecciona primero el producto que reciben los estudiantes y entra a fuentes sólo cuando necesites revisar evidencia o una nueva revisión.</p>
-          <div className="hero-actions"><Link className="button button-primary" href="/curriculum">Abrir la malla <span aria-hidden="true">→</span></Link><Link className="text-link" href="/sources">Gobernar fuentes</Link></div>
+          <p className="eyebrow accent">Administración curricular · Plan 2514</p>
+          <h1>Administración curricular</h1>
+          <div className="hero-actions"><Link className="button button-primary" href="/curriculum">Revisar la malla publicada <span aria-hidden="true">→</span></Link><Link className="button button-secondary" href="/sources">Abrir bandeja editorial</Link></div>
         </div>
+        <aside><span>Principio de trabajo</span><strong>Publicar sólo cuando reglas, impacto y evidencia sean comprensibles.</strong><small>Cada revisión publicada es inmutable y conserva su procedencia.</small></aside>
       </section>
-      <section className="panel empty-state-panel" aria-labelledby="editorial-start-title"><div className="section-heading"><div><p className="eyebrow">Flujo editorial</p><h2 id="editorial-start-title">Publica sin perder procedencia</h2></div><span className="tag tag-outline">Separación de funciones</span></div><div className="start-grid"><Link className="start-card" href="/curriculum"><span className="start-number">01</span><span><strong>Verifica la experiencia</strong><small>Malla, reglas visibles y estados no normativos</small></span><span aria-hidden="true">↗</span></Link><Link className="start-card" href="/sources"><span className="start-number">02</span><span><strong>Revisa evidencia</strong><small>Snapshots, propuestas y recibos inmutables</small></span><span aria-hidden="true">↗</span></Link><Link className="start-card" href="/graph"><span className="start-number">03</span><span><strong>Inspecciona dependencias</strong><small>Relaciones completas y alternativa textual</small></span><span aria-hidden="true">↗</span></Link></div></section>
+      <section className="editorial-flow" aria-labelledby="editorial-start-title"><div className="section-heading"><div><p className="eyebrow">Una tarea a la vez</p><h2 id="editorial-start-title">¿Qué necesitas hacer?</h2></div></div><div className="editorial-flow-grid"><Link href="/curriculum"><span>01</span><div><strong>Validar la experiencia publicada</strong><small>Comprueba obligatorias, elecciones y explicación de bloqueos como las verá una persona.</small></div><b>Empezar →</b></Link><Link href="/sources"><span>02</span><div><strong>Revisar o publicar un cambio</strong><small>Trabaja con evidencia, diff semántico, impacto y separación de funciones.</small></div><b>Abrir →</b></Link><Link href="/graph"><span>03</span><div><strong>Investigar una dependencia</strong><small>Sigue prerrequisitos y desbloqueos sin alterar reglas desde la visualización.</small></div><b>Explorar →</b></Link></div></section>
     </div>
   );
 }
@@ -94,8 +94,7 @@ function StudentDecisionHome({ overview }: { overview: AcademicOverview }) {
       <section className="student-command" aria-labelledby="student-command-title">
         <div className="student-command-copy">
           <p className="eyebrow accent">Estadística · Plan {overview.enrollment.plan_code}</p>
-          <h1 id="student-command-title">¿Qué sigue en tu carrera?</h1>
-          <p>Empieza por tu malla: allí ves lo aprobado, lo que cursas, lo que puedes matricular y por qué lo demás sigue bloqueado.</p>
+          <h1 id="student-command-title">Mi carrera</h1>
           <div className="student-command-actions"><Link className="button button-primary" href="/curriculum">Ver mi malla <span aria-hidden="true">→</span></Link><Link className="text-link" href="/planner">Planear el próximo período</Link></div>
         </div>
         <div className="student-progress-summary">

@@ -73,6 +73,10 @@ function statusTone(status: string): "passed" | "in-progress" | "blocked" | "unk
   return "neutral";
 }
 
+function editorialStatus(status: string) {
+  return ({ DRAFT: "Borrador", IN_REVIEW: "En revisión", APPROVED: "Aprobada", PUBLISHED: "Publicada", ACCEPTED: "Aceptado", REJECTED: "Rechazado", PENDING: "Pendiente", VERIFIED: "Verificado", UNKNOWN: "Por verificar", DISPUTED: "En disputa", INFERRED_PENDING_REVIEW: "Inferencia por revisar" } as Record<string, string>)[status] ?? status.replaceAll("_", " ").toLocaleLowerCase("es-CO");
+}
+
 function diffCount(proposal: GovernanceProposal) {
   const diff = proposal.semantic_diff as SemanticDiff;
   const added = Object.values(diff.added ?? {}).reduce((total, rows) => total + (Array.isArray(rows) ? rows.length : 0), 0);
@@ -110,7 +114,7 @@ function CandidateRow({
       </td>
       <td><code>{candidate.entity}:{candidate.entity_key}</code></td>
       <td>{candidate.operation}</td>
-      <td><StatusBadge tone={statusTone(candidate.status)} label={candidate.status} /></td>
+      <td><StatusBadge tone={statusTone(candidate.status)} label={editorialStatus(candidate.status)} /></td>
       <td>{candidate.evidence.length ? `${candidate.evidence.length} evidencia(s)` : "Sin evidencia enlazada"}</td>
       <td>
         <div className="governance-row-actions">
@@ -281,11 +285,11 @@ export function GovernanceBackoffice({
     <div className="page-shell governance-page">
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true" data-testid="governance-live-region">{announcement}</p>
       <div className="governance-back-link"><Link className="text-link" href="/">← Volver al resumen</Link></div>
-      <section className="panel governance-hero">
+      <section className="governance-decision-hero">
         <div>
-          <p className="eyebrow accent">Bandeja de fuentes · gobernanza curricular</p>
-          <h1>Gobierna antes de publicar.</h1>
-          <p>Fuentes archivadas, candidatos extraídos, reglas explicables y revisiones inmutables viven en una misma cadena auditable.</p>
+          <p className="eyebrow accent">Bandeja editorial</p>
+          <h1>Revisiones curriculares</h1>
+          <span>{inbox.proposals.length} propuestas · {inbox.documents.length} fuentes</span>
         </div>
         <div className="governance-hero-facts" aria-label="Resumen de la bandeja">
           <span><strong>{inbox.documents.length}</strong> documentos</span>
@@ -296,16 +300,13 @@ export function GovernanceBackoffice({
 
       {failure ? <Alert tone={failure.problem?.code === "GOVERNANCE_CONCURRENCY_CONFLICT" ? "error" : "info"}><strong>{failure.problem?.code === "GOVERNANCE_CONCURRENCY_CONFLICT" ? "Conflicto de concurrencia." : "Estado editorial."}</strong> {failureText(failure)} {failure.problem?.code === "GOVERNANCE_CONCURRENCY_CONFLICT" ? <button className="button button-quiet" type="button" onClick={() => selectedId && void loadProposal(selectedId)}>Recargar versión actual</button> : null}</Alert> : null}
 
-      <section className="governance-workflow panel" aria-labelledby="governance-workflow-title">
-        <div className="section-heading"><div><p className="eyebrow">Cadena de procedencia</p><h2 id="governance-workflow-title">Ningún salto directo a VERIFIED o PUBLISHED</h2></div><span className="tag tag-outline">Control editorial</span></div>
-        <ol className="governance-workflow-list">{inbox.workflow.map((stage, index) => <li key={stage}><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage}</strong></li>)}</ol>
-      </section>
+      <details className="governance-workflow panel"><summary><span><b>Cómo se protege una publicación</b><small>La cadena completa de procedencia y separación de funciones</small></span></summary><section aria-labelledby="governance-workflow-title"><h2 id="governance-workflow-title" className="sr-only">Flujo editorial completo</h2><ol className="governance-workflow-list">{inbox.workflow.map((stage, index) => <li key={stage}><span>{String(index + 1).padStart(2, "0")}</span><strong>{editorialStatus(stage)}</strong></li>)}</ol></section></details>
 
       <div className="governance-layout">
         <aside className="panel governance-sidebar" aria-labelledby="governance-queue-title">
           <div className="section-heading"><div><p className="eyebrow">Cola de revisión</p><h2 id="governance-queue-title">Propuestas</h2></div><span className="tag tag-outline">{inbox.proposals.length}</span></div>
           <ul className="governance-proposal-list">
-            {inbox.proposals.map((item: ProposalSummary) => <li key={item.id}><button className={selectedId === item.id ? "governance-proposal-card selected" : "governance-proposal-card"} type="button" onClick={() => { setSelectedId(item.id); void loadProposal(item.id); }}><span className="governance-card-top"><code>{item.candidate_revision_code}</code><StatusBadge tone={statusTone(item.status)} label={item.status} /></span><strong>{item.title}</strong><small>{item.pending_candidates} candidatos pendientes · {item.semantic_has_changes ? "con cambios semánticos" : "sin cambios semánticos"}</small></button></li>)}
+            {inbox.proposals.map((item: ProposalSummary) => <li key={item.id}><button className={selectedId === item.id ? "governance-proposal-card selected" : "governance-proposal-card"} type="button" onClick={() => { setSelectedId(item.id); void loadProposal(item.id); }}><span className="governance-card-top"><code>{item.candidate_revision_code}</code><StatusBadge tone={statusTone(item.status)} label={editorialStatus(item.status)} /></span><strong>{item.title}</strong><small>{item.pending_candidates} afirmaciones pendientes · {item.semantic_has_changes ? "cambia la revisión" : "sin cambios curriculares"}</small></button></li>)}
           </ul>
           <div className="governance-source-list"><h3>Snapshots recientes</h3>{inbox.snapshots.slice(0, 5).map((snapshot) => <article key={snapshot.id}><code>{snapshot.sha256.slice(0, 12)}…</code><p>{snapshot.document_title}</p><small>{snapshot.evidence_count} evidencias · {snapshot.mime_type}</small></article>)}</div>
         </aside>
@@ -314,7 +315,7 @@ export function GovernanceBackoffice({
           {!proposal || busy ? <section className="panel governance-loading"><p className="eyebrow">Propuesta</p><h2>{busy ? "Cargando estado auditable…" : "Selecciona una propuesta"}</h2></section> : <>
             <section className="panel governance-detail-header">
               <div><p className="eyebrow accent">Revisión en borrador · {proposal.candidate_revision.plan_code}</p><h2>{proposal.title}</h2><p>{proposal.rationale}</p></div>
-              <div className="governance-detail-meta"><StatusBadge tone={statusTone(proposal.status)} label={proposal.status} /><span>Versión <code>{proposal.version}</code></span><span>Hash <code>{proposal.content_fingerprint.slice(0, 16)}…</code></span></div>
+              <div className="governance-detail-meta"><StatusBadge tone={statusTone(proposal.status)} label={editorialStatus(proposal.status)} /><span>Versión <code>{proposal.version}</code></span><details><summary>Identificador técnico</summary><code>{proposal.content_fingerprint.slice(0, 16)}…</code></details></div>
             </section>
 
             <section className="panel governance-actions" aria-labelledby="governance-actions-title">
@@ -329,7 +330,7 @@ export function GovernanceBackoffice({
             </section>
 
             <section className="governance-metric-grid" aria-label="Validación e impacto">
-              <article className="panel governance-metric"><span>Validación</span><strong>{proposal.validation_report.ok ? "VÁLIDA" : "BLOQUEADA"}</strong><small>{proposal.validation_report.errors.length} errores · {proposal.validation_report.unknowns.length} unknowns</small></article>
+              <article className="panel governance-metric"><span>Validación</span><strong>{proposal.validation_report.ok ? "Lista" : "Bloqueada"}</strong><small>{proposal.validation_report.errors.length} errores · {proposal.validation_report.unknowns.length} datos por verificar</small></article>
               <article className="panel governance-metric"><span>Diff semántico</span><strong>{diffCount(proposal).changed + diffCount(proposal).added + diffCount(proposal).removed}</strong><small>{diffCount(proposal).added} añadidos · {diffCount(proposal).removed} retirados · {diffCount(proposal).changed} cambios</small></article>
               <article className="panel governance-metric"><span>Impacto</span><strong>{proposal.impact_analysis.students_potentially_affected}</strong><small>estudiantes potencialmente afectados · {proposal.impact_analysis.audits_affected} auditorías</small></article>
             </section>
@@ -340,7 +341,7 @@ export function GovernanceBackoffice({
 
             <section className="panel governance-section" aria-labelledby="governance-candidates-title"><div className="section-heading"><div><p className="eyebrow">Candidatos de extracción</p><h2 id="governance-candidates-title">Revisión de afirmaciones extraídas</h2><p>La selección masiva siempre requiere una previsualización sin escrituras antes de aplicar.</p></div><div className="governance-row-actions"><button className="button button-secondary" type="button" disabled={!selectedCandidates.length || busy} onClick={() => void previewBulk()}>Previsualizar aceptación masiva</button>{bulkPreview ? <button className="button button-primary" type="button" disabled={busy || bulkPreview.blocked > 0} onClick={() => void applyBulk()}>Aplicar preview ({bulkPreview.allowed})</button> : null}</div></div>{bulkPreview ? <Alert tone={bulkPreview.blocked ? "error" : "success"}><strong>Preview sin escrituras:</strong> {bulkPreview.total} seleccionados, {bulkPreview.allowed} aplicables, {bulkPreview.blocked} bloqueados.</Alert> : null}<div className="table-scroll"><table className="governance-table"><caption>Candidatos extraídos de {proposal.source_snapshot.sha256.slice(0, 16)}…</caption><thead><tr><th scope="col">Seleccionar</th><th scope="col">Entidad</th><th scope="col">Operación</th><th scope="col">Estado</th><th scope="col">Evidencia</th><th scope="col"><span className="sr-only">Acciones</span></th></tr></thead><tbody>{proposal.candidates.slice(0, 80).map((candidate) => <CandidateRow key={candidate.id} candidate={candidate} selected={selectedCandidates.includes(candidate.id)} onToggle={() => setSelectedCandidates((current) => current.includes(candidate.id) ? current.filter((id) => id !== candidate.id) : [...current, candidate.id])} onReview={(item, status) => void reviewCandidate(item, status)} busy={busy} />)}</tbody></table></div></section>
 
-            <section className="panel governance-section" aria-labelledby="governance-rule-title"><div className="section-heading"><div><p className="eyebrow">Inspector de reglas</p><h2 id="governance-rule-title">AST legible + explicación humana + evidencia</h2></div><label className="field-group"><span>Regla</span><select value={selectedRequirement?.id ?? ""} onChange={(event) => setSelectedRequirementId(event.target.value)}>{proposal.requirements.slice(0, 80).map((requirement) => <option key={requirement.id} value={requirement.id}>{requirement.code} · {requirement.epistemic_status}</option>)}</select></label></div>{selectedRequirement ? <div className="governance-rule-grid"><div className="governance-rule-copy"><StatusBadge tone={statusTone(selectedRequirement.epistemic_status)} label={selectedRequirement.epistemic_status} /><h3>{selectedRequirement.code}</h3><p>{selectedRequirement.human_explanation}</p><p className="muted-copy">{selectedRequirement.purpose} · {selectedRequirement.ast_schema_version} · {selectedRequirement.ast_hash.slice(0, 16)}…</p><button className="button button-secondary" type="button" disabled={busy || !selectedRequirement.evidence.length} onClick={() => void linkSelectedRequirementEvidence()}>Guardar vínculos de evidencia</button></div><div><h3>AST serializado</h3><pre className="governance-ast">{JSON.stringify(selectedRequirement.ast, null, 2)}</pre></div><div><h3>Evidencia vinculada</h3>{selectedRequirement.evidence.length ? <ul className="governance-evidence-list">{selectedRequirement.evidence.map((evidence) => <li key={evidence.id}><strong>{evidence.locator}</strong><span>{evidence.excerpt}</span><small>{evidence.source_title} · {evidence.snapshot_sha256.slice(0, 16)}…</small></li>)}</ul> : <Alert tone="info">No hay evidencia vinculada. La regla no puede publicarse como VERIFIED.</Alert>}</div></div> : <EmptyState title="No hay requisitos en esta revisión" description="El inspector permanece explícito cuando la fuente no contiene reglas estructuradas." />}</section>
+            <details className="governance-technical panel"><summary><span><b>Inspeccionar reglas y evidencia</b><small>Explicación humana, estructura determinista y procedencia</small></span></summary><section className="governance-section" aria-labelledby="governance-rule-title"><div className="section-heading"><div><p className="eyebrow">Inspector de reglas</p><h2 id="governance-rule-title">Qué significa la regla y de dónde sale</h2></div><label className="field-group"><span>Regla</span><select value={selectedRequirement?.id ?? ""} onChange={(event) => setSelectedRequirementId(event.target.value)}>{proposal.requirements.slice(0, 80).map((requirement) => <option key={requirement.id} value={requirement.id}>{requirement.code} · {editorialStatus(requirement.epistemic_status)}</option>)}</select></label></div>{selectedRequirement ? <div className="governance-rule-grid"><div className="governance-rule-copy"><StatusBadge tone={statusTone(selectedRequirement.epistemic_status)} label={editorialStatus(selectedRequirement.epistemic_status)} /><h3>{selectedRequirement.code}</h3><p>{selectedRequirement.human_explanation}</p><p className="muted-copy">{selectedRequirement.purpose}</p><button className="button button-secondary" type="button" disabled={busy || !selectedRequirement.evidence.length} onClick={() => void linkSelectedRequirementEvidence()}>Guardar vínculos de evidencia</button></div><details><summary>Ver estructura determinista</summary><pre className="governance-ast">{JSON.stringify(selectedRequirement.ast, null, 2)}</pre></details><div><h3>Evidencia vinculada</h3>{selectedRequirement.evidence.length ? <ul className="governance-evidence-list">{selectedRequirement.evidence.map((evidence) => <li key={evidence.id}><strong>{evidence.locator}</strong><span>{evidence.excerpt}</span><small>{evidence.source_title}</small></li>)}</ul> : <Alert tone="info">No hay evidencia vinculada. La regla no puede publicarse como verificada.</Alert>}</div></div> : <EmptyState title="No hay requisitos en esta revisión" description="No se encontraron reglas estructuradas para inspeccionar." />}</section></details>
 
             <section className="panel governance-section" aria-labelledby="governance-validation-title"><div className="section-heading"><div><p className="eyebrow">Informe de validación</p><h2 id="governance-validation-title">Bloqueos antes de publicar</h2></div></div>{proposal.validation_report.errors.length ? <ul className="governance-warning-list">{proposal.validation_report.errors.slice(0, 30).map((error) => <li key={error}>{error}</li>)}</ul> : <Alert tone="success">Sin errores estructurales detectados.</Alert>}{proposal.validation_report.warnings.length ? <ul className="governance-warning-list governance-warning-list-muted">{proposal.validation_report.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul> : null}</section>
 

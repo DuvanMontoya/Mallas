@@ -15,8 +15,15 @@ const statusLabels: Record<string, string> = {
   IN_PROGRESS: "En curso",
   ELIGIBLE: "Puedes cursarlo",
   BLOCKED: "Bloqueado",
+  UNSATISFIED: "Pendiente",
   UNKNOWN: "Por verificar",
   NOT_ASSESSED: "Sin estado personal",
+};
+
+const componentLabels: Record<string, string> = {
+  DISCIPLINARY: "Formación disciplinar",
+  FOUNDATION: "Fundamentación",
+  FREE_ELECTIVE: "Libre elección",
 };
 
 const edgeLabels: Record<string, string> = {
@@ -272,27 +279,29 @@ export function DependencyGraphExplorer({ graph, failureMessage }: { graph: Depe
 
   return (
     <div className="page-shell dependency-graph-page">
-      <section className="dependency-graph-hero panel">
+      <section className="graph-decision-hero">
         <div>
-          <p className="eyebrow accent">Dependencias · {graph.revision.program_code}</p>
-          <h1>Entiende qué desbloquea cada curso.</h1>
-          <p>El grafo proyecta las reglas archivadas como cursos y condiciones. Puedes enfocar una asignatura, seguir rutas transitivas y leer la misma relación sin depender del dibujo.</p>
+          <p className="eyebrow accent">Prerrequisitos y desbloqueos</p>
+          <h1>{graph.focus ? graph.focus.course_code : "Dependencias"}</h1>
+          <label className="graph-primary-search"><span className="sr-only">Buscar curso o condición</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Busca por código o nombre, por ejemplo Cálculo" /></label>
         </div>
-        <div className="dependency-graph-meta"><span className="tag tag-outline">{graph.revision.revision_code}</span><span>{graph.nodes.length} nodos</span><span>{graph.edges.length} relaciones</span></div>
+        <div className="dependency-graph-meta"><strong>{graph.nodes.filter((node) => node.kind === "COURSE").length}</strong><span>asignaturas conectadas</span><small>Revisión {graph.revision.revision_code}</small></div>
       </section>
-      {graph.warnings.length ? <div className="dependency-graph-alerts">{graph.warnings.map((warning) => <Alert key={warning}><strong>{warning === "LAYOUTS_ARE_NOT_NORMATIVE" ? "La revisión usa layouts y relaciones visuales no normativas." : warning === "CURRICULUM_DEPENDENCY_CYCLE" ? "Hay un ciclo que requiere revisión administrativa." : warning === "GRAPH_FOCUS_NOT_FOUND" ? "El curso solicitado no pertenece a esta revisión." : warning}</strong></Alert>)}</div> : null}
-      <section className="dependency-graph-toolbar panel" aria-labelledby="dependency-filter-title">
-        <div className="section-heading"><div><p className="eyebrow">Exploración</p><h2 id="dependency-filter-title">Filtra y enfoca sin editar reglas</h2></div><span className="tag tag-outline" aria-live="polite">{visibleNodes.length} nodos · {visibleEdges.length} relaciones</span></div>
+      {graph.warnings.some((warning) => ["CURRICULUM_DEPENDENCY_CYCLE", "GRAPH_FOCUS_NOT_FOUND"].includes(warning)) ? <div className="dependency-graph-alerts">{graph.warnings.filter((warning) => ["CURRICULUM_DEPENDENCY_CYCLE", "GRAPH_FOCUS_NOT_FOUND"].includes(warning)).map((warning) => <Alert key={warning}><strong>{warning === "CURRICULUM_DEPENDENCY_CYCLE" ? "Hay una relación circular que el equipo curricular debe revisar." : "La asignatura solicitada no pertenece a esta revisión."}</strong></Alert>)}</div> : null}
+      <details className="graph-explorer-controls panel">
+        <summary><span><b>Afinar la exploración</b><small>Componente, tipo de elemento, estado y leyenda</small></span><span className="tag tag-outline" aria-live="polite">{visibleNodes.length} elementos</span></summary>
+        <section className="dependency-graph-toolbar" aria-labelledby="dependency-filter-title">
+        <h2 id="dependency-filter-title" className="sr-only">Filtros avanzados del grafo</h2>
         <div className="dependency-filter-grid">
-          <label className="field-group"><span>Buscar curso o condición</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Código, nombre o tipo" /></label>
-          <label className="field-group"><span>Componente</span><select value={component} onChange={(event) => setComponent(event.target.value)}><option value="">Todos</option>{componentOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+          <label className="field-group"><span>Componente</span><select value={component} onChange={(event) => setComponent(event.target.value)}><option value="">Todos</option>{componentOptions.map((value) => <option key={value} value={value}>{componentLabels[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("es-CO")}</option>)}</select></label>
           <label className="field-group"><span>Tipo de nodo</span><select value={nodeKind} onChange={(event) => setNodeKind(event.target.value)}><option value="ALL">Todos</option><option value="COURSE">Cursos</option><option value="CONDITION">Condiciones</option></select></label>
           <label className="field-group"><span>Estado</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">Todos</option>{statusOptions.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}</select></label>
         </div>
         <label className="graph-focus-toggle"><input type="checkbox" checked={focusMode} onChange={(event) => setFocusMode(event.target.checked)} disabled={!graph.focus} /> <span>Modo foco: conservar sólo ancestros, descendientes y condiciones de la selección</span></label>
-        <p className="muted-copy">Los nodos no se pueden arrastrar para cambiar reglas. React Flow sólo presenta la proyección; el backend y la evidencia siguen siendo la autoridad.</p>
-      </section>
-      <GraphLegend />
+        <p className="muted-copy">Esta vista explica reglas publicadas; mover un elemento en pantalla nunca cambia un prerrequisito.</p>
+        </section>
+        <GraphLegend />
+      </details>
       <section className="dependency-graph-workspace" aria-label="Explorador de grafo curricular">
         <div className="dependency-graph-visual panel">
           {visibleNodes.length ? <DependencyGraphCanvas nodes={visibleNodes} edges={visibleEdges} onSelectCourse={selectCourse} /> : <EmptyState title="Ningún nodo coincide" description="Ajusta o restablece los filtros del grafo." />}
@@ -300,11 +309,11 @@ export function DependencyGraphExplorer({ graph, failureMessage }: { graph: Depe
         <FocusPanel graph={graph} onSelect={selectCourse} headingRef={focusHeadingRef} />
       </section>
       <p className="sr-only" role="status" aria-live="polite" data-testid="graph-focus-announcement">{graph.focus ? `Foco seleccionado: ${graph.focus.course_code}, ${graph.focus.course_name}.` : "No hay un curso seleccionado en el grafo."}</p>
-      <TextualAlternative graph={graph} visibleNodeIds={visibleNodeIds} onSelect={selectCourse} />
-      <section className="dependency-graph-cycles panel" aria-labelledby="dependency-cycles-title">
+      <details className="graph-explorer-controls panel"><summary><span><b>Alternativa textual accesible</b><small>Las mismas relaciones en una lista navegable</small></span></summary><TextualAlternative graph={graph} visibleNodeIds={visibleNodeIds} onSelect={selectCourse} /></details>
+      <details className="graph-explorer-controls panel"><summary><span><b>Integridad de la revisión</b><small>Comprobación técnica de relaciones circulares</small></span><span className="tag tag-outline">{graph.cycles.length} ciclos</span></summary><section className="dependency-graph-cycles" aria-labelledby="dependency-cycles-title">
         <div className="section-heading"><div><p className="eyebrow">Gobernanza</p><h2 id="dependency-cycles-title">Ciclos de dependencia</h2></div><span className="tag tag-outline">{graph.cycles.length} detectados</span></div>
         {graph.cycles.length ? <ul className="graph-cycle-list">{graph.cycles.map((cycle) => <li key={cycle.cycle_id}><StatusBadge tone="blocked" label={cycle.severity} /><strong>{cycle.course_codes.join(" → ")}</strong><span>{cycle.explanation}</span></li>)}</ul> : <p className="muted-copy">No se detectaron ciclos en esta revisión. Si una revisión futura los contiene, se muestran como incidencia para revisión administrativa.</p>}
-      </section>
+      </section></details>
       <footer className="dependency-graph-footer"><Link href={graph.links.curriculum}>Volver a la malla</Link><Link href={graph.links.sources}>Ver procedencia</Link><span>Proyección determinista · sin edición desde la vista estudiante</span></footer>
     </div>
   );

@@ -169,15 +169,16 @@ export function HistoryWorkspace({
 
   return (
     <div className="history-page">
-      <section className="panel history-hero">
+      <section className="history-decision-hero">
         <div>
-          <p className="eyebrow accent">Historia académica · hechos privados</p>
-          <h1>Tu trayectoria, sin mezclarla con el plan.</h1>
-          <p>Consulta intentos registrados, corrige datos con trazabilidad o importa un archivo con vista previa. Cada cambio recalcula la auditoría en el backend.</p>
+          <p className="eyebrow accent">Registro privado</p>
+          <h1>Historia académica</h1>
+          <span>{summary.passed} aprobadas · {summary.inProgress} en curso · {summary.credits} créditos reportados</span>
         </div>
         <div className="history-hero-actions">
-          <span>{studentName}</span>
-          <Link className="button button-primary" href="/history/import"><FileUp size={16} aria-hidden="true" /> Importar historia</Link>
+          <Link className="button button-primary" href="/history/import"><FileUp size={16} aria-hidden="true" /> Importar archivo</Link>
+          <a className="button button-secondary" href="#history-editor-title"><Plus size={16} aria-hidden="true" /> Añadir manualmente</a>
+          <span>{studentName} · información privada</span>
         </div>
       </section>
 
@@ -194,7 +195,7 @@ export function HistoryWorkspace({
       <section className="history-layout">
         <div className="panel history-ledger">
           <div className="section-heading">
-            <div><p className="eyebrow">Registro cronológico</p><h2>Intentos académicos</h2></div>
+            <div><p className="eyebrow">Tu registro</p><h2>Asignaturas e intentos</h2></div>
             <span className="tag tag-outline">{attempts.length} registros</span>
           </div>
           {attempts.length ? (

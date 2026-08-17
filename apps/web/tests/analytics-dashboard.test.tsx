@@ -35,11 +35,11 @@ describe("analytics dashboard", () => {
   it("renders audited progress, bottlenecks, scenarios and definitions", () => {
     render(<AnalyticsDashboard analytics={fixture} failure={null} />);
 
-    expect(screen.getByRole("heading", { name: /tu avance, explicado/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /evolución académica/i })).toBeInTheDocument();
     expect(screen.getAllByText("64 / 141").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("STAT204")).toBeInTheDocument();
     expect(screen.getByText("Ruta equilibrada")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /qué significa cada métrica/i })).toBeInTheDocument();
+    expect(screen.getByText(/cómo se calculan estas métricas/i)).toBeInTheDocument();
   });
 
   it("has no serious automated accessibility violations", async () => {

@@ -163,21 +163,23 @@ export function AcademicDashboard({
     required: group.required_credits,
     status: toneFor(group.status),
   }));
+  const remainingCredits = Math.max(0, overall.required_credits - overall.applied_credits);
+  const firstEligible = overview.eligible_courses.slice(0, 6);
+  const firstMissing = missing.slice(0, 6);
 
   return (
     <div className="academic-dashboard" data-audit-state={overview.state}>
-      <section className="dashboard-intro panel" aria-labelledby="dashboard-title">
-        <div>
-          <p className="eyebrow accent">Resumen verificable · {enrollment.program_code}</p>
-          <h1 id="dashboard-title">Tu avance real, con reglas visibles.</h1>
-          <p className="dashboard-subtitle">
-            {enrollment.program_name} · Plan {enrollment.plan_code} · Revisión {enrollment.revision_code}
-          </p>
+      <section className="audit-decision-hero" aria-labelledby="dashboard-title">
+        <div className="audit-decision-copy">
+          <p className="eyebrow accent">Auditoría de grado</p>
+          <h1 id="dashboard-title">{remainingCredits} créditos por completar</h1>
+          <span>{missing.length} obligatorias pendientes · {overview.unknowns.length} datos por verificar</span>
         </div>
-        <div className="dashboard-state">
-          <StatusBadge tone={toneFor(overview.state)} label={statusLabel(overview.state)} />
-          <small>{statusLabel(overall.status)} según la auditoría del backend</small>
+        <div className="audit-progress-orbit" aria-label={`${overall.credit_progress_percent}% de créditos aplicados`}>
+          <strong>{overall.credit_progress_percent}%</strong>
+          <span>{overall.applied_credits} de {overall.required_credits}</span>
         </div>
+        <div className="audit-hero-actions"><Link className="button button-primary" href="/curriculum">Abrir malla</Link><Link className="button button-secondary" href="/planner">Planear</Link></div>
       </section>
 
       {overview.state === "NO_HISTORY" ? (
@@ -187,71 +189,33 @@ export function AcademicDashboard({
         </AuditWarning>
       ) : null}
 
-      {overview.unknowns.length > 0 ? (
-        <section className="dashboard-alert-stack" aria-labelledby="unknown-title">
-          <h2 id="unknown-title" className="sr-only">Datos por verificar</h2>
-          {overview.unknowns.map((unknown) => (
-            <AuditWarning key={`${unknown.kind}-${unknown.code}`} title={`Por verificar · ${unknown.code}`}>
-              {unknown.detail}
-              <Link className="small-link" href={unknown.href}> Ver detalle →</Link>
-            </AuditWarning>
-          ))}
-        </section>
-      ) : null}
-
-      <section className="dashboard-metric-grid" aria-label="Créditos de la auditoría">
-        <article className="dashboard-metric panel">
-          <p className="metric-label">Créditos aplicados</p>
-          <strong>{overall.applied_credits}/{overall.required_credits}</strong>
-          <small>Los créditos aplicados cierran requisitos concretos.</small>
+      <section className="audit-next-grid" aria-label="Tus siguientes decisiones">
+        <article className="audit-next-card audit-next-primary">
+          <p className="eyebrow">Puedes matricular</p>
+          <strong>{overview.eligible_courses.length}</strong>
+          <span>asignaturas cumplen hoy sus prerrequisitos</span>
+          <ul>{firstEligible.map((course) => <li key={course.code}><Link href={course.href}><b>{course.code}</b>{course.name}</Link></li>)}</ul>
+          <Link className="small-link" href="/curriculum?status=ELIGIBLE">Ver todas en la malla →</Link>
         </article>
-        <article className="dashboard-metric panel">
-          <p className="metric-label">Créditos aprobados</p>
-          <strong>{overall.earned_credits}</strong>
-          <small>Incluye créditos que pueden permanecer sin aplicar.</small>
+        <article className="audit-next-card">
+          <p className="eyebrow">Obligatorias pendientes</p>
+          <strong>{missing.length}</strong>
+          <span>siguen siendo parte de tu ruta base</span>
+          <ul>{firstMissing.map((course) => <li key={course.code}><Link href={course.href}><b>{course.code}</b>{course.name}</Link></li>)}</ul>
         </article>
-        <article className="dashboard-metric panel">
-          <p className="metric-label">Créditos sin aplicar</p>
-          <strong>{overall.unapplied_credits}</strong>
-          <small>No se reasignan automáticamente a otra agrupación.</small>
+        <article className="audit-next-card audit-next-review">
+          <p className="eyebrow">Necesitan confirmación</p>
+          <strong>{overview.unknowns.length}</strong>
+          <span>datos no se asumirán hasta contar con evidencia</span>
+          {overview.unknowns.length ? <details><summary>Revisar datos pendientes</summary><ul>{overview.unknowns.map((unknown) => <li key={`${unknown.kind}-${unknown.code}`}><span>{unknown.detail}</span><Link href={unknown.href}>Abrir</Link></li>)}</ul></details> : <p>No hay ambigüedades pendientes.</p>}
         </article>
       </section>
 
-      <section className="dashboard-progress panel" aria-labelledby="credit-progress-title">
+      <section className="dashboard-section audit-components" aria-labelledby="components-title">
         <div className="section-heading">
-          <div>
-            <p className="eyebrow">Avance por créditos</p>
-            <h2 id="credit-progress-title">{overall.credit_progress_percent}% de créditos aplicados</h2>
-          </div>
+          <div><p className="eyebrow">Dónde está la deuda</p><h2 id="components-title">Avance por componente</h2></div>
           <StatusBadge tone={toneFor(overall.status)} label={statusLabel(overall.status)} />
         </div>
-        <div className="progress-meter" aria-label="Avance de créditos aplicado por el backend">
-          <div className="progress-meter-heading"><span>Aplicados frente al requisito total</span><span>{overall.applied_credits}/{overall.required_credits}</span></div>
-          <div className="progress-track" role="progressbar" aria-label="Avance de créditos aplicados" aria-valuemin={0} aria-valuemax={overall.required_credits} aria-valuenow={overall.applied_credits}>
-            <span style={{ width: `${overall.credit_progress_percent}%` }} />
-          </div>
-        </div>
-        <p className="dashboard-disclaimer">Este porcentaje sólo describe créditos aplicados. No significa que el grado esté completo mientras existan obligatorias, requisitos externos o estados UNKNOWN pendientes.</p>
-      </section>
-
-      <section className="dashboard-section" aria-labelledby="ledger-title">
-        <div className="section-heading">
-          <div><p className="eyebrow">Contabilidad auditable</p><h2 id="ledger-title">Aprobados, aplicados y excedentes</h2></div>
-          <Link className="small-link" href={overview.links.self}>Abrir auditoría completa →</Link>
-        </div>
-        <div className="dashboard-ledger-grid">
-          <CreditLedger earned={overall.earned_credits} applied={overall.applied_credits} unapplied={overall.unapplied_credits} />
-          <div className="traceability-card">
-            <strong>Resultado reproducible</strong>
-            <span>Motor: {audit.metadata.engine_version ?? "no disponible"}</span>
-            <span>Hash del resultado: {audit.metadata.result_hash ?? "vista previa"}</span>
-            <span>Revisión: {audit.metadata.revision_hash}</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="dashboard-section" aria-labelledby="components-title">
-        <div className="section-heading"><div><p className="eyebrow">Deuda curricular</p><h2 id="components-title">Progreso por componente</h2></div></div>
         <div className="dashboard-component-grid">
           {overview.components.map((component) => (
             <ComponentProgressCard
@@ -266,30 +230,9 @@ export function AcademicDashboard({
         </div>
       </section>
 
-      <section className="dashboard-section" aria-labelledby="groups-title">
-        <div className="section-heading"><div><p className="eyebrow">Detalle de requisitos</p><h2 id="groups-title">Progreso por agrupación</h2></div></div>
-        <GroupProgressTable rows={groups} />
-        <div className="dashboard-missing-grid">
-          <div>
-            <h3>Obligatorias faltantes</h3>
-            {missing.length === 0 ? <p className="muted-copy">No hay obligatorias faltantes según la auditoría.</p> : (
-              <ul className="dashboard-link-list">{missing.map((course) => <li key={course.code}><Link href={course.href}>{course.code} · {course.name}</Link></li>)}</ul>
-            )}
-          </div>
-          <div>
-            <h3>Próximos desbloqueos</h3>
-            {overview.next_unlocks.length === 0 ? <p className="muted-copy">No hay un desbloqueo publicado para mostrar.</p> : (
-              <ul className="dashboard-link-list">{overview.next_unlocks.slice(0, compact ? 3 : 8).map((course) => <li key={course.code}><Link href={course.href}>{course.code} · {course.name}</Link><StatusBadge tone={toneFor(course.status)} label={statusLabel(course.status)} /></li>)}</ul>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {!compact ? <CourseOptions title="Qué puedes cursar" items={overview.eligible_courses} empty="El backend no identificó cursos elegibles con reglas verificables para este contexto." /> : null}
-
-      {!compact ? (
-        <section className="dashboard-section" aria-labelledby="blocked-title">
-          <div className="section-heading"><div><p className="eyebrow">Bloqueos explicables</p><h2 id="blocked-title">Cursos bloqueados o por verificar</h2></div></div>
+      {!compact ? <details className="audit-disclosure panel"><summary><span><b>Entender bloqueos y requisitos</b><small>Agrupaciones, cursos bloqueados y requisitos externos</small></span></summary><div className="audit-disclosure-body">
+        <section className="dashboard-section" aria-labelledby="groups-title"><div className="section-heading"><div><p className="eyebrow">Detalle curricular</p><h2 id="groups-title">Progreso por agrupación</h2></div></div><GroupProgressTable rows={groups} /></section>
+        <section className="dashboard-section" aria-labelledby="blocked-title"><div className="section-heading"><div><p className="eyebrow">Bloqueos explicables</p><h2 id="blocked-title">Por qué todavía no puedes cursar algunas asignaturas</h2></div></div>
           {overview.blocked_courses.length === 0 && overview.unknown_courses.length === 0 ? <p className="muted-copy">No hay cursos bloqueados o ambiguos en el read model.</p> : (
             <div className="dashboard-reason-grid">
               {[...overview.blocked_courses, ...overview.unknown_courses].slice(0, 12).map((course) => (
@@ -302,9 +245,6 @@ export function AcademicDashboard({
             </div>
           )}
         </section>
-      ) : null}
-
-      {!compact ? (
         <section className="dashboard-section" aria-labelledby="graduation-title">
           <div className="section-heading"><div><p className="eyebrow">Requisitos de grado</p><h2 id="graduation-title">Requisitos externos y evidencia</h2></div></div>
           {overview.external_graduation_requirements.length === 0 ? <p className="muted-copy">No hay requisitos externos publicados en esta revisión.</p> : (
@@ -319,14 +259,16 @@ export function AcademicDashboard({
             </div>
           )}
         </section>
-      ) : null}
+      </div></details> : null}
 
-      {overview.warnings.length > 0 ? (
-        <section className="dashboard-section" aria-labelledby="warnings-title">
+      <details className="audit-disclosure panel"><summary><span><b>Cómo se calculó este resultado</b><small>Créditos, versión del motor, evidencia y advertencias</small></span></summary><div className="audit-disclosure-body">
+        <div className="dashboard-ledger-grid"><CreditLedger earned={overall.earned_credits} applied={overall.applied_credits} unapplied={overall.unapplied_credits} /><div className="traceability-card"><strong>Resultado reproducible</strong><span>Motor: {audit.metadata.engine_version ?? "no disponible"}</span><span>Hash: {audit.metadata.result_hash ?? "vista previa"}</span><span>Revisión: {audit.metadata.revision_hash}</span></div></div>
+        {overview.warnings.length > 0 ? <section className="dashboard-section" aria-labelledby="warnings-title">
           <div className="section-heading"><div><p className="eyebrow">Trazabilidad</p><h2 id="warnings-title">Advertencias de la auditoría</h2></div></div>
           <ul className="dashboard-warning-list">{overview.warnings.map((warning) => <li key={warning.code}><StatusBadge tone={warning.severity === "ERROR" ? "blocked" : "unknown"} label={warning.title} /><span>{warning.detail}</span><Link href={warning.href}>Ver →</Link></li>)}</ul>
-        </section>
-      ) : null}
+        </section> : null}
+        <p className="dashboard-disclaimer">{enrollment.program_name} · Plan {enrollment.plan_code} · Revisión {enrollment.revision_code}. Los créditos aplicados cierran requisitos concretos; aprobar créditos no certifica por sí solo el grado.</p>
+      </div></details>
     </div>
   );
 }

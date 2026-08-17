@@ -32,6 +32,18 @@ function freshnessLabel(value: string) {
   return { FRESH: "fresca", STALE: "antigua", UNKNOWN: "desconocida" }[value] ?? "por verificar";
 }
 
+function termStatusLabel(value: string | undefined) {
+  return ({ ACTIVE: "Inscripciones activas", OPEN: "Disponible", CLOSED: "Cerrado", PLANNED: "Próximo", UNKNOWN: "Por confirmar" } as Record<string, string>)[value ?? "UNKNOWN"] ?? "Por confirmar";
+}
+
+function decisionStatusLabel(value: string) {
+  return ({ ELIGIBLE: "Puedes cursarla", BLOCKED: "Prerrequisitos pendientes", UNKNOWN: "Por verificar", OFFERED: "Con grupos reportados", NOT_OFFERED: "Sin grupos reportados", SCHEDULABLE: "Compatible", CONFLICT: "Con cruces", NOT_EVALUATED: "Sin comparar" } as Record<string, string>)[value] ?? "Por verificar";
+}
+
+function modalityLabel(value: string) {
+  return ({ IN_PERSON: "Presencial", REMOTE: "Remota", HYBRID: "Híbrida", UNKNOWN: "Por verificar" } as Record<string, string>)[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("es-CO");
+}
+
 function ScheduleRows({ meetings }: { meetings: Meeting[] }) {
   if (!meetings.length) return <p className="muted-copy">Horario no reportado para este grupo.</p>;
   return (
@@ -68,7 +80,7 @@ function SectionCard({
       <div className="offering-section-header">
         <div>
           <p className="eyebrow">Grupo {section.group_code}</p>
-          <h3>{section.modality === "UNKNOWN" ? "Modalidad por verificar" : section.modality.replaceAll("_", " ")}</h3>
+          <h3>{modalityLabel(section.modality)}</h3>
         </div>
         <label className="offering-select-section">
           <input
@@ -82,10 +94,10 @@ function SectionCard({
       </div>
       <div className="offering-section-badges">
         <span className={`offering-status-badge offering-status-${statusClass(section.schedulable_state)}`}>
-          Horario: {section.schedulable_state === "NOT_EVALUATED" ? "sin evaluar" : section.schedulable_state}
+          Horario: {decisionStatusLabel(section.schedulable_state)}
         </span>
         <span className={`offering-status-badge offering-status-${statusClass(section.capacity.state)}`}>
-          Cupo: {section.capacity.state === "UNKNOWN" ? "dato no reportado" : section.capacity.state}
+          Cupo: {section.capacity.state === "UNKNOWN" ? "dato no reportado" : decisionStatusLabel(section.capacity.state)}
         </span>
       </div>
       <ScheduleRows meetings={section.meetings} />
@@ -121,18 +133,18 @@ function OfferingCard({
       <p className="offering-source-note">{sourceLabel(offering)}</p>
       <div className="offering-state-row" aria-label={`Estados de ${offering.course_code}`}>
         <span className={`offering-status-badge offering-status-${statusClass(offering.eligibility_state)}`}>
-          Académico: {offering.eligibility_state}
+          Elegibilidad: {decisionStatusLabel(offering.eligibility_state)}
         </span>
         <span className={`offering-status-badge offering-status-${statusClass(offering.offered_state)}`}>
-          Oferta: {offering.offered_state}
+          Oferta: {decisionStatusLabel(offering.offered_state)}
         </span>
         <span className={`offering-status-badge offering-status-${statusClass(offering.schedulable_state)}`}>
-          Horario: sin evaluar
+          Horario: {decisionStatusLabel(offering.schedulable_state)}
         </span>
       </div>
       {offering.eligibility_reasons.length ? (
         <details className="offering-reason-disclosure">
-          <summary>Por qué el estado académico es {offering.eligibility_state.toLowerCase()}</summary>
+          <summary>Por qué: {decisionStatusLabel(offering.eligibility_state).toLocaleLowerCase("es-CO")}</summary>
           <ul>
             {offering.eligibility_reasons.slice(0, 4).map((reason) => (
               <li key={`${offering.id}-${String(reason.code ?? "reason")}`}>
@@ -165,15 +177,15 @@ function ScheduleEvaluationPanel({ evaluation }: { evaluation: ScheduleEvaluatio
   if (!evaluation) {
     return (
       <section className="panel offerings-schedule-panel" aria-labelledby="offerings-schedule-title">
-        <p className="eyebrow">ScheduleGrid</p>
-        <h2 id="offerings-schedule-title">Compara grupos antes de planear</h2>
-        <p className="muted-copy">Selecciona dos o más grupos. El backend compara intervalos, zona horaria y fechas parciales del período.</p>
+        <p className="eyebrow">Comprobación de horario</p>
+        <h2 id="offerings-schedule-title">¿Estos grupos caben juntos?</h2>
+        <p className="muted-copy">Marca los grupos que te interesan y verificaremos si se cruzan. Esta comparación no modifica tu plan.</p>
       </section>
     );
   }
   return (
     <section className="panel offerings-schedule-panel" aria-labelledby="offerings-schedule-title">
-      <p className="eyebrow">ScheduleGrid · {evaluation.term_code}</p>
+      <p className="eyebrow">Comprobación de horario · {evaluation.term_code}</p>
       <h2 id="offerings-schedule-title">
         {evaluation.state === "CONFLICT" ? "Hay solapamientos" : evaluation.state === "SCHEDULABLE" ? "Horario compatible" : "Horario por verificar"}
       </h2>
@@ -261,31 +273,31 @@ export function OfferingsExplorer({
 
   return (
     <div className="offerings-page">
-      <section className="panel offerings-hero">
+      <section className="offerings-decision-hero">
         <div>
-          <p className="eyebrow accent">Oferta · fuente temporal</p>
-          <h1>Encuentra grupos sin confundir oferta con elegibilidad.</h1>
-          <p>La malla responde qué exige el plan. Esta vista responde qué reportó una fuente para un período y si los grupos elegidos chocan en horario.</p>
+          <p className="eyebrow accent">Oferta académica</p>
+          <h1>{term?.code ?? "Período por seleccionar"}</h1>
+          <span>{visibleOfferings.length ? `${visibleOfferings.length} asignaturas con grupos reportados` : "Sin grupos reportados"}</span>
         </div>
         <dl className="offerings-hero-meta">
-          <div><dt>Período</dt><dd>{term?.code ?? "Sin seleccionar"}</dd></div>
-          <div><dt>Estado</dt><dd>{term?.status ?? "UNKNOWN"}</dd></div>
-          <div><dt>Fuente</dt><dd>{term?.source.freshness ?? "UNKNOWN"}</dd></div>
+          <div><dt>Período</dt><dd>{term?.code ?? "Por seleccionar"}</dd></div>
+          <div><dt>Inscripción</dt><dd>{termStatusLabel(term?.status)}</dd></div>
+          <div><dt>Actualización</dt><dd>{freshnessLabel(term?.source.freshness ?? "UNKNOWN")}</dd></div>
         </dl>
+        {!visibleOfferings.length ? <Link className="button button-primary" href="/curriculum?status=ELIGIBLE">Ver matriculables</Link> : null}
       </section>
       {failureMessage ? <p className="inline-error" role="alert">{failureMessage}</p> : null}
       <section className="panel offerings-toolbar" aria-labelledby="offerings-filter-title">
-        <div className="section-heading"><div><p className="eyebrow">Exploración</p><h2 id="offerings-filter-title">Oferta por período</h2></div><span className="tag tag-outline">{visibleOfferings.length} asignaturas</span></div>
+        <div className="section-heading"><div><p className="eyebrow">Encuentra tu grupo</p><h2 id="offerings-filter-title">¿Qué buscas cursar?</h2></div><span className="tag tag-outline">{visibleOfferings.length} resultados</span></div>
         <div className="offerings-filter-grid">
-          <label className="field-group"><span>Período académico</span><select value={termCode} onChange={(event) => changeTerm(event.target.value)} disabled={isPending}><option value="">Todos los períodos</option>{data.terms.map((item) => <option key={String(item.id)} value={item.code}>{item.code} · {item.status}</option>)}</select></label>
+          <label className="field-group"><span>Período académico</span><select value={termCode} onChange={(event) => changeTerm(event.target.value)} disabled={isPending}><option value="">Todos los períodos</option>{data.terms.map((item) => <option key={String(item.id)} value={item.code}>{item.code} · {termStatusLabel(item.status)}</option>)}</select></label>
           <label className="field-group"><span>Buscar curso</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Código o nombre" /></label>
         </div>
-        <p className="muted-copy">`Elegible`, `ofertado` y `horario compatible` son estados distintos. La fuente no reporta cupos en tiempo real.</p>
       </section>
-      <ScheduleEvaluationPanel evaluation={schedule} />
+      {visibleOfferings.length || selected.size ? <ScheduleEvaluationPanel evaluation={schedule} /> : null}
       <div className="offerings-list" aria-live="polite">
         {visibleOfferings.map((offering) => <OfferingCard key={String(offering.id)} offering={offering} selectedSectionIds={selected} onToggleSection={toggleSection} />)}
-        {!visibleOfferings.length ? <section className="panel offerings-empty"><h2>No hay oferta registrada para este filtro</h2><p>Que una asignatura no aparezca aquí no demuestra que sea inelegible; puede faltar una fuente temporal o el período seleccionado.</p></section> : null}
+        {!visibleOfferings.length ? <section className="panel offerings-empty"><p className="eyebrow">Sin grupos reportados</p><h2>No estás bloqueado: falta información de oferta.</h2><p>Consulta otro período o vuelve a la malla para decidir con tus prerrequisitos. La ausencia aquí no convierte una asignatura en inelegible.</p><div className="offerings-empty-actions"><Link className="button button-primary" href="/curriculum?status=ELIGIBLE">Ir a mis matriculables</Link><Link className="button button-secondary" href="/sources">Comprobar la fuente</Link></div></section> : null}
       </div>
       <footer className="offerings-footer"><span>La oferta puede cambiar durante inscripción.</span><Link href="/sources">Ver fuentes y procedencia →</Link></footer>
     </div>

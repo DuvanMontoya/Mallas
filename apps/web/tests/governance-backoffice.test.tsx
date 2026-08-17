@@ -132,8 +132,9 @@ describe("governance backoffice", () => {
   it("shows the rule inspector, source chain, and editor action", async () => {
     mocks.submitGovernanceProposal.mockResolvedValue({ data: { ...proposal, status: "IN_REVIEW" }, failure: null });
     render(<GovernanceBackoffice initialInbox={inbox} initialFailure={null} initialProposal={proposal} initialProposalEtag={'"2026-08-16T20:00:00Z"'} initialProposalFailure={null} roles={["EDITOR"]} />);
-    expect(screen.getByRole("heading", { name: /gobierna antes de publicar/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /ast legible/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /revisiones curriculares/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/inspeccionar reglas y evidencia/i));
+    expect(screen.getByRole("heading", { name: /qué significa la regla y de dónde sale/i })).toBeInTheDocument();
     expect(screen.getByText(/haber aprobado el curso stat000/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /enviar a revisión/i }));
     await waitFor(() => expect(mocks.submitGovernanceProposal).toHaveBeenCalledWith(

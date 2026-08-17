@@ -21,12 +21,12 @@ describe("offerings explorer", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: /encuentra grupos sin confundir/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "2026-2S" })).toBeInTheDocument();
     expect(screen.getAllByText(/fuente fresca/i).length).toBeGreaterThan(0);
-    expect(screen.getByText("Académico: ELIGIBLE")).toBeInTheDocument();
-    expect(screen.getByText("Académico: BLOCKED")).toBeInTheDocument();
+    expect(screen.getByText("Elegibilidad: Puedes cursarla")).toBeInTheDocument();
+    expect(screen.getByText("Elegibilidad: Prerrequisitos pendientes")).toBeInTheDocument();
     expect(screen.getAllByText(/dato no reportado/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/la fuente no reporta cupos en tiempo real/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Oferta: Con grupos reportados").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /cálculo diferencial/i })).toHaveAttribute(
       "href",
       "/curriculum?selected=2016377",

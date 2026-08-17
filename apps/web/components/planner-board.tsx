@@ -11,6 +11,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { GripVertical, Lock, LockOpen, Plus, Share2, Trash2, WandSparkles } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
@@ -198,6 +199,7 @@ export function PlannerBoard({
   const [compare, setCompare] = useState<ScenarioCompare | null>(initialCompare);
   const [compareId, setCompareId] = useState(initialCompare?.right.id ?? "");
   const [newName, setNewName] = useState("");
+  const [courseQuery, setCourseQuery] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState(courseOptions[0]?.id ?? "");
   const [selectedTermId, setSelectedTermId] = useState(terms[0]?.id ?? "");
   const [pending, setPending] = useState(false);
@@ -220,6 +222,12 @@ export function PlannerBoard({
     }
     return [...known.values()];
   }, [planningTerms, scenario]);
+  const visibleCourseOptions = useMemo(() => {
+    const normalized = courseQuery.trim().toLocaleLowerCase("es-CO");
+    return [...courseOptions]
+      .filter((course) => !normalized || `${course.code} ${course.name}`.toLocaleLowerCase("es-CO").includes(normalized))
+      .sort((left, right) => Number(right.personal_status === "ELIGIBLE") - Number(left.personal_status === "ELIGIBLE") || left.code.localeCompare(right.code));
+  }, [courseOptions, courseQuery]);
 
   function applyScenario(next: PlanningScenario) {
     setScenarios((current) => current.some((item) => item.id === next.id)
@@ -355,13 +363,13 @@ export function PlannerBoard({
 
   return (
     <div className="planner-page">
-      <section className="panel planner-hero">
+      <section className="planner-decision-hero">
         <div>
-          <p className="eyebrow accent">Planificador · escenario privado</p>
-          <h1>Planea sin alterar tu historia real.</h1>
-          <p>Arrastra cursos entre períodos o usa los controles de teclado. Las reglas se verifican en el backend; un escenario nunca crea ni edita intentos académicos oficiales.</p>
+          <p className="eyebrow accent">Planificador privado</p>
+          <h1>{scenario.name}</h1>
+          <span>{scenario.planned_courses.length} asignaturas · {scenarioTerms.length} períodos · {warnings.length} advertencias</span>
         </div>
-        <div className="planner-privacy-card"><Lock size={18} aria-hidden="true" /><strong>Privado por defecto</strong><span>Compartir sólo publica una vista mínima sin estudiante, matrícula, historial ni auditoría personal.</span></div>
+        <div className="planner-privacy-card"><Lock size={18} aria-hidden="true" /><strong>Borrador privado</strong><span>No altera tu historia</span></div>
       </section>
 
       <section className="panel planner-toolbar" aria-labelledby="planner-controls-title">
@@ -388,13 +396,13 @@ export function PlannerBoard({
       </section>
 
       <section className="panel planner-add-panel" aria-labelledby="planner-add-title">
-        <div className="section-heading"><div><p className="eyebrow">Añadir al escenario</p><h2 id="planner-add-title">Proyecta una asignatura</h2></div></div>
-        {courseOptions.length && scenarioTerms.length ? <form className="planner-add-form" onSubmit={handleAddCourse}><label className="field-group"><span>Asignatura</span><select value={selectedCourseId} onChange={(event) => setSelectedCourseId(event.target.value)}>{courseOptions.map((course) => <option key={course.id} value={course.id}>{course.code} · {course.name}</option>)}</select></label><label className="field-group"><span>Período</span><select value={selectedTermId} onChange={(event) => setSelectedTermId(event.target.value)}>{scenarioTerms.map((term) => <option key={term.id} value={term.id}>{term.code}</option>)}</select></label><button className="button button-primary" type="submit" disabled={pending}><Plus size={15} aria-hidden="true" /> Añadir</button></form> : <p className="muted-copy">No hay cursos o períodos verificables disponibles para añadir. Consulta la malla y la oferta antes de completar este escenario.</p>}
+        <div className="section-heading"><div><p className="eyebrow">Añadir a la ruta</p><h2 id="planner-add-title">¿Qué quieres probar?</h2></div><Link className="small-link" href="/curriculum?status=ELIGIBLE">Ver mis matriculables →</Link></div>
+        {courseOptions.length && scenarioTerms.length ? <form className="planner-add-form planner-add-decision" onSubmit={handleAddCourse}><label className="field-group"><span>Buscar asignatura</span><input type="search" value={courseQuery} onChange={(event) => setCourseQuery(event.target.value)} placeholder="Código o nombre" /></label><label className="field-group"><span>Asignatura</span><select value={selectedCourseId} onChange={(event) => setSelectedCourseId(event.target.value)}>{visibleCourseOptions.map((course) => <option key={course.id} value={course.id}>{course.personal_status === "ELIGIBLE" ? "Puedes cursar · " : "Para más adelante · "}{course.code} · {course.name}</option>)}</select></label><label className="field-group"><span>Período</span><select value={selectedTermId} onChange={(event) => setSelectedTermId(event.target.value)}>{scenarioTerms.map((term) => <option key={term.id} value={term.id}>{term.code}</option>)}</select></label><button className="button button-primary" type="submit" disabled={pending || !visibleCourseOptions.length}><Plus size={15} aria-hidden="true" /> Añadir</button></form> : <p className="muted-copy">No hay cursos o períodos verificables disponibles para añadir. Consulta la malla y la oferta antes de completar este escenario.</p>}
       </section>
 
       <div className="planner-support-grid">
         <section className="panel planner-validation-panel" aria-labelledby="planner-validation-title"><div className="section-heading"><div><p className="eyebrow">Explicabilidad</p><h2 id="planner-validation-title">Advertencias de la ruta</h2></div><span className="tag tag-outline">{warnings.length} señal{warnings.length === 1 ? "" : "es"}</span></div>{warnings.length ? <ul className="planner-warning-list">{warnings.map((warning, index) => <li key={`${warning.code}-${warning.course_code ?? "scenario"}-${index}`}><StatusBadge tone={warning.severity === "ERROR" ? "blocked" : "unknown"} label={warningLabel(warning.code)} /><span>{warning.detail}</span></li>)}</ul> : <p className="muted-copy">No hay advertencias para los cursos actuales; la ausencia de advertencias no reemplaza la fuente normativa.</p>}</section>
-        <section className="panel planner-audit-panel" aria-labelledby="planner-audit-title"><div className="section-heading"><div><p className="eyebrow">Motor determinista</p><h2 id="planner-audit-title">Auditoría proyectada</h2></div><StatusBadge tone={toneForState(projectedStatus)} label={projectedStatus} /></div><p>{scenario.audit_projection?.unknown_count ? "La revisión no permite calcular una auditoría completa; el resultado queda por verificar." : "La proyección usa una copia inmutable de tu historia y los cursos del escenario."}</p><dl className="planner-audit-facts"><div><dt>Cursos proyectados</dt><dd>{scenario.planned_courses.length}</dd></div><div><dt>Versión del motor</dt><dd>{scenario.audit_projection?.engine_version ?? "—"}</dd></div><div><dt>Huella de resultado</dt><dd><code>{scenario.audit_projection?.result_hash.slice(0, 12) ?? "—"}</code></dd></div></dl></section>
+        <section className="panel planner-audit-panel" aria-labelledby="planner-audit-title"><div className="section-heading"><div><p className="eyebrow">Resultado de esta ruta</p><h2 id="planner-audit-title">Qué cambiaría</h2></div><StatusBadge tone={toneForState(projectedStatus)} label={projectedStatus === "UNKNOWN" ? "Por verificar" : projectedStatus === "READY" ? "Calculado" : warningLabel(projectedStatus)} /></div><p>{scenario.audit_projection?.unknown_count ? "Faltan datos para calcular toda la ruta; el resultado se mantiene explícitamente por verificar." : "La proyección usa una copia inmutable de tu historia y los cursos del escenario."}</p><dl className="planner-audit-facts"><div><dt>Cursos proyectados</dt><dd>{scenario.planned_courses.length}</dd></div><div><dt>Versión del cálculo</dt><dd>{scenario.audit_projection?.engine_version ?? "—"}</dd></div><div><dt>Identificador verificable</dt><dd><code>{scenario.audit_projection?.result_hash.slice(0, 12) ?? "—"}</code></dd></div></dl></section>
       </div>
 
       <OptimizerPanel scenario={scenario} />

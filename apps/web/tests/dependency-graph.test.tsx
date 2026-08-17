@@ -24,8 +24,10 @@ describe("dependency graph explorer", () => {
   it("keeps condition nodes, direct relations and a readable textual alternative", async () => {
     const { container } = render(<DependencyGraphExplorer graph={fixture as DependencyGraph} />);
 
-    expect(screen.getByRole("heading", { name: /entiende qué desbloquea/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "1000003" }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText(/afinar la exploración/i));
     expect(screen.getAllByText(/todas las condiciones/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText(/alternativa textual accesible/i));
     expect(screen.getByText(/lista textual de relaciones/i)).toBeInTheDocument();
     expect(screen.getByText(/1000003 abre una ruta hacia 2000001/i)).toBeInTheDocument();
     expect(screen.getByText(/sin modificar reglas/i)).toBeInTheDocument();
@@ -35,6 +37,7 @@ describe("dependency graph explorer", () => {
   it("filters semantic nodes and keeps focus navigation explicit", () => {
     render(<DependencyGraphExplorer graph={fixture as DependencyGraph} />);
 
+    fireEvent.click(screen.getByText(/afinar la exploración/i));
     fireEvent.change(screen.getByLabelText("Tipo de nodo"), { target: { value: "CONDITION" } });
     expect(screen.getByTestId("dependency-graph-canvas")).toHaveTextContent("2 nodos");
     expect(screen.getAllByText("Todas las condiciones").length).toBeGreaterThan(0);
