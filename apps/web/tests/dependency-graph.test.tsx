@@ -42,7 +42,7 @@ describe("dependency graph explorer", () => {
     expect(screen.getByTestId("dependency-graph-canvas")).toHaveTextContent("2 nodos");
     expect(screen.getAllByText("Todas las condiciones").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Umbral de créditos en agrupación").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/tipo ALL/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/todas las condiciones/i).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("Buscar curso o condición"), { target: { value: "no-existe" } });
     expect(screen.getAllByText(/ningún nodo coincide/i).length).toBeGreaterThan(0);

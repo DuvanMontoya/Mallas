@@ -66,8 +66,8 @@ describe("offerings explorer", () => {
 
   it("distinguishes reported capacity from real-time capacity", () => {
     const known = structuredClone(fixture) as OfferingsReadModel;
-    known.courses[0].sections[0].capacity.state = "REPORTED_NOT_REAL_TIME";
-    known.courses[1].sections[0].capacity.state = "REAL_TIME";
+    known.offerings[0].sections[0].capacity.state = "REPORTED_NOT_REAL_TIME";
+    known.offerings[1].sections[0].capacity.state = "REAL_TIME";
     render(<OfferingsExplorer data={known} schedule={null} selectedSectionIds={[]} />);
     expect(screen.getByText("Cupo: Reportado, no en tiempo real")).toBeInTheDocument();
     expect(screen.getByText("Cupo: Actualizado en tiempo real")).toBeInTheDocument();

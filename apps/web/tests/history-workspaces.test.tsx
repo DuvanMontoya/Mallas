@@ -82,6 +82,14 @@ describe("history workspaces", () => {
     expect(screen.getByRole("rowheader", { name: /1000001.*Matemáticas básicas/i })).toBeInTheDocument();
   });
 
+  it("rejects a manual course code outside the current plan", () => {
+    render(<HistoryWorkspace enrollmentId="enrollment-1" studentName="Estudiante" attemptsPage={attemptsPage} courseOptions={[{ code: "1000001", name: "Matemáticas básicas" }]} termOptions={["2026-2S"]} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Asignatura del plan" }), { target: { value: "NO-EXISTE" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Período académico" }), { target: { value: "2026-2S" } });
+    fireEvent.click(screen.getByRole("button", { name: "Agregar intento" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/selecciona una asignatura válida del plan/i);
+  });
+
   it("lets an internal conflict be mapped and requires an explicit note", () => {
     render(<HistoryImportWorkspace enrollmentId="enrollment-1" initialPreview={importPreview} courseOptions={[{ id: "course-1", code: "1000001", name: "Matemáticas básicas" }]} />);
 

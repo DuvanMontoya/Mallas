@@ -27,6 +27,7 @@ function EmptyDashboardHome({ state }: { state: EntryState }) {
 }
 
 function EditorialHome() {
+  const administrativeUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? (process.env.NODE_ENV === "development" ? "http://localhost:8000/admin/" : null);
   return (
     <div className="editorial-home">
       <section className="editorial-command">
@@ -36,7 +37,7 @@ function EditorialHome() {
         </div>
         <aside><span>Principio de trabajo</span><strong>Publicar sólo cuando reglas, impacto y evidencia sean comprensibles.</strong><small>Cada revisión publicada es inmutable y conserva su procedencia.</small></aside>
       </section>
-      <section className="editorial-flow" aria-labelledby="editorial-start-title"><div className="section-heading"><div><p className="eyebrow">Una tarea a la vez</p><h2 id="editorial-start-title">¿Qué necesitas hacer?</h2></div></div><div className="editorial-flow-grid"><Link href="/curriculum"><span>01</span><div><strong>Validar la experiencia publicada</strong><small>Comprueba obligatorias, elecciones y explicación de bloqueos como las verá una persona.</small></div><b>Empezar →</b></Link><Link href="/sources"><span>02</span><div><strong>Revisar o publicar un cambio</strong><small>Trabaja con evidencia, diff semántico, impacto y separación de funciones.</small></div><b>Abrir →</b></Link><Link href="/graph"><span>03</span><div><strong>Investigar una dependencia</strong><small>Sigue prerrequisitos y desbloqueos sin alterar reglas desde la visualización.</small></div><b>Explorar →</b></Link></div></section>
+      <section className="editorial-flow" aria-labelledby="editorial-start-title"><div className="section-heading"><div><p className="eyebrow">Una tarea a la vez</p><h2 id="editorial-start-title">¿Qué necesitas hacer?</h2></div></div><div className="editorial-flow-grid"><Link href="/curriculum"><span>01</span><div><strong>Validar la experiencia publicada</strong><small>Comprueba obligatorias, elecciones y explicación de bloqueos como las verá una persona.</small></div><b>Empezar →</b></Link><Link href="/sources"><span>02</span><div><strong>Revisar o publicar un cambio</strong><small>Trabaja con evidencia, diff semántico, impacto y separación de funciones.</small></div><b>Abrir →</b></Link><Link href="/graph"><span>03</span><div><strong>Investigar una dependencia</strong><small>Sigue prerrequisitos y desbloqueos sin alterar reglas desde la visualización.</small></div><b>Explorar →</b></Link>{administrativeUrl ? <a href={administrativeUrl}><span>04</span><div><strong>Gestionar estudiantes y matrículas</strong><small>Crea cuentas, perfiles, matrículas e intentos desde la consola operativa protegida.</small></div><b>Abrir administración →</b></a> : null}</div></section>
     </div>
   );
 }
@@ -91,7 +92,7 @@ export default async function HomePage() {
   const overview = await getAcademicOverview({ headers });
 
   if (overview.data) return <StudentDecisionHome overview={overview.data} />;
-  const enrollmentMissing = overview.failure?.problem?.code?.toLocaleLowerCase("es-CO") === "enrollment_not_found";
+  const enrollmentMissing = session.state === "authenticated" && overview.failure?.problem?.code?.toLocaleLowerCase("es-CO") === "enrollment_not_found";
   const entryState: EntryState = overview.failure?.unavailable || session.state === "unavailable" || (session.state === "authenticated" && !enrollmentMissing)
     ? "unavailable"
     : enrollmentMissing

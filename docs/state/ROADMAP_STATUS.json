@@ -372,8 +372,8 @@
         "P91"
       ],
       "prompt": "prompts/92_UI_POLISH_AND_COGNITIVE_AUDIT.md",
-      "verification": "Real Chrome admin/student route and write audit plus console inspection; ESLint, TypeScript and Vitest 15 files/39 tests pass. Role-aware home/navigation, map filtered-selection consistency, planner hydration, history/import and sources UX were corrected; production-like Playwright/axe/load rerun remains pending.",
-      "notes": "The curriculum map is now the primary surface, editorial-only users avoid student onboarding, sources fail safely, ANNULLED is a dedicated auditable action, and critical import controls are accessible. UX reviewer reports zero Critical/High; technical import localization and production-like cross-device proof remain explicit debt."
+      "verification": "Real Chrome admin/new-student route and write audit plus browser-console inspection; python scripts/verify.py PASS with 149 backend tests passed + 1 expected skip and Vitest 15 files/43 tests. ESLint, TypeScript, Ruff, mypy, migrations, OpenAPI/client freshness, security gates and curriculum invariants pass. Focused planner regression suite passes 5/5 after the final copy correction; production-like Playwright/axe/load rerun remains pending.",
+      "notes": "A real local acceptance persona for plan 2514 was created with six terms, 23 persisted attempts and a persisted planning scenario; no mocks or hardcoded frontend state drive the result. Chrome verified 20 passed, 3 in progress, 70/141 applied credits, 21 eligible courses, the correct 1000013 planned course, zero visible alerts, zero document overflow and zero fresh product warnings/errors on the curriculum, planner and graph routes. Security, UX and code reviewers report zero Critical/High. Credentials are intentionally not stored in repository documentation. Production-like cross-device/load proof, parser isolation, import-payload retention and enrollment-scoped academic-term retrieval remain explicit work."
     },
     {
       "id": "P93",

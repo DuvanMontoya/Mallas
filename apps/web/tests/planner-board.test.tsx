@@ -132,6 +132,25 @@ describe("planner board", () => {
     ));
   });
 
+  it("adds the eligible course displayed first on initial render", async () => {
+    const updated = structuredClone(scenarios[0]);
+    updated.version += 1;
+    mocks.addPlannedCourse.mockResolvedValue({ data: updated, failure: null });
+    const firstEligible = [...mapFixture.courses]
+      .filter((course) => course.personal_status === "ELIGIBLE")
+      .sort((left, right) => left.code.localeCompare(right.code))[0];
+
+    render(<PlannerBoard initialScenarios={scenarios} initialSelectedId={scenarios[0].id} initialCompare={null} terms={terms} courseOptions={mapFixture.courses} />);
+
+    expect(screen.getByRole("combobox", { name: /^asignatura$/i })).toHaveValue(firstEligible.id);
+    fireEvent.click(screen.getByRole("button", { name: /^añadir$/i }));
+    await waitFor(() => expect(mocks.addPlannedCourse).toHaveBeenCalledWith(
+      scenarios[0].id,
+      { course_version_id: firstEligible.id, term_id: terms[0].id, priority: 0, notes: "" },
+      { ifMatch: `"${scenarios[0].version}"` },
+    ));
+  });
+
   it("has no serious automated accessibility violations", async () => {
     const { container } = render(
       <PlannerBoard

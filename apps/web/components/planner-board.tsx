@@ -38,6 +38,14 @@ import { StatusBadge, type StatusTone } from "./ui/status-badge";
 type CurriculumCourse = ApiComponents["schemas"]["MapCourseView"];
 type PlannerTerm = Pick<AcademicTerm, "id" | "code">;
 
+function prioritizedCourseOptions(courses: CurriculumCourse[]) {
+  return [...courses].sort(
+    (left, right) =>
+      Number(right.personal_status === "ELIGIBLE") - Number(left.personal_status === "ELIGIBLE")
+      || left.code.localeCompare(right.code),
+  );
+}
+
 function toneForState(value: string): StatusTone {
   if (["SATISFIED", "VALID", "OFFERED"].includes(value)) return "eligible";
   if (["UNSATISFIED", "WARNINGS", "NOT_OFFERED"].includes(value)) return "blocked";
@@ -200,7 +208,7 @@ export function PlannerBoard({
   const [compareId, setCompareId] = useState(initialCompare?.right.id ?? "");
   const [newName, setNewName] = useState("");
   const [courseQuery, setCourseQuery] = useState("");
-  const [selectedCourseId, setSelectedCourseId] = useState(courseOptions[0]?.id ?? "");
+  const [selectedCourseId, setSelectedCourseId] = useState(() => prioritizedCourseOptions(courseOptions)[0]?.id ?? "");
   const [selectedTermId, setSelectedTermId] = useState(terms[0]?.id ?? "");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -224,15 +232,14 @@ export function PlannerBoard({
   }, [planningTerms, scenario]);
   const visibleCourseOptions = useMemo(() => {
     const normalized = courseQuery.trim().toLocaleLowerCase("es-CO");
-    return [...courseOptions]
-      .filter((course) => !normalized || `${course.code} ${course.name}`.toLocaleLowerCase("es-CO").includes(normalized))
-      .sort((left, right) => Number(right.personal_status === "ELIGIBLE") - Number(left.personal_status === "ELIGIBLE") || left.code.localeCompare(right.code));
+    return prioritizedCourseOptions(courseOptions)
+      .filter((course) => !normalized || `${course.code} ${course.name}`.toLocaleLowerCase("es-CO").includes(normalized));
   }, [courseOptions, courseQuery]);
 
   function changeCourseQuery(next: string) {
     setCourseQuery(next);
     const normalized = next.trim().toLocaleLowerCase("es-CO");
-    const matches = courseOptions.filter((course) => !normalized || `${course.code} ${course.name}`.toLocaleLowerCase("es-CO").includes(normalized));
+    const matches = prioritizedCourseOptions(courseOptions).filter((course) => !normalized || `${course.code} ${course.name}`.toLocaleLowerCase("es-CO").includes(normalized));
     if (!matches.some((course) => course.id === selectedCourseId)) setSelectedCourseId(matches[0]?.id ?? "");
   }
 
@@ -374,7 +381,9 @@ export function PlannerBoard({
         <div>
           <p className="eyebrow accent">Planificador privado</p>
           <h1>{scenario.name}</h1>
-          <span>{scenario.planned_courses.length} asignaturas · {scenarioTerms.length} períodos · {warnings.length} advertencias</span>
+          <span>
+            {scenario.planned_courses.length} {scenario.planned_courses.length === 1 ? "asignatura" : "asignaturas"} · {scenarioTerms.length} {scenarioTerms.length === 1 ? "período" : "períodos"} · {warnings.length} {warnings.length === 1 ? "advertencia" : "advertencias"}
+          </span>
         </div>
         <div className="planner-privacy-card"><Lock size={18} aria-hidden="true" /><strong>Borrador privado</strong><span>No altera tu historia</span></div>
       </section>

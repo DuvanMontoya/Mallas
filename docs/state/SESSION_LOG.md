@@ -563,3 +563,30 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
   un retry del mismo confirm ya aplicado devuelve éxito idempotente sin crear
   registros duplicados. Los tests HTTP cubren ambos caminos; el reviewer final
   confirmó `0 Critical / 0 High`.
+
+## Continuación del Goal — 2026-08-17 16:20 -05:00 — persona nueva y aceptación de sexto semestre
+
+- Se creó en la base local una persona de aceptación nueva, matrícula activa
+  del plan 2514, seis períodos y 23 intentos reales persistidos; el frontend no
+  usa mocks ni hardcodes para sus resultados. La historia es sintética y está
+  identificada como tal, no como registro oficial UNAL.
+- Chrome real verificó login de administrador, consola administrativa, login de
+  estudiante, inicio, malla, auditoría, historia, oferta, planificador,
+  analítica, grafo e importación.
+- La prueba E2E encontró y corrigió un desfase de selección del planificador:
+  el texto visible podía corresponder a 1000013 mientras el submit conservaba
+  otro ID. Se unificaron inicialización, búsqueda y submit bajo el mismo orden
+  priorizado y se añadieron regresiones por ID exacto.
+- Se redujo el catálogo de períodos a abiertos/planeados o ya referenciados, se
+  tradujeron tokens técnicos del grafo y flujos estudiantiles, se validó el
+  curso manual contra el catálogo y se corrigió singular/plural del escenario.
+- Consola fresca de Chrome en malla, planificador y grafo: cero `warn/error` de
+  producto; cero alertas visibles y cero desbordamiento horizontal de documento.
+- `python scripts/verify.py` PASS: backend 149 passed + 1 skip esperado;
+  frontend 15 archivos/43 pruebas; lint, tipos, formato, migraciones, contrato,
+  seguridad, anti-MVP e invariantes pasan. Suite focalizada UX 22/22 y planner
+  final 5/5.
+- Reviewers read-only de seguridad, UX y código: 0 Critical / 0 High. Quedan
+  explícitos el scope multi-institución de términos, el gate production-like,
+  aislamiento PDF, retención de payload y consolidación CSS. No se guardaron
+  credenciales en Git y no hubo commit, push ni despliegue.

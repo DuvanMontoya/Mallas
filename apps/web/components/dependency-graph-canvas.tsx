@@ -22,14 +22,32 @@ type FlowEdge = Edge<{ label: string; kind: string }>;
 
 const elk = new ELK();
 
+const graphStateLabels: Record<string, string> = {
+  PASSED: "Aprobado",
+  IN_PROGRESS: "En curso",
+  ELIGIBLE: "Puedes cursarlo",
+  BLOCKED: "Bloqueado",
+  UNSATISFIED: "Pendiente",
+  UNKNOWN: "Por verificar",
+  NOT_ASSESSED: "Sin estado personal",
+};
+
+const conditionLabels: Record<string, string> = {
+  ALL: "Todas las condiciones",
+  ANY: "Cualquier alternativa",
+  THRESHOLD: "Umbral de créditos",
+  EQUIVALENCE: "Equivalencia",
+  EXTERNAL: "Requisito externo",
+};
+
 function SemanticNode({ data }: NodeProps<FlowNode>) {
   const isCourse = data.kind === "COURSE";
   const content = (
     <>
       <span className="graph-node-kind">{isCourse ? "Curso" : "Condición"}</span>
       <strong>{isCourse ? data.course_code : data.label}</strong>
-      <span className="graph-node-label">{isCourse ? data.label : data.condition_type}</span>
-      <span className="graph-node-state">{data.state.replaceAll("_", " ")}</span>
+      <span className="graph-node-label">{isCourse ? data.label : conditionLabels[data.condition_type ?? ""] ?? "Condición académica"}</span>
+      <span className="graph-node-state">{graphStateLabels[data.state] ?? "Estado por verificar"}</span>
     </>
   );
   return (

@@ -46,6 +46,12 @@ export default async function PlannerPage({ searchParams }: PlannerPageProps) {
     getCurriculumMap({ headers }),
   ]);
   const scenarios = scenariosResult.data?.items ?? [];
+  const referencedTermIds = new Set(
+    scenarios.flatMap((scenario) => scenario.planned_courses.map((course) => course.term_id)),
+  );
+  const planningTerms = (termsResult.data?.items ?? []).filter(
+    (term) => ["OPEN", "PLANNED"].includes(term.status) || referencedTermIds.has(term.id),
+  );
   const selectedId = first(params.scenario) ?? scenarios[0]?.id;
   const compareId = first(params.compare);
   const compareResult = selectedId && compareId
@@ -57,7 +63,7 @@ export default async function PlannerPage({ searchParams }: PlannerPageProps) {
       initialScenarios={scenarios}
       initialSelectedId={selectedId}
       initialCompare={compareResult.data}
-      terms={termsResult.data?.items ?? []}
+      terms={planningTerms}
       courseOptions={mapResult.data?.courses ?? []}
       failureMessage={scenariosResult.failure?.problem?.detail ?? undefined}
     />

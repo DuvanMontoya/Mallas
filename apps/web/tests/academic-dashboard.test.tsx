@@ -11,7 +11,7 @@ describe("academic dashboard read model", () => {
     render(<AcademicDashboard overview={fixture as AcademicOverview} />);
 
     expect(screen.getByRole("heading", { name: /créditos por completar/i })).toBeInTheDocument();
-    expect(screen.getByText(/este porcentaje sólo describe créditos aplicados/i)).toBeInTheDocument();
+    expect(screen.getByText(/aprobar créditos no certifica por sí solo el grado/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /graduation:foreign_language_b1/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /1000003.*álgebra lineal/i })).toHaveAttribute(
       "href",

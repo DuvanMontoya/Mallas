@@ -739,9 +739,7 @@ def get_publication_impact(actor: Any, publication_id: UUID | str) -> dict[str, 
         "publication_id": publication.pk,
         "event": _publication_event_view(
             event,
-            include_private_impacts=can_manage_revision_lifecycle(
-                actor, publication.revision
-            ),
+            include_private_impacts=can_manage_revision_lifecycle(actor, publication.revision),
         ),
     }
 
@@ -779,9 +777,7 @@ def _publication_view(
         "source_set_hash": publication.source_set_hash,
         "validation_report": publication.validation_report,
         "confirmation": publication.confirmation,
-        "event": _publication_event_view(
-            event, include_private_impacts=include_private_impacts
-        ),
+        "event": _publication_event_view(event, include_private_impacts=include_private_impacts),
     }
 
 

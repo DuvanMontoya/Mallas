@@ -1235,3 +1235,70 @@ Ejecutar el build standalone con PostgreSQL y Compose, correr Playwright/axe y
 la prueba de carga instrumentada contra ese build, completar el restore drill,
 aislar el parser PDF y aplicar minimización/retención a `raw_payload`. No se
 creó commit, no se hizo push y no se desplegó.
+
+## Authoritative latest snapshot (EOF) — 2026-08-17 16:20 -05:00
+
+Se completó una segunda aceptación real en la sesión de Chrome del usuario con
+una persona académica nueva y persistida, no con mocks del frontend. Los datos
+representan un caso sintético de aceptación y no se presentan como historia
+oficial de la Universidad Nacional.
+
+### Terminado
+
+- Se habilitó el acceso operativo local del administrador y su enlace explícito
+  a la administración de estudiantes y matrículas. Las credenciales se entregan
+  sólo en la conversación y no se guardaron en archivos versionados.
+- Se creó una cuenta estudiantil nueva del plan 2514, seis períodos académicos,
+  una matrícula activa y 23 intentos persistidos: 20 aprobados y 3 en curso.
+- El motor calculó en vivo 70/141 créditos aplicados, 21 cursos matriculables,
+  una obligatoria pendiente y ocho estados por verificar.
+- Se creó y persistió el escenario `Sexto semestre · ruta 2026-2S`. La prueba
+  visual detectó que el selector podía enseñar el curso 1000013 pero enviar el
+  identificador previo; se corrigió la selección derivada y el escenario quedó
+  con `1000013 · Probabilidad y estadística fundamental`.
+- El planificador limita el selector a períodos abiertos/planeados o períodos
+  históricos ya usados. La gramática del resumen distingue singular y plural.
+- La malla abre directamente la ruta obligatoria y expone 20 aprobadas, 3 en
+  curso, 21 matriculables, 32 bloqueadas y 21 por revisar sin portada ornamental.
+- El grafo traduce estados, condiciones, relaciones, epistemología y severidad;
+  la consola fresca no registra advertencias ni errores de producto.
+- Historia valida que la asignatura manual pertenezca al catálogo del plan;
+  importación usa `revisión previa` en lenguaje público y reserva datos técnicos
+  para trazabilidad secundaria.
+- La redacción de impactos de publicación impide que EDITOR reciba UUID, hashes
+  o jobs individuales y conserva el detalle autorizado para REVIEWER/ADMIN.
+
+### Evidencia final
+
+- `python scripts/verify.py` → `PASS`.
+- Backend: `149 passed`, `1 skipped` esperado para trigger PostgreSQL.
+- Frontend: Vitest `15` archivos / `43` pruebas; suite focalizada de UX `22/22`;
+  planificador final `5/5`; ESLint y TypeScript pasan.
+- Ruff, formato, mypy, migraciones, Django checks, OpenAPI/cliente generado,
+  secret scan, SAST, anti-MVP, TODO gate e invariantes curriculares pasan.
+- Chrome real: cuenta nueva autenticada; `/`, `/curriculum`, `/audit`,
+  `/history`, `/offerings`, `/planner`, `/analytics`, `/graph` e importación
+  recorridas. En la comprobación final de malla, planificador y grafo hubo cero
+  alertas visibles, cero overflow del documento y cero mensajes frescos
+  `warn/error` de producto en consola.
+- Revisores read-only de código, seguridad y UX: `0 Critical`, `0 High`.
+
+### No terminado / riesgos vivos
+
+- El catálogo de períodos del planificador todavía se obtiene globalmente; en
+  una instalación multi-institución podría mostrar un período ajeno que el
+  backend rechazará. El read model debe exponer institución/campus o proveer un
+  endpoint de períodos scoped por matrícula.
+- La aceptación se ejecutó sobre servidores locales de desarrollo y SQLite. No
+  sustituye el gate production-like con PostgreSQL, build standalone, Compose,
+  Playwright/axe móvil y carga instrumentada.
+- Continúan los riesgos ya registrados: aislamiento del parser PDF, política de
+  minimización/retención de `raw_payload`, paginación estable de historia y
+  consolidación de CSS legacy que hoy depende de overrides finales.
+
+### Siguiente acción exacta
+
+Agregar alcance de matrícula/institución al read model de períodos y ejecutar
+la matriz production-like completa con PostgreSQL y build standalone. Después,
+aislar el parser PDF y cerrar la política de retención. No se creó commit, no se
+hizo push y no se desplegó.

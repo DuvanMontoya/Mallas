@@ -164,7 +164,7 @@ export function HistoryImportWorkspace({
       <Link className="governance-back-link" href="/history">← Volver a la historia</Link>
       <section className="panel history-import-hero">
         <div>
-          <p className="eyebrow accent">Importación privada · preview obligatorio</p>
+          <p className="eyebrow accent">Importación privada · revisión previa obligatoria</p>
           <h1>Revisa los hechos antes de aplicarlos.</h1>
           <p>CSV, JSON y PDF se convierten en candidatos. Ninguna fila cambia tu historia hasta que resuelvas errores y confirmes explícitamente.</p>
         </div>
@@ -183,7 +183,7 @@ export function HistoryImportWorkspace({
               <span><strong>{file?.name ?? "CSV, JSON o PDF"}</strong><small>{file ? `${Math.ceil(file.size / 1024)} KiB listos para validar` : "El archivo no se aplica automáticamente."}</small></span>
               <input type="file" accept=".csv,.json,.pdf,text/csv,application/json,application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} required />
             </label>
-            <button className="button button-primary" type="submit" disabled={!file || pending}>{pending ? "Validando…" : "Crear preview"}</button>
+            <button className="button button-primary" type="submit" disabled={!file || pending}>{pending ? "Validando…" : "Crear revisión"}</button>
           </form>
         </section>
       ) : (

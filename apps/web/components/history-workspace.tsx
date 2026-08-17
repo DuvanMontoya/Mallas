@@ -114,6 +114,10 @@ export function HistoryWorkspace({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!selected && courseOptions.length && !courseOptions.some((course) => course.code === courseCode.trim())) {
+      setError("Selecciona una asignatura válida del plan antes de guardar el intento.");
+      return;
+    }
     setPending(true);
     setError(null);
     setMessage(null);

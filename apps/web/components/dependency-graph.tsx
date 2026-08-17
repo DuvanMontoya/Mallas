@@ -35,6 +35,30 @@ const edgeLabels: Record<string, string> = {
   CONDITION_SATISFIES: "Condición para cursar",
 };
 
+const conditionLabels: Record<string, string> = {
+  ALL: "Todas las condiciones",
+  ANY: "Cualquier alternativa",
+  THRESHOLD: "Umbral de créditos",
+  EQUIVALENCE: "Equivalencia",
+  EXTERNAL: "Requisito externo",
+};
+
+const epistemicLabels: Record<string, string> = {
+  VERIFIED: "evidencia verificada",
+  DERIVED: "resultado derivado",
+  INFERRED_PENDING_REVIEW: "pendiente de revisión",
+  UNKNOWN: "evidencia por verificar",
+  DISPUTED: "evidencia en conflicto",
+  SUPERSEDED: "evidencia reemplazada",
+};
+
+const severityLabels: Record<string, string> = {
+  CRITICAL: "Crítico",
+  HIGH: "Alto",
+  MEDIUM: "Medio",
+  LOW: "Bajo",
+};
+
 function statusLabel(value: string) {
   return statusLabels[value] ?? value.replaceAll("_", " ");
 }
@@ -88,7 +112,7 @@ function GraphLegend() {
       </div>
       <ul className="graph-legend-list">
         <li><span className="graph-legend-swatch graph-legend-course" aria-hidden="true" /> Curso: una asignatura del plan.</li>
-        <li><span className="graph-legend-swatch graph-legend-condition" aria-hidden="true" /> Condición: ALL, ANY, umbral, equivalencia o requisito externo.</li>
+        <li><span className="graph-legend-swatch graph-legend-condition" aria-hidden="true" /> Condición: todas las reglas, cualquier alternativa, umbral, equivalencia o requisito externo.</li>
         <li><span className="graph-legend-line graph-legend-direct" aria-hidden="true" /> Relación directa declarada por una regla.</li>
         <li><span className="graph-legend-line graph-legend-transitive" aria-hidden="true" /> Ruta transitiva: se explica en el panel de análisis.</li>
       </ul>
@@ -191,7 +215,7 @@ function TextualAlternative({ graph, visibleNodeIds, onSelect }: { graph: Depend
             const incoming = edges.filter((edge) => edge.target === node.id);
             const outgoing = edges.filter((edge) => edge.source === node.id);
             const selectableCourse = node.kind === "COURSE" && node.course_code;
-            const summary = `${node.kind === "CONDITION" ? "Condición" : "Curso"} · estado ${statusLabel(node.state)}${node.condition_type ? ` · tipo ${node.condition_type}` : ""}${node.epistemic_status ? ` · evidencia ${node.epistemic_status}` : ""}`;
+            const summary = `${node.kind === "CONDITION" ? "Condición" : "Curso"} · estado ${statusLabel(node.state)}${node.condition_type ? ` · ${conditionLabels[node.condition_type] ?? "regla académica"}` : ""}${node.epistemic_status ? ` · ${epistemicLabels[node.epistemic_status] ?? "evidencia por verificar"}` : ""}`;
             return (
               <li key={node.id} data-testid={`graph-textual-node-${node.id}`}>
                 {selectableCourse ? (
@@ -312,7 +336,7 @@ export function DependencyGraphExplorer({ graph, failureMessage }: { graph: Depe
       <details className="graph-explorer-controls panel"><summary><span><b>Alternativa textual accesible</b><small>Las mismas relaciones en una lista navegable</small></span></summary><TextualAlternative graph={graph} visibleNodeIds={visibleNodeIds} onSelect={selectCourse} /></details>
       <details className="graph-explorer-controls panel"><summary><span><b>Integridad de la revisión</b><small>Comprobación técnica de relaciones circulares</small></span><span className="tag tag-outline">{graph.cycles.length} ciclos</span></summary><section className="dependency-graph-cycles" aria-labelledby="dependency-cycles-title">
         <div className="section-heading"><div><p className="eyebrow">Gobernanza</p><h2 id="dependency-cycles-title">Ciclos de dependencia</h2></div></div>
-        {graph.cycles.length ? <ul className="graph-cycle-list">{graph.cycles.map((cycle) => <li key={cycle.cycle_id}><StatusBadge tone="blocked" label={cycle.severity} /><strong>{cycle.course_codes.join(" → ")}</strong><span>{cycle.explanation}</span></li>)}</ul> : <p className="muted-copy">No se detectaron ciclos en esta revisión. Si una revisión futura los contiene, se muestran como incidencia para revisión administrativa.</p>}
+        {graph.cycles.length ? <ul className="graph-cycle-list">{graph.cycles.map((cycle) => <li key={cycle.cycle_id}><StatusBadge tone="blocked" label={severityLabels[cycle.severity] ?? "Por revisar"} /><strong>{cycle.course_codes.join(" → ")}</strong><span>{cycle.explanation}</span></li>)}</ul> : <p className="muted-copy">No se detectaron ciclos en esta revisión. Si una revisión futura los contiene, se muestran como incidencia para revisión administrativa.</p>}
       </section></details>
       <footer className="dependency-graph-footer"><Link href={graph.links.curriculum}>Volver a la malla</Link><Link href={graph.links.sources}>Ver procedencia</Link><span>Proyección determinista · sin edición desde la vista estudiante</span></footer>
     </div>

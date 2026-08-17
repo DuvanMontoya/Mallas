@@ -184,6 +184,8 @@ class PublicationImpactTests(TestCase):
         response = self.client.get(f"/api/v1/governance/publications/{receipt.pk}/impact")
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["event"]["impact_summary"]["affected_enrollments"], 1)
+        self.assertEqual(len(response.json()["event"]["enrollment_impacts"]), 1)
+        self.assertEqual(len(response.json()["event"]["recompute_plan"]["jobs"]), 1)
         detail_response = self.client.get(f"/api/v1/governance/proposals/{proposal.pk}")
         self.assertEqual(detail_response.status_code, 200, detail_response.content)
         self.assertTrue(
@@ -196,19 +198,16 @@ class PublicationImpactTests(TestCase):
         # Editors can inspect aggregate publication impact, but individual
         # enrollment identifiers and audit fingerprints require reviewer access.
         self.client.force_login(self.editor)
-        editor_impact = self.client.get(
-            f"/api/v1/governance/publications/{receipt.pk}/impact"
-        )
+        editor_impact = self.client.get(f"/api/v1/governance/publications/{receipt.pk}/impact")
         self.assertEqual(editor_impact.status_code, 200, editor_impact.content)
-        self.assertEqual(
-            editor_impact.json()["event"]["impact_summary"]["affected_enrollments"], 1
-        )
+        self.assertEqual(editor_impact.json()["event"]["impact_summary"]["affected_enrollments"], 1)
         self.assertEqual(editor_impact.json()["event"]["enrollment_impacts"], [])
+        self.assertEqual(editor_impact.json()["event"]["recompute_plan"]["jobs"], [])
+        self.assertEqual(editor_impact.json()["event"]["recompute_plan"]["job_count"], 1)
+        self.assertNotIn(str(self.context["enrollment"].pk), editor_impact.content.decode())
         editor_detail = self.client.get(f"/api/v1/governance/proposals/{proposal.pk}")
         self.assertEqual(editor_detail.status_code, 200, editor_detail.content)
-        self.assertEqual(
-            editor_detail.json()["publication"]["event"]["enrollment_impacts"], []
-        )
+        self.assertEqual(editor_detail.json()["publication"]["event"]["enrollment_impacts"], [])
 
         with self.assertRaises(PublishedRevisionImmutableError):
             new_revision.total_required_credits = 999
