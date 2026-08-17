@@ -15,6 +15,35 @@ from domain.errors import PublishedRevisionImmutableError
 from modules.common.models import UUIDTimestampedModel
 
 
+IMMUTABLE_REVISION_STATUSES = frozenset(
+    {
+        RevisionStatus.PUBLISHED.value,
+        RevisionStatus.SUPERSEDED.value,
+        RevisionStatus.RETIRED.value,
+    }
+)
+
+
+def _assert_revision_editable(revision_id: object) -> None:
+    if not revision_id:
+        return
+    status = CurriculumRevision.objects.filter(pk=revision_id).values_list("status", flat=True).first()
+    if status in IMMUTABLE_REVISION_STATUSES:
+        raise PublishedRevisionImmutableError(
+            "Curriculum revision contents cannot be edited after publication or retirement."
+        )
+
+
+def _revision_ids_for_write(instance: models.Model, revision_id: object) -> set[object]:
+    revision_ids = {revision_id}
+    if instance.pk:
+        previous_revision_id = type(instance).objects.filter(pk=instance.pk).values_list(
+            "revision_id", flat=True
+        ).first()
+        revision_ids.add(previous_revision_id)
+    return {value for value in revision_ids if value}
+
+
 class CurriculumPlan(UUIDTimestampedModel):
     program = models.ForeignKey(
         "institutions.Program", on_delete=models.PROTECT, related_name="curriculum_plans"
@@ -218,6 +247,16 @@ class RequirementGroup(UUIDTimestampedModel):
         if self.parent_id and self.parent and self.parent.revision_id != self.revision_id:
             raise ValidationError({"parent": "A group parent must belong to the same revision."})
 
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        for revision_id in _revision_ids_for_write(self, self.revision_id):
+            _assert_revision_editable(revision_id)
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        _assert_revision_editable(self.revision_id)
+        return super().delete(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.revision.revision_code} — {self.code}"
 
@@ -255,6 +294,16 @@ class PlanMembership(UUIDTimestampedModel):
     def clean(self) -> None:
         if self.group_id and self.group.revision_id != self.revision_id:
             raise ValidationError({"group": "The group must belong to the membership revision."})
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        for revision_id in _revision_ids_for_write(self, self.revision_id):
+            _assert_revision_editable(revision_id)
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        _assert_revision_editable(self.revision_id)
+        return super().delete(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.revision.revision_code} — {self.course_version.course.code}"

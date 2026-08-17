@@ -1,5 +1,18 @@
-import { ModuleLanding } from "@/components/module-landing";
+import { cookies } from "next/headers";
 
-export default function SourcesPage() {
-  return <ModuleLanding eyebrow="Procedencia" title="Cada regla necesita una fuente" description="Consulta la evidencia normativa archivada y la revisión curricular a la que respalda." />;
+import { GovernanceBackoffice } from "@/components/governance-backoffice";
+import { getGovernanceInbox, getGovernanceProposal, getSessionSnapshot } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
+
+export default async function SourcesPage() {
+  const cookieHeader = (await cookies()).toString();
+  const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
+  const [session, inbox] = await Promise.all([
+    getSessionSnapshot(headers),
+    getGovernanceInbox({ headers }),
+  ]);
+  const firstProposalId = inbox.data?.proposals[0]?.id;
+  const initialProposalResult = firstProposalId ? await getGovernanceProposal(firstProposalId, { headers }) : { data: null, failure: null, etag: null };
+  return <GovernanceBackoffice initialInbox={inbox.data} initialFailure={inbox.failure} initialProposal={initialProposalResult.data} initialProposalEtag={initialProposalResult.etag} initialProposalFailure={initialProposalResult.failure} roles={session.user?.roles ?? []} />;
 }

@@ -1,25 +1,25 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 
-export default function HomePage() {
-  return (
-    <div className="content-grid">
-      <section className="hero panel">
-        <div>
-          <p className="eyebrow accent">Universidad Nacional · Estadística</p>
-          <h1>Tu mapa académico,<br /><em>con reglas visibles.</em></h1>
-          <p className="hero-copy">Consulta progreso, requisitos, bloqueos y rutas posibles con una explicación que siempre apunta a su evidencia.</p>
-          <div className="hero-actions">
-            <Link className="button button-primary" href="/audit">Abrir auditoría <span aria-hidden="true">→</span></Link>
-            <Link className="text-link" href="/curriculum">Explorar la malla</Link>
-          </div>
-        </div>
-        <div className="hero-orbit" aria-hidden="true">
-          <div className="orbit orbit-one"><span>AST</span></div>
-          <div className="orbit orbit-two"><span>DATA</span></div>
-          <div className="orbit-core"><span>CN</span></div>
-        </div>
-      </section>
+import { AcademicDashboard } from "@/components/academic-dashboard";
+import { getAcademicOverview } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
+async function requestHeaders() {
+  try {
+    const cookieHeader = (await cookies()).toString();
+    return cookieHeader ? { Cookie: cookieHeader } : undefined;
+  } catch {
+    // Vitest renders the Server Component outside a request context. The API
+    // boundary will then return the honest unavailable state.
+    return undefined;
+  }
+}
+
+function EmptyDashboardHome() {
+  return (
+    <>
       <section className="metric-row" aria-label="Resumen académico">
         <article className="metric-card panel">
           <div className="metric-label">Estado de tu historia</div>
@@ -66,6 +66,33 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+    </>
+  );
+}
+
+export default async function HomePage() {
+  const overview = await getAcademicOverview({ headers: await requestHeaders() });
+
+  return (
+    <div className="content-grid">
+      <section className="hero panel">
+        <div>
+          <p className="eyebrow accent">Universidad Nacional · Estadística</p>
+          <h1>Tu mapa académico,<br /><em>con reglas visibles.</em></h1>
+          <p className="hero-copy">Consulta progreso, requisitos, bloqueos y rutas posibles con una explicación que siempre apunta a su evidencia.</p>
+          <div className="hero-actions">
+            <Link className="button button-primary" href="/audit">Abrir auditoría <span aria-hidden="true">→</span></Link>
+            <Link className="text-link" href="/curriculum">Explorar la malla</Link>
+          </div>
+        </div>
+        <div className="hero-orbit" aria-hidden="true">
+          <div className="orbit orbit-one"><span>AST</span></div>
+          <div className="orbit orbit-two"><span>DATA</span></div>
+          <div className="orbit-core"><span>CN</span></div>
+        </div>
+      </section>
+
+      {overview.data ? <AcademicDashboard overview={overview.data} failure={overview.failure} /> : <EmptyDashboardHome />}
     </div>
   );
 }

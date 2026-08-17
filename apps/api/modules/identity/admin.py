@@ -26,6 +26,15 @@ class RoleAssignmentAdmin(admin.ModelAdmin):
     list_filter = ["role", "active"]
     search_fields = ["user__email"]
 
+    def has_add_permission(self, request: object) -> bool:
+        return False
+
+    def has_change_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
+
 
 @admin.register(AuditEvent)
 class AuditEventAdmin(admin.ModelAdmin):

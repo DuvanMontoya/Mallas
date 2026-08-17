@@ -20,6 +20,19 @@ Estados:
 
 Publicación crea un snapshot inmutable.
 
+La publicación es una transición transaccional. El servicio bloquea la
+propuesta, la revisión candidata y la revisión actualmente publicada del plan;
+valida la base que la propuesta declara, congela el hash de contenido y sólo
+entonces marca la candidata como `PUBLISHED`. Si existía una revisión publicada,
+ésta pasa a `SUPERSEDED` y la nueva conserva su relación `supersedes`. El
+recibo, el `PublicationEvent`, sus impactos y las solicitudes de notificación
+se escriben en la misma transacción. Un fallo de validación no crea recibo,
+evento ni notificación.
+
+Una revisión publicada y su evento de publicación no se editan. Una corrección
+o un rollback funcional se expresa como una nueva revisión con nueva evidencia,
+no mediante la mutación de una publicación histórica.
+
 ## Fechas
 
 Separar:
@@ -40,6 +53,18 @@ El `ProgramEnrollment` debe conservar:
 - decisiones administrativas.
 
 Si no se puede determinar la revisión aplicable, mostrar `NEEDS_REVIEW`.
+
+La publicación no cambia automáticamente `revision_basis` de las matrículas.
+Cada matrícula que usaba la revisión sustituida queda en un `PublicationImpact`
+con la auditoría previa, su `result_hash`, los cambios semánticos y un trabajo
+de recomputación que requiere decisión explícita sobre la revisión aplicable.
+Así se identifican los estudiantes afectados sin reescribir su historia ni
+presentar una nueva conclusión como si fuera retroactiva.
+
+Las auditorías históricas conservan la revisión, el hash de revisión, la
+entrada, la versión del motor y el hash de resultado con los que fueron
+generadas. Por tanto, una auditoría anterior sigue siendo explicable aunque el
+plan tenga una revisión publicada más nueva.
 
 ## Diff semántico
 

@@ -138,6 +138,10 @@ class ProgramEnrollment(UUIDTimestampedModel):
         ):
             raise ValidationError("Student and program must belong to the same institution.")
 
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.student} — {self.program.name}"
 

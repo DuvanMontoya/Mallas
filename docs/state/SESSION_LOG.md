@@ -75,3 +75,420 @@ Añadir una entrada por sesión significativa:
 - Resultados: gates P08 satisfechos sin fallos funcionales pendientes dentro del alcance. Los módulos de datos todavía esperan los read models de P09+ y muestran estados vacíos honestos; no se inventan reglas ni métricas.
 - Riesgos: revisión manual NVDA/VoiceOver para release institucional; B1 externo, MFA privilegiado y antimalware externo siguen documentados. `feature-delivery` y reviewers especializados no están expuestos en la sesión; revisión manual read-only sin Critical/High reproducibles. No commit automático.
 - Siguiente: leer y ejecutar `prompts/10_DASHBOARD_AUDIT_UX.md` como P09.
+
+## 2026-08-16 05:53 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P09 (`prompts/10_DASHBOARD_AUDIT_UX.md`).
+- Cambios: read model y endpoint autenticado `GET /api/v1/academic-overview` con ownership/RBAC, ETag, ledger de créditos, componentes/grupos, requisitos externos, `UNKNOWN`, warnings, elegibilidad conservadora, próximos desbloqueos, hashes y evidencia; dashboard `/` y `/audit` conectado al cliente OpenAPI sin recálculo en frontend; estados sin historial/incompletos, deep links, disclosure de evidencia, fixture de estudiante y servidor E2E; ADR-0014 y documentación API/UX/frontend actualizadas.
+- Verificaciones: overview focalizado 3/3 SQLite y 3/3 PostgreSQL; `python scripts/verify.py` PASS con 63 tests + 1 skip esperado; PostgreSQL full suite PASS con 64 tests; Compose healthy, migraciones/check PASS; OpenAPI/cliente PASS; Ruff/format/mypy/ESLint/TypeScript PASS; Vitest 5 archivos/8 tests + axe PASS; Next build PASS; Playwright 6/6 desktop/mobile PASS.
+- Resultados: gates P09 satisfechos; 100% de créditos no se presenta como graduación cuando faltan requisitos externos/UNKNOWN; B1 permanece visible como `UNKNOWN` con evidencia/estado; no hay fallos funcionales pendientes dentro del alcance.
+- Pendiente: B1 requiere snapshot normativo archivado; NVDA/VoiceOver y reviewers especializados no están disponibles en esta sesión, por lo que queda revisión manual read-only documentada. `docs/SPEC.md` y `docs/REQUIREMENTS.md` no existen en el kit original y deberán declararse en la auditoría final. No commit automático.
+- Siguiente: leer y ejecutar `prompts/11_CURRICULUM_MAP.md` como P10.
+
+## 2026-08-16 06:47 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P10 (`prompts/11_CURRICULUM_MAP.md`).
+- Cambios: read model `GET /api/v1/curriculum-map` con ownership/RBAC, ETag, layouts no normativos, dependencia determinista, evidencia/AST, oferta explícita, estado personal protegido y contrato OpenAPI; frontend `/curriculum` y `/curriculum/print` con CourseCard interactiva, filtros, selección contextual, ficha, leyenda, componente/grupo, mobile roadmap, print y preferencias persistidas; corrección del runtime standalone de Next; ADR-0015 y documentación UX/diseño/frontend/API.
+- Verificaciones: 3 tests focalizados SQLite; suite SQLite 66 passed + 1 skip esperado; PostgreSQL 67 passed; `scripts/verify.py` PASS; OpenAPI/cliente/breaking diff; migraciones/check; Ruff/format/mypy/ESLint/TypeScript; Vitest 6 archivos/12 tests + axe; build Next; Playwright 8/8 desktop/mobile; `pnpm audit`/`uv pip check`; deploy check con configuración de producción efímera sin warnings; baseline real importado como DRAFT en PostgreSQL (102 cursos, 3 componentes, 12 grupos, 97 membresías, 12 ambigüedades); Django+Next+Chromium real verificó health, map 200/ETag, 102 tarjetas, selección/ficha y print.
+- Pendiente: B1 externo sigue `UNKNOWN`; `docs/SPEC.md`, `docs/REQUIREMENTS.md` y `docs/07_CURRICULUM_MAP_SPEC.md` no existen; reviewers/skill feature-delivery no están expuestos; NVDA/VoiceOver, MFA privilegiado y antimalware externo quedan documentados para fases posteriores. No hay fallo funcional P10 pendiente; no commit automático.
+- Siguiente: leer y ejecutar `prompts/12_DEPENDENCY_GRAPH.md` como P11.
+
+## 2026-08-16 11:13 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P11 (`prompts/12_DEPENDENCY_GRAPH.md`).
+- Cambios: proyección semántica pura del AST en `domain/rules/graph.py` con nodos de cursos/condiciones, relaciones directas/transitivas, rutas, foco, desbloqueos y ciclos; read model/API `/api/v1/dependency-graph` con ETag, evidencia, estados epistemológicos y autorización; OpenAPI/cliente regenerados; `/graph` React Flow + ELK lazy, filtros, textual alternative, ciclos y canvas no editable; ADR-0016 y documentación UX/diseño/frontend/API; prueba de regresión del cliente.
+- Reparación durante verificación: `openapi-fetch` requiere filtros en `params.query`; el adaptador los enviaba bajo `query`, lo que descartaba `selected` en producción. Se corrigieron overview/map/graph y se añadió `apps/web/tests/api.test.ts`.
+- Verificaciones: 6 tests focalizados SQLite; `scripts/verify.py` PASS con 72 tests + 1 skip; PostgreSQL full suite PASS con 73; migraciones/check/OpenAPI/client PASS; frontend 8 archivos/15 tests, axe, lint, typecheck, build y E2E 10/10 PASS; audit/pip/diff/TODO PASS; Django/PostgreSQL/Next/Chromium real verificó 200/ETag, 126 nodos, 87 relaciones y foco `2016379`.
+- Pendiente: B1 sigue `UNKNOWN` por falta de snapshot normativo; `docs/SPEC.md`/`docs/REQUIREMENTS.md` no existen; NVDA/VoiceOver y reviewers especializados no están disponibles. No commit automático.
+- Siguiente: leer y ejecutar `prompts/13_OFFERINGS_SCHEDULES.md` como P12.
+
+## 2026-08-16 12:24 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P12 (`prompts/13_OFFERINGS_SCHEDULES.md`).
+- Cambios: modelo temporal de términos/ofertas/grupos/reuniones con
+  `SourceSnapshot`, capacidad opcional, fechas parciales y sesiones alternas;
+  dominio puro de frescura y conflictos exactos; `OfferingSourceAdapter`,
+  importador JSON idempotente con hash y adaptador SIA seguro; CRUD scoped/API
+  de términos, ofertas, reuniones y evaluación de agenda; `/offerings` con
+  filtros, badges, fuente/timestamp, capacidad honesta, selección optimista y
+  ScheduleGrid/conflictos; OpenAPI/cliente, ADR-0017, registro de fuentes y
+  docs actualizados.
+- Reparaciones durante verificación: se validó `day_of_week` para mypy; se
+  tipó correctamente el read model de elegibilidad; se aplicó la migración
+  SQLite y PostgreSQL `offerings.0002`; se corrigió la selección controlada
+  durante navegación Next y se amplió el timeout del smoke del grafo lazy.
+- Verificaciones: 5 tests focalizados; `scripts/verify.py` PASS con 77 passed
+  + 1 skip; frontend 9 archivos/18 tests+axe, lint/typecheck PASS; build
+  standalone PASS; E2E 12/12 desktop/mobile PASS; PostgreSQL real importó 2
+  ofertas/2 grupos/2 reuniones y devolvió 200/ETag con 26 conflictos; Next
+  standalone + Chromium verificó `/offerings` y comparación real de grupos.
+- Pendiente: B1 sigue `UNKNOWN`; captura SIA actual requiere proceso autorizado
+  y no se automatiza acceso autenticado; `docs/SPEC.md` y
+  `docs/REQUIREMENTS.md` no existen; reviewers/skills especializados y
+  NVDA/VoiceOver no están disponibles. No commit automático.
+- Siguiente: leer y ejecutar `prompts/14_PLANNER.md` como P13.
+
+## 2026-08-16 16:20 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P13 (`prompts/14_PLANNER.md`).
+- Cambios: escenarios persistentes privados/versionados; cursos planificados
+  por término y sección; preferencias; validador puro de prerrequisitos,
+  correquisitos, oferta, disponibilidad y conflictos; locks; duplicar/archivar;
+  comparación; sharing redacted; `ScenarioAuditProjection` sin mutar historia;
+  API OpenAPI/cliente; `/planner` accesible y BFF; ADR-0018 y docs actualizadas.
+- Reparaciones: se tiparon `PlanScenario.save()` y helper de test para mypy; se
+  ajustó `scripts/verify.py` a `python -m pytest` por bloqueo del ejecutable en
+  Windows; se aplicó `planning.0004` en PostgreSQL; se renovó CSRF después del
+  login en la verificación HTTP real.
+- Verificaciones: P13 focalizado 6/6; backend completo 83 passed + 1 skip
+  esperado; `scripts/verify.py` PASS; migraciones/OpenAPI/cliente/Ruff/format/
+  mypy/ESLint/TypeScript PASS; Vitest 20/20 + axe; build standalone PASS;
+  Playwright 14/14 desktop/mobile; audit/pip/secret/TODO/diff PASS; PostgreSQL
+  real y Next standalone verificaron login, escenario, proyección, curso,
+  sharing/404, archive, BFF y `/planner`.
+- Pendiente: B1 externo UNKNOWN, fuente SIA institucional autorizada, revisión
+  NVDA/VoiceOver y reviewers especializados; `docs/SPEC.md`/`REQUIREMENTS.md`
+  ausentes. No commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/15_OPTIMIZER.md` como P14.
+
+## 2026-08-16 17:50 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P14 (`prompts/15_OPTIMIZER.md`).
+- Cambios: motor puro CP-SAT con snapshot canónico, variables de curso/período
+  y grupo, restricciones académicas/temporales/horarias, políticas UNKNOWN,
+  objetivos lexicográficos sin pesos mágicos, límites/cancelación/estados y
+  explicaciones; `OptimizationRun` persistido con hashes/solver metadata; API,
+  OpenAPI/cliente, BFF, panel de comparación y ADR-0019.
+- Reparaciones: el preflight de locks usaba la variable residual del último
+  candidato; se corrigió para consultar el candidato bloqueado. Se impidió
+  reprogramar aprobados, se añadió error 400 para políticas inválidas y se
+  incorporó una propiedad Hypothesis/regresiones.
+- Verificaciones: focalizado 11 passed; backend final 94 passed + 1 skip
+  esperado; `scripts/verify.py` PASS; migraciones SQLite/PostgreSQL,
+  OpenAPI/cliente, Ruff/format/mypy, ESLint/TypeScript/Vitest 21/21 + axe,
+  build Next y Playwright 14/14 desktop/mobile PASS; audit/pip/deploy/secret/
+  diff checks PASS.
+- Integración real: PostgreSQL/Django y Next standalone+BFF verificaron login,
+  escenarios, optimizer 202, polling `INFEASIBLE` con output hash/conflicto y
+  `/planner` 200 con origen CSRF/CORS explícito.
+- Pendiente global: B1 UNKNOWN por falta de evidencia institucional; revisores
+  especializados/NVDA/VoiceOver no expuestos; `docs/SPEC.md`,
+  `docs/REQUIREMENTS.md` y `docs/ACCEPTANCE.md` ausentes. No commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/16_ADMIN_GOVERNANCE.md` como
+  P15.
+
+## 2026-08-16 18:51 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P15 (`prompts/16_ADMIN_GOVERNANCE.md`).
+- Cambios: backoffice `/sources`; Source Inbox, documentos/snapshots,
+  candidatos de extracción, diff semántico, validación/impacto, inspector AST
+  + explicación humana + evidencia, review queue y publicación con recibo;
+  `ExtractionCandidate`, `Review`, `Publication`, migración `governance.0003`,
+  ETag/If-Match, preview-token bulk review, editor/reviewer separation, audit
+  trail relacionado, OpenAPI/cliente, UI responsive y ADR-0020.
+- Reparaciones: se corrigió el locking Postgres de propuestas con outer join
+  nullable (`select_for_update(of=("self",))`), se actualizó la auditoría para
+  incluir candidatos/requisitos/publicaciones relacionados y se hizo visible
+  el resultado del vínculo de evidencia en la UI.
+- Verificaciones: 4/4 SQLite + 4/4 PostgreSQL focalizados; suite 98 passed + 1
+  skip esperado; `scripts/verify.py` PASS; migraciones/check/OpenAPI/client,
+  Ruff/format/mypy/ESLint/TypeScript PASS; Vitest 23/23 + axe; Next build
+  PASS; Playwright 16/16 desktop/mobile PASS; HTTP real PostgreSQL/Django
+  inbox/detail/submit/request-changes/restore PASS.
+- Pendiente: P16 en adelante; B1 `UNKNOWN`; `docs/SPEC.md`,
+  `docs/REQUIREMENTS.md` y `docs/ACCEPTANCE.md` ausentes; reviewers
+  especializados y NVDA/VoiceOver no expuestos; no commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/17_PUBLICATION_IMPACT.md`
+  como P16.
+
+## 2026-08-16 19:50 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P16 (`prompts/17_PUBLICATION_IMPACT.md`).
+- Cambios: publicación transaccional con supersesión, `PublicationEvent`,
+  `PublicationImpact` por matrícula y `NotificationOutbox`; endpoint de impacto,
+  OpenAPI/cliente, vista `/sources`, auditoría relacionada, migraciones
+  `governance.0004`/`notifications.0001`, ADR-0021 y documentación de
+  versionado/procedencia/auditoría/backoffice/eventos/notificaciones.
+- Reparaciones: se eliminó la limpieza de conexión del ejecutor síncrono que
+  rompía requests posteriores en PostgreSQL; se hizo UTF-8 el guard TODO en
+  Windows; se aisló el estado mutable del fixture editorial E2E para evitar que
+  desktop/mobile compartieran el estado de una propuesta.
+- Verificaciones: 3 focused SQLite + 3 PostgreSQL; suite PostgreSQL 102 passed;
+  suite canónica SQLite 101 passed + 1 skip esperado; `scripts/verify.py`
+  PASS; migraciones/check/OpenAPI/client/Ruff/formato/mypy/ESLint/TypeScript
+  PASS; Vitest 23/23 + axe; build Next PASS; Playwright 16/16 desktop/mobile;
+  `pnpm audit`, `uv pip check`, diff y guard TODO UTF-8 PASS.
+- Pendiente: P17 en adelante; el outbox está listo pero el dispatcher/entrega
+  efectiva pertenece a P17; B1 `UNKNOWN`; documentos
+  `docs/24_PUBLICATION_AND_IMPACT.md`/`docs/05_AUDIT_AND_CREDIT_ALLOCATION.md`
+  y `docs/SPEC.md`/`REQUIREMENTS.md`/`ACCEPTANCE.md` no existen; reviewers y
+  NVDA/VoiceOver no expuestos; no commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/18_NOTIFICATIONS.md` como
+P17, empezando por outbox, dispatcher, deduplicación, reintentos y canales.
+
+## 2026-08-16 20:48 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P17 (`prompts/18_NOTIFICATIONS.md`).
+- Cambios: `NotificationEvent`/`Delivery`/`Preference`, outbox post-commit,
+  dispatcher y management command con deduplicación/backoff, draft gate,
+  plantillas `es-CO`/`en`, adaptador email opcional/idempotente, API de feed,
+  lectura/preferencias con cursor, cliente OpenAPI, centro frontend accesible,
+  fixture E2E, migración `notifications.0002`, ADR-0022 y documentación de
+  seguridad/eventos/API/ERD/notificaciones.
+- Reparaciones: se implementó cursor consumible en vez de `next_cursor` falso;
+  se añadió prueba IDOR/cursor; se formatearon tres archivos que el verificador
+  detectó; se reconstruyó el standalone antes de E2E para evitar probar un
+  build anterior.
+- Verificaciones: 5 focused SQLite + 5 PostgreSQL; `scripts/verify.py` PASS con
+  106 backend tests + 1 skip esperado y Vitest 26/26 + axe; OpenAPI/client,
+  migraciones, Ruff/formato/mypy/ESLint/TypeScript PASS; Next build PASS;
+  Playwright 18/18 desktop/mobile; `pnpm audit`, `uv pip check`, deploy check
+  explícito, diff y guard TODO UTF-8 PASS.
+- Pendiente global: P18–P26; B1 `UNKNOWN`; email no configurado localmente;
+  reviewers/NVDA/VoiceOver no expuestos; `docs/SPEC.md`, `docs/REQUIREMENTS.md`
+  y `docs/ACCEPTANCE.md` ausentes; no commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/19_ANALYTICS.md` como P18.
+
+## 2026-08-16 21:33 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P18/P19 (`prompts/19_ANALYTICS.md`), tratados
+  como un bloque porque el prompt contiene analítica estudiantil e institucional.
+- Cambios: servicios y API de analytics sobre auditorías `PUBLISHED`, métricas
+  privadas, tendencias, cuellos de botella, requisitos, escenarios, agregados
+  institucionales, demanda potencial, rutas HMAC, duración observada, RBAC de
+  alcance, supresión de celdas, exportación JSON/CSV auditada, definiciones,
+  OpenAPI/cliente y página frontend `/analytics` con accesibilidad. ADR-0023
+  y documentación de analítica/seguridad/RBAC añadidas.
+- Reparaciones: se corrigieron fixture de créditos no reconciliados, contrato
+  `as_of` date-time, validación de período institucional, localizadores E2E
+  estrictos y se reconstruyó el standalone antes de repetir Playwright.
+- Verificaciones: 4 focused SQLite + 4 PostgreSQL; `scripts/verify.py` PASS
+  con 110 backend tests + 1 skip esperado; OpenAPI/client, migraciones,
+  Ruff/formato/mypy, ESLint/TypeScript; Vitest 30/30 + axe; Next build y
+  Playwright 20/20 desktop/mobile; audit/pip checks previos PASS.
+- Limitaciones: `feature-delivery`/`security-change` y reviewers
+  especializados no están expuestos; revisión manual read-only completada;
+  NVDA/VoiceOver no disponibles; B1 sigue `UNKNOWN`; documentos
+  `docs/SPEC.md`, `docs/REQUIREMENTS.md`, `docs/ACCEPTANCE.md` ausentes; no
+  commit automático.
+- Siguiente: leer completamente `prompts/20_OBSERVABILITY.md` como P20.
+
+## 2026-08-16 22:25 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P20 (`prompts/20_OBSERVABILITY.md`). Se leyó el
+  prompt completo, `docs/20_OBSERVABILITY_OPERATIONS.md`, estado, seguridad,
+  autorización y baseline tecnológico; la skill `feature-delivery` y los
+  reviewers especializados no están expuestos, por lo que se hizo revisión
+  manual read-only.
+- Cambios: módulo backend de redacción/log JSON/correlación/OTel/métricas,
+  middleware de requests, health live/ready/metrics, timing para auditoría,
+  grafo, optimizer, importación, publicación y notificaciones; exporter OTLP
+  HTTP 1.44.0 fijado en pyproject/lock. Adaptador frontend opt-in de errores y
+  Web Vitals; dashboard/runbooks/smoke/ADR-0024; OpenAPI/cliente regenerados.
+- Reparaciones: el smoke inicialmente truncaba el OpenAPI grande y se amplió
+  con techo de 4 MiB; se evitó ocultar UUIDs de correlación en logs; se
+  protegió `/health/metrics` en producción, se añadió no-store y se reconstruyó
+  standalone después de detener el servidor que bloqueaba `.next` en Windows.
+- Verificaciones: focused observability 7 passed; `scripts/verify.py` PASS con
+  117 backend + 1 skip y 33 frontend; PostgreSQL migrate/makemigrations check,
+  plan 0 y suite 118 passed; `pnpm build`; Playwright 20/20 desktop/mobile;
+  API/Web reales en 8020/3020 y smoke live/ready/OpenAPI/Web PASS; headers
+  correlation/trace/no-store observados; `pnpm audit`, `uv pip check`,
+  `check --deploy`, OTel imports y `git diff --check` PASS.
+- Limitaciones: el guard TODO amplio sólo encuentra referencias históricas en
+  documentación/metadatos y no TODO funcional nuevo; no hay SLO numérico sin
+  baseline; métricas en memoria requieren collector OTLP para persistencia;
+  B1 continúa UNKNOWN; faltan `docs/SPEC.md`, `docs/REQUIREMENTS.md` y
+  `docs/ACCEPTANCE.md`; no commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/21_PERFORMANCE.md` como P21.
+
+## 2026-08-16 23:07 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P21 (`prompts/21_PERFORMANCE.md`). Se leyó el
+  prompt completo, `docs/25_PERFORMANCE.md`, requisitos no funcionales,
+  estrategia de pruebas y estado del repositorio. La skill
+  `feature-delivery` y reviewers especializados no están expuestos; se hizo
+  revisión manual read-only de arquitectura, código, currículo, seguridad y
+  UX.
+- Cambios: benchmark de reglas/servicios/consultas/EXPLAIN, load probe y
+  auditoría de bundle; helper SQL de enrollment prioritario; prefetch de
+  evidencias en snapshots de auditoría; índices internos reutilizados para
+  mapa/grafo; límites de tiempo/workers/jobs del optimizador; tests de query
+  budget/capacidad; documentación de baseline y ADR-0025.
+- Reparaciones: el primer profiling reveló 164 consultas en auditoría; se
+  localizó `requirement.evidence.all()` dentro de `build_revision_snapshot` y
+  se redujo a 19 con `prefetch_related("evidence__snapshot")`. Mypy detectó
+  una reutilización de nombre entre lista y set en el índice de desbloqueos;
+  se renombró y volvió a pasar. Se ajustó el benchmark para crear un
+  enrollment válido efímero y hacer rollback, sin mutar la base local.
+- Verificaciones: `tests/test_performance.py` 4 passed; regresión focalizada
+  34 passed; `scripts/verify.py` PASS con 122 backend y 33 frontend; benchmark
+  PostgreSQL p95 reglas 16.489 µs, mapa 172.191 ms, grafo 168.314 ms,
+  auditoría 239.645 ms; queries 16/16/19; EXPLAIN usa índices existentes;
+  Next build, bundle audit, Playwright 20/20, smoke/API/Web real, migraciones
+  plan 0/PostgreSQL 18, deploy check, audit de dependencias, pip check y
+  diff check PASS.
+- Limitaciones: el load probe concurrente contra `runserver` mostró
+  contención propia del servidor de desarrollo, no un SLO de producción. El
+  baseline de despliegue requiere worker/proxy/pool y siete días de OTel;
+  no se añadió caché ni Redis por intuición. `check_no_todos.py` reportó 35
+  hits históricos/documentales/metadatos/propios, sin TODO funcional P21.
+  B1 sigue `UNKNOWN`; faltan las tres especificaciones globales; no hubo
+  commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/22_ACCESSIBILITY_E2E.md`
+  como P22.
+
+## 2026-08-16 23:55 — Codex / GPT-5
+
+- Objetivo: ejecutar y cerrar P22 (`prompts/22_ACCESSIBILITY_E2E.md`). Se leyó
+  el prompt completo, `docs/26_ACCESSIBILITY.md`, arquitectura UX, design
+  system, estrategia de pruebas y requisitos no funcionales. Los reviewers y
+  `feature-delivery` no están expuestos; se hizo revisión manual read-only.
+- Baseline: un probe page-level axe encontró contraste serio del token
+  `#6f8177` (4.13:1 sobre blanco) y abrió el área de foco/landmarks para
+  revisión. El bundle viejo se distinguió del bundle reconstruido antes de
+  aceptar resultados.
+- Cambios: suite `accessibility.spec.ts`, foco/restauración/Escape del menú
+  móvil, foco de ficha curricular y foco/anuncio del grafo, handles React Flow
+  sin ARIA inválido, fixture de grafo sensible a `selected`, selector y
+  columnas del planner con nombres accesibles, token `--text-muted` corregido,
+  checklist manual de contraste/NVDA/VoiceOver, workflow editorial E2E
+  extendido hasta publicación y backoffice con una sola landmark `main`.
+- Reparaciones: se limpió el artefacto de cero bytes generado por el panic de
+  Turbopack (`apps/web/n.target)}))}))`); se reconstruyó Next standalone; se
+  corrigió `setState` síncrono en efecto señalado por ESLint; se repararon
+  aserciones de fixture/viewport y finalmente los landmarks duplicados de
+  `/sources`. El gate axe se endureció de serious/critical a cero violaciones.
+- Verificaciones: Vitest 33/33, lint, typecheck, build Next 16.3.1, E2E
+  completo 50/50 desktop/mobile, axe final 20/20 sin violaciones y suite
+  focalizada 10/10. Se documentaron ratios WCAG y las comprobaciones manuales
+  que no pueden ejecutarse con el entorno headless.
+- Limitaciones: NVDA/VoiceOver/dispositivo físico no disponibles; B1 sigue
+  `UNKNOWN`; faltan `docs/SPEC.md`, `docs/REQUIREMENTS.md` y
+  `docs/ACCEPTANCE.md`; no commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/23_SECURITY_HARDENING.md`
+  como P23.
+
+## 2026-08-17 00:04 — cierre verificable de P22
+
+- Se repitió `pnpm e2e` completo después de corregir el landmark duplicado de
+  `/sources`; el resultado final fue 50/50 desktop/mobile PASS. El resultado
+  incluye 20/20 ejecuciones axe sin violaciones y los flujos de teclado, foco,
+  planner móvil, zoom 200%, reduced motion, journeys y publicación editorial.
+- `scripts/verify.py` terminó con 122 pruebas backend y 33 frontend PASS,
+  además de Ruff, mypy, cliente OpenAPI, ESLint y TypeScript.
+- P22 queda cerrado; el siguiente trabajo es el threat model y hardening de
+  P23. Los reviewers especializados y las Skills `security-change` y
+  `feature-delivery` no están expuestos en esta sesión; se documentará la
+  revisión manual equivalente.
+
+## 2026-08-17 01:08 — cierre verificable de P23
+
+- Objetivo: ejecutar y cerrar P23 (`prompts/23_SECURITY_HARDENING.md`). Se leyó
+  el prompt completo, threat model, autorización, privacidad, importación,
+  observabilidad, despliegue y estrategia de pruebas. Las Skills y reviewers
+  especializados de seguridad no están expuestos; se realizó revisión manual
+  read-only y no se fabricó sign-off.
+- Cambios: trust boundaries y matriz IDOR/BOLA; `SafeSourceFetcher` con
+  allowlist, validación DNS/redirect, conexiones fijadas y límites; rate
+  limiting de mutaciones; headers; upload storage privado; audit log inmutable;
+  secret scan/SAST; workflow de seguridad; SQL de roles mínimos y runbook.
+- Reparación: `pip-audit==2.9.0` encontró vulnerabilidades corregibles en
+  `pypdf==6.10.0`; se actualizó a `pypdf==6.16.1`, se regeneró `uv.lock`, se
+  reinstaló con `--frozen` y pasaron los tests del parser. El escáner encontró
+  y corrigió un falso positivo específico para nombres de variables psql,
+  manteniendo la detección de valores reales.
+- Verificaciones: security/history/identity 34 passed y 10 subtests; parser
+  PDF 23 passed y 1 skip; secret scan, SAST, pip-audit sin vulnerabilidades
+  conocidas, `uv pip check`, `pnpm audit`; `scripts/verify.py` PASS con 131
+  backend passed, 1 skip esperado y 33 frontend passed, además de migraciones,
+  OpenAPI/cliente, Ruff, formato, mypy, ESLint y TypeScript.
+- Limitaciones: MFA/IdP institucional, antimalware gestionado, egress de red y
+  rotación operativa de secretos son prerrequisitos externos documentados; B1
+  continúa UNKNOWN sin snapshot normativo; faltan las tres especificaciones
+  globales; no hubo commit automático.
+- Siguiente: leer y ejecutar estrictamente `prompts/24_DEPLOYMENT_DR.md` como
+  P24.
+
+## 2026-08-17 — cierre documentado de P24–P99 y auditoría final parcial
+
+- Se ejecutaron lexicográficamente los prompts disponibles posteriores a P23
+  y se inspeccionaron sus referencias antes de modificar el repositorio.
+- P24: infraestructura de producción, Compose, imágenes no-root, healthchecks,
+  backup/restore/smoke/scan scripts, workflows y ADR-0027. Verificación
+  estática PASS; Docker CLI/socket no accesible, por lo que build, scan,
+  restore y smoke reales quedaron `BLOCKED_EXTERNAL`.
+- P25: matriz de trazabilidad y auditoría de sistema; `verify_docs_clone_clean`
+  integrado y PASS. El sign-off especializado queda pendiente porque los
+  reviewers no están expuestos.
+- P26: source watch, cola de reglas `UNKNOWN`, mantenimiento DB, baseline y
+  workflows recurrentes; offline PASS, remoto `ERROR` por `WinError 10013`.
+- P90: reauditoría oficial del plan 2514 con snapshot, comparación semántica y
+  registro de fuentes. Hash del PDF local y JSON PASS; no se publicó ninguna
+  regla remota o inferida.
+- P91: revisión de dependencias y advisory de Next; se propuso resolver
+  `next@16.2.12` estable, pero el registry no está accesible. No se modificó
+  lockfile manualmente.
+- P92: auditoría cognitiva de las vistas y bundle; historial P22 de 50/50 E2E,
+  20/20 axe y 33 Vitest PASS; rerun actual y lector de pantalla bloqueados.
+- P93: revisión estática de bugs/deuda sin bug activo reproducible; P95: runbook
+  de incidentes documentado; ambos quedaron cerrados en su alcance posible.
+- P94: prueba sintética multi-programa y documento de límites; `py_compile`
+  PASS, ejecución Django pendiente por runtime.
+- P98: gate anti-MVP PASS sobre 196 archivos/14 contextos/0 señales y creación
+  de los índices canónicos `docs/SPEC.md`, `docs/REQUIREMENTS.md` y
+  `docs/ACCEPTANCE.md`.
+- P99: recovery PASS (`27 done`, `8 in_progress`, sin errores), checks
+  estáticos PASS y `scripts/verify.py` finalizado con bloqueos explícitos en
+  vez de fallar silenciosamente; se documentó que el Goal global sigue abierto.
+
+### Comandos y resultados del cierre
+
+- PASS: `python scripts/verify_deployment.py`.
+- PASS: `python scripts/verify_state_recovery.py`.
+- PASS: `python scripts/anti_mvp_audit.py`.
+- PASS: `python scripts/verify_docs_clone_clean.py`.
+- PASS: `python scripts/update_technology_baseline.py --check`.
+- PASS: JSON/Markdown checks, source watch offline, curriculum invariants,
+  OpenAPI breaking diff y `py_compile` compatible.
+- NO CERRADO: `scripts/verify.py` global, backend Django/Python 3.14, pnpm
+  frontend, integración/E2E actual, Docker/DB, source watch remoto y manual
+  accessibility, por restricciones de ACL/red/runtime descritas en
+  `docs/state/CURRENT_STATE.md`.
+- `scripts/check_no_todos.py` se inició pero no produjo salida durante más de
+  un minuto y se interrumpió para no dejar un proceso colgado; `anti_mvp_audit`
+  y la búsqueda `rg` equivalente no encontraron deuda funcional en producto.
+
+No se hicieron commits, pushes, despliegues ni publicaciones normativas.
+
+## Continuación del Goal — 2026-08-17 — reparación del gate TODO
+
+- Inspeccioné de nuevo AGENTS, CURRENT_STATE, ROADMAP, OPEN_DECISIONS, git y
+  todos los prompts lexicográficos. Los runtimes siguen sin Python 3.14
+  ejecutable, Django/uv funcional, Docker o paquetes Node legibles.
+- Pnpm confirmó que el lockfile está instalado pero la instalación aislada
+  offline no puede resolver metadata de `@testing-library/react` porque el
+  mirror de registry está inaccesible; no se modificaron lockfiles ni manifests.
+- Corregí `scripts/check_no_todos.py`: ahora poda `.pnpm-store`, caches y
+  dependencias, reporta errores de lectura, clasifica hits no funcionales y
+  falla sólo ante marcadores dentro de código de producto.
+- Integré el gate al verificador canónico `scripts/verify.py`.
+- Resultado: `files_scanned=508`, `nonfunctional_hits=46`,
+  `functional_hits=0`, `TODO_RELEASE_GATE=PASS`; `py_compile`, anti-MVP y
+  docs clone-clean también PASS.
+- `scripts/verify.py` vuelve a llegar a todos sus gates con el TODO gate PASS,
+  pero permanece no-cero por SAST/runtime/Node/DB/Docker, sin ocultar esos
+  bloqueos.
+
+## Continuación del Goal — 2026-08-17 — probe de runtime Python
+
+- Intenté recuperar Python 3.14 sin tocar el venv existente usando
+  `uv --cache-dir .uv-cache python install 3.14 --install-dir .uv-python`.
+- El intento falló después de tres reintentos por `WinError 10013` al acceder
+  a GitHub/releases.astral.sh; no se instaló un binario alternativo ni se
+  modificó el lockfile. Los directorios de probe quedaron fuera del alcance
+  del código y no contienen cambios de producto.
+- La alternativa Node/pnpm offline tampoco pudo recrear dependencias aisladas:
+  pnpm necesita metadata local de `@testing-library/react` que no está
+  disponible en el mirror accesible. Se detuvo el proceso de probe iniciado
+  por esta sesión.

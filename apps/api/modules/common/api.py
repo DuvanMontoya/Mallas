@@ -12,7 +12,7 @@ from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
-ERROR_RESPONSE_CODES = (400, 401, 403, 404, 409, 422, 428, 429, 500)
+ERROR_RESPONSE_CODES = (400, 401, 403, 404, 409, 422, 428, 429, 500, 503)
 _CORRELATION_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 _IDEMPOTENCY_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 

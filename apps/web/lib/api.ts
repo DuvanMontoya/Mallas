@@ -6,6 +6,21 @@ import {
 
 export type UserView = ApiComponents["schemas"]["UserView"];
 export type ProblemDetails = ApiComponents["schemas"]["ProblemDetails"];
+export type AcademicOverview = ApiComponents["schemas"]["AcademicOverviewView"];
+export type CurriculumMap = ApiComponents["schemas"]["CurriculumMapView"];
+export type DependencyGraph = ApiComponents["schemas"]["DependencyGraphView"];
+export type AcademicTerm = ApiComponents["schemas"]["AcademicTermView"];
+export type OfferingsReadModel = ApiComponents["schemas"]["OfferingsView"];
+export type ScheduleEvaluation = ApiComponents["schemas"]["ScheduleEvaluationView"];
+export type NotificationView = ApiComponents["schemas"]["NotificationView"];
+export type NotificationCollection = ApiComponents["schemas"]["NotificationCollectionView"];
+export type NotificationPreferenceView = ApiComponents["schemas"]["NotificationPreferenceView"];
+export type NotificationPreferenceCollection = ApiComponents["schemas"]["NotificationPreferenceCollectionView"];
+export type NotificationPreferencePayload = ApiComponents["schemas"]["NotificationPreferencePayload"];
+export type AnalyticsDefinition = ApiComponents["schemas"]["AnalyticsDefinitionView"];
+export type StudentAnalytics = ApiComponents["schemas"]["StudentAnalyticsView"];
+export type InstitutionalAnalytics = ApiComponents["schemas"]["InstitutionalAnalyticsView"];
+export type { ApiComponents };
 
 export type SessionState = "authenticated" | "anonymous" | "unavailable";
 
@@ -102,6 +117,753 @@ export async function signOut(): Promise<ApiFailure | null> {
     };
   } catch {
     return { problem: null, correlationId: null, unavailable: true };
+  }
+}
+
+export async function getNotifications(options?: {
+  unreadOnly?: boolean;
+  limit?: number;
+  before?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: NotificationCollection | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/notifications", {
+      headers: options?.headers,
+      params: {
+        query: {
+          unread_only: options?.unreadOnly,
+          limit: options?.limit,
+          before: options?.before,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function markNotificationRead(
+  deliveryId: string,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: NotificationView | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/notifications/{delivery_id}/read", {
+      params: { path: { delivery_id: deliveryId } },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function markAllNotificationsRead(
+  options?: ScenarioMutationOptions,
+): Promise<{ data: ApiComponents["schemas"]["NotificationReadAllView"] | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/notifications/read-all", {
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getNotificationPreferences(options?: {
+  headers?: HeadersInit;
+}): Promise<{ data: NotificationPreferenceCollection | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/notifications/preferences", { headers: options?.headers });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updateNotificationPreference(
+  eventType: string,
+  body: NotificationPreferencePayload,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: NotificationPreferenceView | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PUT("/api/v1/notifications/preferences/{event_type}", {
+      params: { path: { event_type: eventType } },
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getAcademicOverview(options?: {
+  enrollmentId?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: AcademicOverview | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/academic-overview", {
+      headers: options?.headers,
+      params: {
+        query: options?.enrollmentId ? { enrollment_id: options.enrollmentId } : undefined,
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getAnalyticsDefinitions(options?: {
+  headers?: HeadersInit;
+}): Promise<{ data: ApiComponents["schemas"]["AnalyticsDefinitionsView"] | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/analytics/definitions", { headers: options?.headers });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getStudentAnalytics(options?: {
+  enrollmentId?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: StudentAnalytics | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/analytics/student", {
+      headers: options?.headers,
+      params: { query: options?.enrollmentId ? { enrollment_id: options.enrollmentId } : undefined },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getInstitutionalAnalytics(options: {
+  institutionId: string;
+  programId?: string;
+  termCode?: string;
+  minCellSize?: number;
+  headers?: HeadersInit;
+}): Promise<{ data: InstitutionalAnalytics | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/analytics/institutional", {
+      headers: options.headers,
+      params: {
+        query: {
+          institution_id: options.institutionId,
+          program_id: options.programId,
+          term_code: options.termCode,
+          min_cell_size: options.minCellSize,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getCurriculumMap(options?: {
+  planCode?: string;
+  revisionId?: string;
+  enrollmentId?: string;
+  termCode?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: CurriculumMap | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/curriculum-map", {
+      headers: options?.headers,
+      params: {
+        query: {
+          plan_code: options?.planCode,
+          revision_id: options?.revisionId,
+          enrollment_id: options?.enrollmentId,
+          term_code: options?.termCode,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getDependencyGraph(options?: {
+  planCode?: string;
+  revisionId?: string;
+  enrollmentId?: string;
+  termCode?: string;
+  selected?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: DependencyGraph | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/dependency-graph", {
+      headers: options?.headers,
+      params: {
+        query: {
+          plan_code: options?.planCode,
+          revision_id: options?.revisionId,
+          enrollment_id: options?.enrollmentId,
+          term_code: options?.termCode,
+          selected: options?.selected,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getAcademicTerms(options?: {
+  institutionId?: string;
+  campusCode?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: ApiComponents["schemas"]["AcademicTermCollectionView"] | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/academic-terms", {
+      headers: options?.headers,
+      params: {
+        query: {
+          institution_id: options?.institutionId,
+          campus_code: options?.campusCode,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getOfferings(options?: {
+  termCode?: string;
+  courseCode?: string;
+  status?: string;
+  enrollmentId?: string;
+  headers?: HeadersInit;
+}): Promise<{ data: OfferingsReadModel | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/offerings", {
+      headers: options?.headers,
+      params: {
+        query: {
+          term_code: options?.termCode,
+          course_code: options?.courseCode,
+          status: options?.status,
+          enrollment_id: options?.enrollmentId,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getOfferingSchedule(options: {
+  termCode: string;
+  sectionIds: string[];
+  headers?: HeadersInit;
+}): Promise<{ data: ScheduleEvaluation | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/offerings/schedule", {
+      headers: options.headers,
+      params: {
+        query: {
+          term_code: options.termCode,
+          section_ids: options.sectionIds.join(","),
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export type PlanningScenario = ApiComponents["schemas"]["ScenarioView"];
+export type ScenarioCompare = ApiComponents["schemas"]["ScenarioCompareView"];
+export type PlannedCourse = ApiComponents["schemas"]["PlannedCourseView"];
+export type ScenarioCreatePayload = ApiComponents["schemas"]["ScenarioCreatePayload"];
+export type ScenarioPatchPayload = ApiComponents["schemas"]["ScenarioPatchPayload"];
+export type PlannedCourseCreatePayload = ApiComponents["schemas"]["PlannedCourseCreatePayload"];
+export type PlannedCoursePatchPayload = ApiComponents["schemas"]["PlannedCoursePatchPayload"];
+export type OptimizationRun = ApiComponents["schemas"]["OptimizationRunView"];
+export type OptimizationRequestPayload = ApiComponents["schemas"]["OptimizationRequestPayload"];
+export type SourceInbox = ApiComponents["schemas"]["SourceInboxView"];
+export type GovernanceProposal = ApiComponents["schemas"]["ProposalDetailView"];
+export type GovernanceReviewPayload = ApiComponents["schemas"]["ReviewPayload"];
+export type GovernanceCandidateReviewPayload = ApiComponents["schemas"]["CandidateReviewPayload"];
+export type GovernanceCandidate = ApiComponents["schemas"]["GovernanceCandidateView"];
+export type GovernanceBulkCandidatePayload = ApiComponents["schemas"]["BulkCandidatePayload"];
+export type GovernanceBulkPreview = ApiComponents["schemas"]["BulkPreviewView"];
+export type GovernanceRequirement = ApiComponents["schemas"]["GovernanceRequirementView"];
+export type GovernancePublicationImpact = ApiComponents["schemas"]["PublicationImpactView"];
+
+type ScenarioMutationOptions = {
+  csrfToken?: string;
+  ifMatch?: string;
+};
+
+async function mutationHeaders(options: ScenarioMutationOptions = {}): Promise<HeadersInit> {
+  const csrfToken = options.csrfToken ?? (await getCsrfToken());
+  return {
+    "X-CSRFToken": csrfToken,
+    ...(options.ifMatch ? { "If-Match": options.ifMatch } : {}),
+  };
+}
+
+function failureFromResult(result: { error?: unknown; response?: Response }): ApiFailure {
+  return {
+    problem: problemFromUnknown(result.error),
+    correlationId: correlationId(result.response),
+    unavailable: false,
+  };
+}
+
+export async function getScenarios(options?: {
+  enrollmentId?: string;
+  includeArchived?: boolean;
+  headers?: HeadersInit;
+}): Promise<{ data: { items: PlanningScenario[] } | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/scenarios", {
+      headers: options?.headers,
+      params: {
+        query: {
+          enrollment_id: options?.enrollmentId,
+          include_archived: options?.includeArchived,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getScenarioCompare(options: {
+  leftId: string;
+  rightId: string;
+  headers?: HeadersInit;
+}): Promise<{ data: ScenarioCompare | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/scenarios/compare", {
+      headers: options.headers,
+      params: { query: { left_id: options.leftId, right_id: options.rightId } },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function createScenario(
+  body: ScenarioCreatePayload,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/scenarios", {
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updateScenario(
+  scenarioId: string,
+  body: ScenarioPatchPayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PATCH("/api/v1/scenarios/{scenario_id}", {
+      params: { path: { scenario_id: scenarioId } },
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function addPlannedCourse(
+  scenarioId: string,
+  body: PlannedCourseCreatePayload,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/scenarios/{scenario_id}/courses", {
+      params: { path: { scenario_id: scenarioId } },
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updatePlannedCourse(
+  scenarioId: string,
+  plannedCourseId: string,
+  body: PlannedCoursePatchPayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PATCH("/api/v1/scenarios/{scenario_id}/courses/{planned_course_id}", {
+      params: { path: { scenario_id: scenarioId, planned_course_id: plannedCourseId } },
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function deletePlannedCourse(
+  scenarioId: string,
+  plannedCourseId: string,
+  options: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.DELETE("/api/v1/scenarios/{scenario_id}/courses/{planned_course_id}", {
+      params: { path: { scenario_id: scenarioId, planned_course_id: plannedCourseId } },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function duplicateScenario(
+  scenarioId: string,
+  name: string,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/scenarios/{scenario_id}/duplicate", {
+      params: { path: { scenario_id: scenarioId } },
+      body: { name },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function archiveScenario(
+  scenarioId: string,
+  options: ScenarioMutationOptions,
+): Promise<{ data: PlanningScenario | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/scenarios/{scenario_id}/archive", {
+      params: { path: { scenario_id: scenarioId } },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function startOptimization(
+  scenarioId: string,
+  body: OptimizationRequestPayload,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: OptimizationRun | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/scenarios/{scenario_id}/optimization-runs", {
+      params: { path: { scenario_id: scenarioId } },
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getOptimizationRun(
+  runId: string,
+  options?: { headers?: HeadersInit },
+): Promise<{ data: OptimizationRun | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/optimization-runs/{run_id}", {
+      params: { path: { run_id: runId } },
+      headers: options?.headers,
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function cancelOptimizationRun(
+  runId: string,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: OptimizationRun | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/optimization-runs/{run_id}/cancel", {
+      params: { path: { run_id: runId } },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getGovernanceInbox(options?: {
+  headers?: HeadersInit;
+}): Promise<{ data: SourceInbox | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/governance/inbox", { headers: options?.headers });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getGovernanceProposal(
+  proposalId: string,
+  options?: { headers?: HeadersInit },
+): Promise<{ data: GovernanceProposal | null; failure: ApiFailure | null; etag: string | null }> {
+  try {
+    const result = await api.GET("/api/v1/governance/proposals/{proposal_id}", {
+      params: { path: { proposal_id: proposalId } },
+      headers: options?.headers,
+    });
+    if (result.data) return { data: result.data, failure: null, etag: result.response.headers.get("ETag") };
+    return { data: null, failure: failureFromResult(result), etag: null };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true }, etag: null };
+  }
+}
+
+async function governanceMutationHeaders(options: ScenarioMutationOptions = {}): Promise<HeadersInit> {
+  return mutationHeaders(options);
+}
+
+export async function submitGovernanceProposal(
+  proposalId: string,
+  body: { comment?: string },
+  options: ScenarioMutationOptions,
+): Promise<{ data: GovernanceProposal | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/proposals/{proposal_id}/submit", {
+      params: { path: { proposal_id: proposalId } },
+      body: { comment: body.comment ?? "" },
+      headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function reviewGovernanceProposal(
+  proposalId: string,
+  body: GovernanceReviewPayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: GovernanceProposal | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/proposals/{proposal_id}/review", {
+      params: { path: { proposal_id: proposalId } },
+      body,
+      headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function publishGovernanceProposal(
+  proposalId: string,
+  confirmation: string,
+  options: ScenarioMutationOptions,
+): Promise<{ data: GovernanceProposal | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/proposals/{proposal_id}/publish", {
+      params: { path: { proposal_id: proposalId } },
+      body: { confirmation },
+      headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getGovernancePublicationImpact(
+  publicationId: string,
+  options?: { headers?: HeadersInit },
+): Promise<{ data: GovernancePublicationImpact | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/governance/publications/{publication_id}/impact", {
+      params: { path: { publication_id: publicationId } },
+      headers: options?.headers,
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function reviewGovernanceCandidate(
+  proposalId: string,
+  candidateId: string,
+  body: GovernanceCandidateReviewPayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: GovernanceCandidate | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/proposals/{proposal_id}/candidates/{candidate_id}/review", {
+      params: { path: { proposal_id: proposalId, candidate_id: candidateId } },
+      body,
+      headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function previewGovernanceCandidates(
+  proposalId: string,
+  body: GovernanceBulkCandidatePayload,
+): Promise<{ data: GovernanceBulkPreview | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/proposals/{proposal_id}/candidates/bulk-preview", {
+      params: { path: { proposal_id: proposalId } },
+      body,
+      headers: await governanceMutationHeaders(),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function applyGovernanceCandidates(
+  proposalId: string,
+  body: GovernanceBulkCandidatePayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: GovernanceProposal | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/proposals/{proposal_id}/candidates/bulk-review", {
+      params: { path: { proposal_id: proposalId } },
+      body,
+      headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function linkGovernanceRequirementEvidence(
+  requirementId: string,
+  evidenceIds: string[],
+  options: ScenarioMutationOptions,
+): Promise<{ data: GovernanceRequirement | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/governance/requirements/{requirement_id}/evidence", {
+      params: { path: { requirement_id: requirementId } },
+      body: { evidence_ids: evidenceIds },
+      headers: await governanceMutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
   }
 }
 

@@ -21,17 +21,24 @@ docker compose -f infra/docker-compose.yml up --build
 
 La configuración usa variables `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_PORT`; los valores incluidos son sólo para desarrollo local.
 
-## Producción objetivo
-- TLS/reverse proxy;
-- web Next.js;
-- API Django;
-- workers si el job adapter de producción los requiere;
-- PostgreSQL con backups;
-- object storage para fuentes/artefactos si se necesita;
-- OpenTelemetry;
-- health/readiness;
-- secretos fuera de Git.
+## Referencia de producción
 
-Antes de un despliegue, ejecute las migraciones, health checks, pruebas de restore y el checklist de `docs/24_DEPLOYMENT_AND_DR.md`.
+`docker-compose.production.yml` contiene API Django, web Next.js, PostgreSQL
+no publicado y Caddy como reverse proxy/TLS. Las imágenes de API/web y las
+imágenes base están fijadas por digest; los contenedores de aplicación son no
+root, read-only salvo el volumen privado explícito y tienen healthchecks.
 
-No desplegar automáticamente desde este kit sin completar P24.
+```bash
+cp infra/production.env.example infra/production.env
+# sustituir cada placeholder desde el secret manager; no guardar el archivo
+python3 scripts/production_preflight.py --env-file infra/production.env
+docker compose --env-file infra/production.env -f infra/docker-compose.production.yml config
+docker compose --env-file infra/production.env -f infra/docker-compose.production.yml --profile migration run --rm migrate
+docker compose --env-file infra/production.env -f infra/docker-compose.production.yml up -d
+```
+
+La guía completa es `docs/ops/DEPLOYMENT_RUNBOOK.md`. Backups y restore drills
+están en `docs/ops/BACKUP_RESTORE_RUNBOOK.md`; el object storage separado en
+`docs/ops/OBJECT_STORAGE_STRATEGY.md`; rollback en
+`docs/ops/ROLLBACK_RUNBOOK.md`. El archivo local de desarrollo sigue usando
+credenciales de ejemplo y nunca es una configuración institucional.

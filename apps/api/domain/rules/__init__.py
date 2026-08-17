@@ -35,7 +35,17 @@ from .evaluator import (
     RevisionFacts,
     evaluate_rule,
 )
-from .graph import direct_course_dependencies, find_requirement_cycles
+from .graph import (
+    CourseRelation,
+    GraphEdge,
+    GraphNode,
+    GraphProjection,
+    direct_course_dependencies,
+    find_requirement_cycles,
+    project_rule_graph,
+    shortest_course_path,
+    transitive_course_dependencies,
+)
 
 RuleStatus = EvaluationStatus
 RuleResult = EvaluationResult
@@ -50,6 +60,7 @@ __all__ = [
     "AuditContext",
     "AuditRule",
     "Corequisite",
+    "CourseRelation",
     "CourseInProgress",
     "CoursePassed",
     "CoursePassedOrInProgress",
@@ -60,6 +71,9 @@ __all__ = [
     "EvaluationStatus",
     "ExternalRequirement",
     "GroupCompleted",
+    "GraphEdge",
+    "GraphNode",
+    "GraphProjection",
     "MandatoryCoursesCompleted",
     "MinimumGrade",
     "Not",
@@ -83,4 +97,7 @@ __all__ = [
     "serialize_rule",
     "serialize_rule_document",
     "serialize_ast",
+    "project_rule_graph",
+    "shortest_course_path",
+    "transitive_course_dependencies",
 ]

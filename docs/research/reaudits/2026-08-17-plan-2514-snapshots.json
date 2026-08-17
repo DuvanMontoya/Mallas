@@ -1,0 +1,144 @@
+{
+  "reaudit_id": "P90-2026-08-17-2514",
+  "checked_at": "2026-08-17",
+  "timezone": "America/Bogota",
+  "subject": {
+    "institution": "Universidad Nacional de Colombia",
+    "campus": "Bogotá",
+    "faculty": "Facultad de Ciencias",
+    "program": "Estadística",
+    "program_code": "2514",
+    "baseline_revision": "2514-AC496-2023"
+  },
+  "publication_decision": "NO_PUBLISHABLE_SEMANTIC_DIFF",
+  "snapshot_policy": "metadata_and_observed_excerpt_only_until_authorized_byte_archive",
+  "sources": [
+    {
+      "id": "UNAL-STAT-PLAN-CURRENT",
+      "url": "https://ciencias.bogota.unal.edu.co/estudiar_en_la_facultad/pregrados/estadistica/plan_de_estudios/",
+      "source_type": "official_program_page",
+      "snapshot_status": "REMOTE_REFERENCE_ONLY",
+      "local_bytes_archived": false,
+      "sha256": null,
+      "observed": {
+        "degree_name": "Estadístico(a)",
+        "snies": "32",
+        "estimated_terms": 9,
+        "total_required_credits": 141,
+        "page_update_label": "27/08/2025",
+        "accreditation_resolution": "000114 11/01/2024"
+      },
+      "epistemic_status": "INFERRED_PENDING_REVIEW"
+    },
+    {
+      "id": "UNAL-STAT-FAQ-CURRENT",
+      "url": "https://ciencias.bogota.unal.edu.co/areas_curriculares/estadistica/preguntas_frecuentes/",
+      "source_type": "official_program_faq",
+      "snapshot_status": "REMOTE_REFERENCE_ONLY",
+      "local_bytes_archived": false,
+      "sha256": null,
+      "observed": {
+        "normative_reference": "Acuerdo 496 de 2023",
+        "scope": "courses, groups and credits; current practice and degree-work procedures"
+      },
+      "epistemic_status": "INFERRED_PENDING_REVIEW"
+    },
+    {
+      "id": "UNAL-LEGAL-AC496-INDEX",
+      "url": "https://legal.unal.edu.co/rlunal/home/nmap.jsp?ctl=get&d_i=103943",
+      "source_type": "official_legal_index",
+      "snapshot_status": "REMOTE_REFERENCE_ONLY",
+      "local_bytes_archived": false,
+      "sha256": null,
+      "observed": {
+        "title": "Acuerdo 496 de 2023 Consejo Facultad de Ciencias - Sede Bogotá",
+        "direct_document_access": "HTTP_403_DURING_REAUDIT",
+        "later_amendment_found_in_indexed_search": false,
+        "absence_is_proof_of_absence": false
+      },
+      "epistemic_status": "INFERRED_PENDING_REVIEW"
+    },
+    {
+      "id": "UNAL-ENGLISH-B1-CURRENT",
+      "url": "https://admisiones.unal.edu.co/otras-pruebas/prueba-de-ingles-pregrado/?L=1",
+      "source_type": "official_admissions_requirement",
+      "snapshot_status": "REMOTE_REFERENCE_ONLY",
+      "local_bytes_archived": false,
+      "sha256": null,
+      "observed": {
+        "level": "B1",
+        "is_degree_requirement": true,
+        "classification_exam_before_end_of_first_period": true,
+        "credits": 0
+      },
+      "epistemic_status": "INFERRED_PENDING_REVIEW"
+    },
+    {
+      "id": "UNAL-STAT-PRACTICE-2026-2",
+      "url": "https://ciencias.bogota.unal.edu.co/wp-content/uploads/CONVOCATORIA-2026-2-nueva.pdf",
+      "source_type": "official_practice_call_pdf",
+      "snapshot_status": "REMOTE_REFERENCE_ONLY",
+      "local_bytes_archived": false,
+      "sha256": null,
+      "observed": {
+        "page": 10,
+        "normative_reference": "Acuerdo 496 de 2023",
+        "practice_course": {
+          "code": "2028081",
+          "credits": 10,
+          "prerequisite_text": "36 créditos de Núcleo Estadístico",
+          "component_text": "optativa en Libre Elección"
+        },
+        "degree_work_course": {
+          "code": "2015314",
+          "credits": 8,
+          "prerequisite_text": "80% de los créditos del plan",
+          "component_text": "Consolidación Estadística"
+        }
+      },
+      "epistemic_status": "INFERRED_PENDING_REVIEW"
+    },
+    {
+      "id": "LOCAL-BASELINE-2514",
+      "url": "repo:data/curricula/unal/bogota/estadistica/2514/plan_2514_acuerdo_496_2023.json",
+      "source_type": "local_archived_normative_evidence",
+      "snapshot_status": "LOCAL_ARCHIVED",
+      "local_bytes_archived": true,
+      "sha256": "9253909e4208304dd0eb141b5c388956d0008bafe4e7b9033f2aabd5225e8bad",
+      "observed": {
+        "revision_code": "2514-AC496-2023",
+        "effective_from": "2023-05-09",
+        "estimated_terms": 9,
+        "total_required_credits": 141,
+        "practice_course": {
+          "code": "2028081",
+          "credits": 10,
+          "group": "FREE_ELECTIVE"
+        },
+        "degree_work_course": {
+          "code": "2015314",
+          "credits": 8,
+          "group": "STAT_CONSOLIDATION",
+          "percentage_numerator": 4,
+          "percentage_denominator": 5
+        },
+        "foreign_language_requirement": {
+          "key": "FOREIGN_LANGUAGE_B1_OR_RECOGNIZED_EQUIVALENT",
+          "credits": 0
+        }
+      },
+      "epistemic_status": "VERIFIED"
+    }
+  ],
+  "semantic_diff": {
+    "status": "NO_CONFIRMED_CHANGE",
+    "published_revision_mutated": false,
+    "candidate_changes": [],
+    "unknowns": [
+      "Byte-level archive of current remote sources is not available in this execution.",
+      "A non-indexed or inaccessible later legal amendment cannot be ruled out.",
+      "No new general optative catalogue was established by the observed 2026-2 call."
+    ],
+    "disputed": []
+  }
+}

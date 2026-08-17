@@ -22,6 +22,7 @@ from domain.rules import EvaluationStatus, Unknown, parse_rule
 from domain.rules.errors import RuleSchemaError
 from modules.audit.models import CreditAllocation, DegreeAuditResult, DegreeAuditRun
 from modules.curriculum.models import Course, CurriculumRevision
+from modules.observability.metrics import measure_domain_timing
 from modules.student_records.models import ProgramEnrollment
 
 
@@ -107,7 +108,9 @@ def build_revision_snapshot(revision: CurriculumRevision) -> RevisionSnapshot:
             source_metadata=requirement.metadata,
         )
 
-    requirements = list(revision.requirements.all().order_by("code"))
+    requirements = list(
+        revision.requirements.prefetch_related("evidence__snapshot").order_by("code")
+    )
     owner_ids = {
         requirement.owner_id for requirement in requirements if requirement.owner_type == "COURSE"
     }
@@ -200,6 +203,7 @@ def build_audit_input(
     )
 
 
+@measure_domain_timing("degree_audit")
 @transaction.atomic  # type: ignore[untyped-decorator]
 def run_degree_audit(
     enrollment_id: UUID | str,

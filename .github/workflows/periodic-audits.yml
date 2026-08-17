@@ -1,0 +1,41 @@
+name: periodic-audits
+
+on:
+  schedule:
+    - cron: "47 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24.19.0"
+  PNPM_VERSION: "11.21.0"
+
+jobs:
+  accessibility-security:
+    name: monthly-accessibility-security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir apps/web test
+      - run: pnpm --dir apps/web lint
+      - run: pnpm --dir apps/web typecheck
+      - run: pnpm --dir apps/web audit:bundle
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --dir apps/web e2e
+      - run: python scripts/scan_secrets.py
+      - run: python scripts/sast.py
+      - run: python scripts/verify_docs_clone_clean.py
+      - run: python scripts/verify_state_recovery.py

@@ -1,7 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
+
+import { reportFrontendError } from "@/lib/observability";
+
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const supportId = error.digest ? `ID ${error.digest}` : "sin identificador";
+
+  useEffect(() => {
+    reportFrontendError(error, { digest: error.digest ?? "", phase: "error-boundary" });
+  }, [error]);
 
   return (
     <div className="page-shell" role="alert">

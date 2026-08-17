@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import secrets
+from datetime import datetime
 from typing import Any
 
 from django.conf import settings
@@ -12,13 +14,24 @@ from ninja import NinjaAPI, Schema
 from ninja.errors import HttpError
 from ninja.errors import ValidationError as NinjaValidationError
 
+from modules.analytics.api import router as analytics_router
+from modules.audit.api import router as audit_router
 from modules.common.api import (
     ApiProblemError,
     problem_response,
     with_problem_responses,
 )
+from modules.curriculum.api import router as curriculum_router
+from modules.governance.api import router as governance_router
 from modules.identity.api import router as identity_router
 from modules.imports.api import router as history_router
+from modules.notifications.api import router as notifications_router
+from modules.observability.logging import record_log
+from modules.observability.metrics import metrics_payload, record_db_check
+from modules.observability.redaction import safe_route
+from modules.offerings.api import router as offerings_router
+from modules.optimization.api import router as optimization_router
+from modules.planning.api import router as planning_router
 from modules.student_records.api import router as student_records_router
 
 logger = logging.getLogger(__name__)
@@ -34,6 +47,14 @@ class ReadyResponse(Schema):
     status: str
     service: str
     database: str
+    checks: dict[str, str]
+
+
+class MetricsResponse(Schema):
+    status: str
+    service: str
+    generated_at: datetime
+    metrics: dict[str, float]
 
 
 api = NinjaAPI(
@@ -154,7 +175,14 @@ def permission_denied_handler(request: HttpRequest, error: PermissionDenied) -> 
 
 @api.exception_handler(Exception)
 def unhandled_api_exception(request: HttpRequest, error: Exception) -> HttpResponse:
-    logger.exception("Unhandled API exception", exc_info=error)
+    record_log(
+        logger,
+        "api.unhandled_exception",
+        level=logging.ERROR,
+        correlation_id=getattr(request, "correlation_id", None),
+        route=safe_route(request.path),
+        error_type=type(error).__name__,
+    )
     return problem_response(
         request,
         status=500,
@@ -165,8 +193,16 @@ def unhandled_api_exception(request: HttpRequest, error: Exception) -> HttpRespo
 
 
 api.add_router("/auth", identity_router)
+api.add_router("", audit_router)
+api.add_router("", analytics_router)
+api.add_router("", curriculum_router)
+api.add_router("", governance_router)
 api.add_router("/history", history_router)
 api.add_router("/history", student_records_router)
+api.add_router("", offerings_router)
+api.add_router("", optimization_router)
+api.add_router("", planning_router)
+api.add_router("", notifications_router)
 
 
 @api.get("/health/live", response=with_problem_responses(HealthResponse), tags=["Operations"])
@@ -176,9 +212,54 @@ def live_health(request: object) -> dict[str, str]:
 
 
 @api.get("/health/ready", response=with_problem_responses(ReadyResponse), tags=["Operations"])
-def ready_health(request: object) -> dict[str, str]:
-    del request
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT 1")
-        cursor.fetchone()
-    return {"status": "ready", "service": "api", "database": "ok"}
+def ready_health(request: HttpRequest) -> dict[str, Any]:
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except Exception as error:
+        record_db_check("error")
+        record_log(
+            logger,
+            "health.readiness_failed",
+            level=logging.ERROR,
+            correlation_id=getattr(request, "correlation_id", None),
+            dependency="database",
+            error_type=type(error).__name__,
+        )
+        from modules.common.api import raise_problem
+
+        raise_problem(
+            status=503,
+            code="NOT_READY",
+            title="Service not ready",
+            detail="An essential dependency is unavailable.",
+            fields={"database": "unavailable"},
+        )
+    record_db_check("ok")
+    return {
+        "status": "ready",
+        "service": "api",
+        "database": "ok",
+        "checks": {"database": "ok"},
+    }
+
+
+@api.get("/health/metrics", response=with_problem_responses(MetricsResponse), tags=["Operations"])
+def metrics_health(request: HttpRequest) -> dict[str, Any]:
+    configured_token = getattr(settings, "OBSERVABILITY_METRICS_TOKEN", "")
+    supplied_token = request.headers.get("X-Metrics-Token", "")
+    if configured_token:
+        authorized = secrets.compare_digest(supplied_token, configured_token)
+    else:
+        authorized = bool(getattr(settings, "DEBUG", False))
+    if not authorized:
+        from modules.common.api import raise_problem
+
+        raise_problem(
+            status=404,
+            code="NOT_FOUND",
+            title="Resource not found",
+            detail="The requested resource does not exist.",
+        )
+    return metrics_payload()

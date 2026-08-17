@@ -99,6 +99,18 @@ class SectionModality(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class OfferingFreshness(StrEnum):
+    FRESH = "FRESH"
+    STALE = "STALE"
+    UNKNOWN = "UNKNOWN"
+
+
+class CapacityStatus(StrEnum):
+    UNKNOWN = "UNKNOWN"
+    REPORTED_NOT_REAL_TIME = "REPORTED_NOT_REAL_TIME"
+    REAL_TIME = "REAL_TIME"
+
+
 class EnrollmentStatus(StrEnum):
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
@@ -179,6 +191,42 @@ class ProposalStatus(StrEnum):
     REJECTED = "REJECTED"
     APPLIED = "APPLIED"
     WITHDRAWN = "WITHDRAWN"
+
+
+class ReviewDecision(StrEnum):
+    APPROVE = "APPROVE"
+    REQUEST_CHANGES = "REQUEST_CHANGES"
+    REJECT = "REJECT"
+
+
+class ExtractionCandidateStatus(StrEnum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+
+
+class PublicationImpactStatus(StrEnum):
+    IDENTIFIED = "IDENTIFIED"
+    RECOMPUTE_QUEUED = "RECOMPUTE_QUEUED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+    RECOMPUTED = "RECOMPUTED"
+
+
+class NotificationDeliveryStatus(StrEnum):
+    QUEUED = "QUEUED"
+    SENDING = "SENDING"
+    SENT = "SENT"
+    FAILED = "FAILED"
+    SUPPRESSED = "SUPPRESSED"
+
+
+class NotificationChannel(StrEnum):
+    IN_APP = "IN_APP"
+    EMAIL = "EMAIL"
+
+
+class NotificationEventType(StrEnum):
+    CURRICULUM_REVISION_PUBLISHED = "curriculum.revision.published"
 
 
 class ScenarioStatus(StrEnum):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
@@ -124,6 +125,10 @@ def can_publish_revision(user: Any, revision: CurriculumRevision) -> bool:
         RevisionStatus.APPROVED.value,
     }:
         return False
+    if settings.PRIVILEGED_MFA_REQUIRED and not getattr(
+        user, "_privileged_mfa_verified", False
+    ):
+        return False
     program_id = revision.plan.program_id
     institution_id = revision.plan.program.faculty.campus.institution_id
     return has_role(
@@ -136,6 +141,10 @@ def can_manage_revision_lifecycle(user: Any, revision: CurriculumRevision) -> bo
 
     institution_id = revision.plan.program.faculty.campus.institution_id
     program_id = revision.plan.program_id
+    if settings.PRIVILEGED_MFA_REQUIRED and not getattr(
+        user, "_privileged_mfa_verified", False
+    ):
+        return False
     return has_role(
         user, UserRole.REVIEWER, institution_id=institution_id, program_id=program_id
     ) or has_role(user, UserRole.ADMIN, institution_id=institution_id, program_id=program_id)

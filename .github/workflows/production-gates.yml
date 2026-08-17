@@ -1,0 +1,158 @@
+name: production-gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.14"
+  NODE_VERSION: "24.19.0"
+  PNPM_VERSION: "11.21.0"
+  UV_VERSION: "0.11.19"
+
+jobs:
+  tests:
+    name: tests-contract-migrations-e2e
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.0-alpine@sha256:48c8ad3a7284b82be4482a52076d47d879fd6fb084a1cbfccbd551f9331b0e40
+        env:
+          POSTGRES_DB: curriculum
+          POSTGRES_USER: curriculum_runtime
+          POSTGRES_PASSWORD: curriculum_ci_only
+          DATABASE_URL: postgresql://curriculum_runtime:curriculum_ci_only@127.0.0.1:5432/curriculum
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U curriculum -d curriculum"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project apps/api --frozen
+      - name: Django migration gates
+        env:
+          DATABASE_URL: postgresql://curriculum:curriculum_ci_only@127.0.0.1:5432/curriculum
+        run: |
+          uv run --project apps/api --frozen python apps/api/manage.py migrate --noinput
+          uv run --project apps/api --frozen python apps/api/manage.py migrate --check
+          uv run --project apps/api --frozen python apps/api/manage.py makemigrations --check --dry-run
+      - name: Canonical verification
+        env:
+          DATABASE_URL: postgresql://curriculum:curriculum_ci_only@127.0.0.1:5432/curriculum
+        run: uv run --project apps/api --frozen python scripts/verify.py
+      - run: pnpm --dir apps/web build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --dir apps/web e2e
+
+  restore-drill:
+    name: backup-restore-drill
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --project apps/api --frozen
+      - name: Start isolated PostgreSQL
+        run: |
+          docker run --detach --name p24-postgres --publish 5432:5432 \
+            --env POSTGRES_DB=curriculum \
+            --env POSTGRES_USER=curriculum \
+            --env POSTGRES_PASSWORD=curriculum_ci_only \
+            postgres:18.0-alpine@sha256:48c8ad3a7284b82be4482a52076d47d879fd6fb084a1cbfccbd551f9331b0e40
+          for attempt in $(seq 1 30); do
+            docker exec p24-postgres pg_isready -U curriculum -d curriculum && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Migrate, backup and restore
+        env:
+          DATABASE_URL: postgresql://curriculum:curriculum_ci_only@127.0.0.1:5432/curriculum
+        run: |
+          uv run --project apps/api --frozen python apps/api/manage.py migrate --noinput
+          uv run --project apps/api --frozen python scripts/backup_postgres.py --container p24-postgres --output-dir /tmp/curriculum-backups
+          dump=$(find /tmp/curriculum-backups -name '*.dump' -print -quit)
+          test -n "$dump"
+          uv run --project apps/api --frozen python scripts/restore_drill.py "$dump" --container p24-postgres
+      - name: Cleanup isolated PostgreSQL
+        if: always()
+        run: docker rm --force p24-postgres || true
+
+  images:
+    name: pinned-images-and-critical-scan
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        run: docker buildx build --file infra/docker/api.Dockerfile --tag curriculum-navigator/api:${GITHUB_SHA} --load .
+      - name: Build web image
+        run: docker buildx build --file infra/docker/web.Dockerfile --tag curriculum-navigator/web:${GITHUB_SHA} --load .
+      - name: Verify non-root runtime and no baked secret values
+        shell: bash
+        run: |
+          test "$(docker image inspect --format '{{.Config.User}}' curriculum-navigator/api:${GITHUB_SHA})" = "app"
+          test "$(docker image inspect --format '{{.Config.User}}' curriculum-navigator/web:${GITHUB_SHA})" = "nextjs"
+          for image in curriculum-navigator/api:${GITHUB_SHA} curriculum-navigator/web:${GITHUB_SHA}; do
+            ! docker history --no-trunc "$image" | grep -E 'DJANGO_SECRET_KEY=|POSTGRES_PASSWORD=|PGPASSWORD=' || exit 1
+          done
+      - name: Docker Scout Critical gate (API)
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: curriculum-navigator/api:${{ github.sha }}
+          only-severities: critical
+          exit-code: true
+      - name: Docker Scout Critical gate (web)
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: curriculum-navigator/web:${{ github.sha }}
+          only-severities: critical
+          exit-code: true
+      - name: Production Compose renders
+        env:
+          API_IMAGE: ghcr.io/example/curriculum-navigator-api:ci@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          WEB_IMAGE: ghcr.io/example/curriculum-navigator-web:ci@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          POSTGRES_DB: curriculum
+          POSTGRES_USER: curriculum_owner
+          POSTGRES_PASSWORD: curriculum_ci_only
+          RUNTIME_DATABASE_URL: postgresql://curriculum_runtime:curriculum_ci_only@postgres:5432/curriculum
+          MIGRATION_DATABASE_URL: postgresql://curriculum_migrator:curriculum_ci_only@postgres:5432/curriculum
+          DJANGO_SECRET_KEY: curriculum-ci-secret-not-for-production-12345678901234567890
+          PRIVILEGED_MFA_REQUIRED: "true"
+          ALLOWED_HOSTS: app.example.edu
+          APP_DOMAIN: app.example.edu
+          PUBLIC_APP_URL: https://app.example.edu
+          CSRF_TRUSTED_ORIGINS: https://app.example.edu
+          CORS_ALLOWED_ORIGINS: https://app.example.edu
+          TLS_EMAIL: ops@example.edu
+          OBSERVABILITY_METRICS_TOKEN: curriculum-ci-metrics-token
+        run: |
+          python scripts/production_preflight.py --env-file infra/production.env.example
+          docker compose --env-file infra/production.env.example -f infra/docker-compose.production.yml config --quiet

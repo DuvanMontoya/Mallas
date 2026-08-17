@@ -10,12 +10,16 @@ class OptimizationRun(UUIDTimestampedModel):
         "planning.PlanScenario", on_delete=models.PROTECT, related_name="optimization_runs"
     )
     input_hash = models.CharField(max_length=128)
+    input_snapshot = models.JSONField(default=dict)
     solver_version = models.CharField(max_length=80)
     status = models.CharField(max_length=24)
+    output_hash = models.CharField(max_length=128, blank=True)
     objective_values = models.JSONField(default=dict)
     solution = models.JSONField(default=dict)
     explanation = models.JSONField(default=dict)
     time_limit_seconds = models.PositiveIntegerField(default=60)
+    started_at = models.DateTimeField(null=True, blank=True)
+    cancel_requested_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

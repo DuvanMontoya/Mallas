@@ -11,9 +11,10 @@ dependencies = [
   "hypothesis==6.165.9",
   "ortools==9.15.6755",
   "opentelemetry-sdk==1.44.0",
+  "opentelemetry-exporter-otlp-proto-http==1.44.0",
   "structlog==25.5.0",
   "gunicorn==23.0.0",
-  "pypdf==6.10.0",
+  "pypdf==6.16.1",
 ]
 
 [dependency-groups]

@@ -1,0 +1,173 @@
+{
+  "terms": [
+    {
+      "id": "00000000-0000-4000-8000-000000000401",
+      "code": "2026-2S",
+      "institution_id": "00000000-0000-4000-8000-000000000001",
+      "campus_code": "BOG",
+      "campus_name": "Bogotá",
+      "starts_at": "2026-08-03T00:00:00Z",
+      "ends_at": "2027-01-31T23:59:59Z",
+      "status": "OPEN",
+      "source": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "retrieved_at": "2026-08-15T12:00:00Z",
+        "freshness": "FRESH",
+        "age_seconds": 86400,
+        "max_age_seconds": 86400,
+        "source_name": "UNAL SIA Bogotá — Buscador de cursos público",
+        "source_url": "https://siabog.unal.edu.co/academia/apoyo-administrativo/",
+        "capacity_realtime": false
+      }
+    }
+  ],
+  "offerings": [
+    {
+      "id": "00000000-0000-4000-8000-000000000402",
+      "course_version_id": "00000000-0000-4000-8000-000000000411",
+      "course_code": "2016377",
+      "course_name": "Cálculo diferencial en una variable",
+      "credits": 4,
+      "term": {
+        "id": "00000000-0000-4000-8000-000000000401",
+        "code": "2026-2S",
+        "institution_id": "00000000-0000-4000-8000-000000000001",
+        "campus_code": "BOG",
+        "campus_name": "Bogotá",
+        "starts_at": "2026-08-03T00:00:00Z",
+        "ends_at": "2027-01-31T23:59:59Z",
+        "status": "OPEN",
+        "source": {
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "retrieved_at": "2026-08-15T12:00:00Z",
+          "freshness": "FRESH",
+          "age_seconds": 86400,
+          "max_age_seconds": 86400,
+          "source_name": "UNAL SIA Bogotá — Buscador de cursos público",
+          "source_url": "https://siabog.unal.edu.co/academia/apoyo-administrativo/",
+          "capacity_realtime": false
+        }
+      },
+      "status": "PUBLISHED",
+      "offered_state": "OFFERED",
+      "eligibility_state": "ELIGIBLE",
+      "eligibility_reasons": [],
+      "schedulable_state": "NOT_EVALUATED",
+      "sections": [
+        {
+          "id": "00000000-0000-4000-8000-000000000421",
+          "group_code": "1",
+          "modality": "IN_PERSON",
+          "capacity": {
+            "capacity": null,
+            "enrolled_count": null,
+            "state": "UNKNOWN",
+            "note": "No se afirma cupo disponible en tiempo real."
+          },
+          "meetings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000431",
+              "day_of_week": 0,
+              "starts_at": "08:00:00",
+              "ends_at": "10:00:00",
+              "starts_on": null,
+              "ends_on": null,
+              "session_code": "",
+              "is_alternate": false,
+              "location": "Aula 101",
+              "timezone": "America/Bogota"
+            }
+          ],
+          "schedulable_state": "NOT_EVALUATED"
+        }
+      ],
+      "source": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "retrieved_at": "2026-08-15T12:00:00Z",
+        "freshness": "FRESH",
+        "age_seconds": 86400,
+        "max_age_seconds": 86400,
+        "source_name": "UNAL SIA Bogotá — Buscador de cursos público",
+        "source_url": "https://siabog.unal.edu.co/academia/apoyo-administrativo/",
+        "capacity_realtime": false
+      },
+      "href": "/offerings?term=2026-2S&course=2016377"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000403",
+      "course_version_id": "00000000-0000-4000-8000-000000000412",
+      "course_code": "2016379",
+      "course_name": "Inferencia estadística",
+      "credits": 4,
+      "term": {
+        "id": "00000000-0000-4000-8000-000000000401",
+        "code": "2026-2S",
+        "institution_id": "00000000-0000-4000-8000-000000000001",
+        "campus_code": "BOG",
+        "campus_name": "Bogotá",
+        "starts_at": "2026-08-03T00:00:00Z",
+        "ends_at": "2027-01-31T23:59:59Z",
+        "status": "OPEN",
+        "source": {
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "retrieved_at": "2026-08-15T12:00:00Z",
+          "freshness": "FRESH",
+          "age_seconds": 86400,
+          "max_age_seconds": 86400,
+          "source_name": "UNAL SIA Bogotá — Buscador de cursos público",
+          "source_url": "https://siabog.unal.edu.co/academia/apoyo-administrativo/",
+          "capacity_realtime": false
+        }
+      },
+      "status": "PUBLISHED",
+      "offered_state": "OFFERED",
+      "eligibility_state": "BLOCKED",
+      "eligibility_reasons": [
+        {"code": "PREREQUISITE", "note": "Falta un prerrequisito verificable."}
+      ],
+      "schedulable_state": "NOT_EVALUATED",
+      "sections": [
+        {
+          "id": "00000000-0000-4000-8000-000000000422",
+          "group_code": "1",
+          "modality": "IN_PERSON",
+          "capacity": {
+            "capacity": null,
+            "enrolled_count": null,
+            "state": "UNKNOWN",
+            "note": "No se afirma cupo disponible en tiempo real."
+          },
+          "meetings": [
+            {
+              "id": "00000000-0000-4000-8000-000000000432",
+              "day_of_week": 0,
+              "starts_at": "09:00:00",
+              "ends_at": "11:00:00",
+              "starts_on": null,
+              "ends_on": null,
+              "session_code": "",
+              "is_alternate": false,
+              "location": "Aula 202",
+              "timezone": "America/Bogota"
+            }
+          ],
+          "schedulable_state": "NOT_EVALUATED"
+        }
+      ],
+      "source": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "retrieved_at": "2026-08-15T12:00:00Z",
+        "freshness": "FRESH",
+        "age_seconds": 86400,
+        "max_age_seconds": 86400,
+        "source_name": "UNAL SIA Bogotá — Buscador de cursos público",
+        "source_url": "https://siabog.unal.edu.co/academia/apoyo-administrativo/",
+        "capacity_realtime": false
+      },
+      "href": "/offerings?term=2026-2S&course=2016379"
+    }
+  ],
+  "selected_term_code": "2026-2S",
+  "enrollment_id": null,
+  "warnings": ["ELIGIBILITY_NOT_ASSESSED", "CAPACITY_NOT_REAL_TIME"]
+}

@@ -1,0 +1,242 @@
+{
+  "state": "INCOMPLETE",
+  "enrollment": {
+    "id": "00000000-0000-4000-8000-000000000251",
+    "student_name": "Estudiante Fixture",
+    "student_number": "F-2514",
+    "program_code": "2514",
+    "program_name": "Estadística",
+    "plan_code": "2514",
+    "plan_title": "Plan de estudios de Estadística",
+    "revision_code": "2023-PUBLISHED",
+    "revision_hash": "revision-hash-2514",
+    "status": "ACTIVE"
+  },
+  "audit": {
+    "metadata": {
+      "run_id": "00000000-0000-4000-8000-000000000252",
+      "generated_at": "2026-08-16T10:00:00Z",
+      "engine_version": "degree-audit/1.0.0",
+      "result_hash": "result-hash-2514",
+      "input_fingerprint": "input-hash-2514",
+      "revision_hash": "revision-hash-2514",
+      "source": "PERSISTED"
+    },
+    "overall": {
+      "status": "UNKNOWN",
+      "required_credits": 141,
+      "earned_credits": 8,
+      "applied_credits": 7,
+      "unapplied_credits": 1,
+      "credit_progress_percent": 4
+    },
+    "ledger": {
+      "allocations": [
+        {
+          "course_code": "1000001",
+          "attempt_id": "attempt-1",
+          "group_code": "FOUNDATION",
+          "earned_credits": 8,
+          "applied_credits": 7,
+          "unapplied_credits": 1,
+          "requirement_code": "GROUP:FOUNDATION",
+          "explanation_key": "audit.credit_applied"
+        }
+      ],
+      "total_earned_credits": 8,
+      "total_applied_credits": 7,
+      "total_unapplied_credits": 1,
+      "group_applied_credits": {"FOUNDATION": 7},
+      "unknowns": [],
+      "warnings": ["unapplied_credits_present"]
+    }
+  },
+  "components": [
+    {
+      "code": "FOUNDATION",
+      "label": "Fundamentación",
+      "required_credits": 32,
+      "applied_credits": 7,
+      "remaining_credits": 25,
+      "progress_percent": 21,
+      "status": "UNSATISFIED",
+      "explanation_key": "audit.component_incomplete",
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&component=FOUNDATION"
+    }
+  ],
+  "groups": [
+    {
+      "code": "FOUNDATION",
+      "label": "Fundamentación",
+      "component": "FOUNDATION",
+      "required_credits": 32,
+      "applied_credits": 7,
+      "remaining_credits": 25,
+      "mandatory_missing": [
+        {"code": "1000002", "name": "Cálculo diferencial", "credits": 4, "href": "/curriculum?selected=1000002"}
+      ],
+      "options_available": [
+        {"code": "1000003", "name": "Álgebra lineal", "credits": 4, "href": "/curriculum?selected=1000003"}
+      ],
+      "status": "UNSATISFIED",
+      "explanation_key": "audit.group_incomplete",
+      "waived": false,
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&group=FOUNDATION"
+    }
+  ],
+  "graduation_requirements": [
+    {
+      "code": "GRADUATION:FOREIGN_LANGUAGE_B1",
+      "purpose": "GRADUATION",
+      "status": "UNKNOWN",
+      "progress": {"current": 0, "required": 1, "unit": "boolean"},
+      "explanation_key": "rule.external_requirement_unknown",
+      "facts_used": [],
+      "evidence_refs": ["fixture-source-hash#page:6"],
+      "evidence": [
+        {
+          "reference": "fixture-source-hash#page:6",
+          "snapshot_sha256": "fixture-source-hash",
+          "locator": "page:6",
+          "page": 6,
+          "section": "Requisitos de grado",
+          "excerpt": "La suficiencia en lengua extranjera se acredita por separado.",
+          "annotation": "Fixture de evidencia archivada.",
+          "source_title": "Reglamento de prueba fixture",
+          "source_url": "https://example.test/foreign-language"
+        }
+      ],
+      "epistemic_status": "VERIFIED",
+      "note": "Este requisito no suma créditos al total del plan.",
+      "source_url": "https://example.test/foreign-language",
+      "owner_course_code": null,
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&requirement=GRADUATION%3AFOREIGN_LANGUAGE_B1"
+    }
+  ],
+  "external_graduation_requirements": [
+    {
+      "code": "GRADUATION:FOREIGN_LANGUAGE_B1",
+      "purpose": "GRADUATION",
+      "status": "UNKNOWN",
+      "progress": {"current": 0, "required": 1, "unit": "boolean"},
+      "explanation_key": "rule.external_requirement_unknown",
+      "facts_used": [],
+      "evidence_refs": ["fixture-source-hash#page:6"],
+      "evidence": [
+        {
+          "reference": "fixture-source-hash#page:6",
+          "snapshot_sha256": "fixture-source-hash",
+          "locator": "page:6",
+          "page": 6,
+          "section": "Requisitos de grado",
+          "excerpt": "La suficiencia en lengua extranjera se acredita por separado.",
+          "annotation": "Fixture de evidencia archivada.",
+          "source_title": "Reglamento de prueba fixture",
+          "source_url": "https://example.test/foreign-language"
+        }
+      ],
+      "epistemic_status": "VERIFIED",
+      "note": "Este requisito no suma créditos al total del plan.",
+      "source_url": "https://example.test/foreign-language",
+      "owner_course_code": null,
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&requirement=GRADUATION%3AFOREIGN_LANGUAGE_B1"
+    }
+  ],
+  "requirements": [],
+  "mandatory_missing": [
+    {"code": "1000002", "name": "Cálculo diferencial", "credits": 4, "href": "/curriculum?selected=1000002"}
+  ],
+  "unknowns": [
+    {
+      "kind": "requirement",
+      "code": "GRADUATION:FOREIGN_LANGUAGE_B1",
+      "detail": "La evidencia externa no permite determinar todavía el cumplimiento individual.",
+      "material": true,
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&requirement=GRADUATION%3AFOREIGN_LANGUAGE_B1"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "material_unknowns_present",
+      "severity": "WARNING",
+      "title": "Material Unknowns Present",
+      "detail": "Hay requisitos o hechos no verificables; el estado no se presenta como completo.",
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&warning=material_unknowns_present"
+    },
+    {
+      "code": "unapplied_credits_present",
+      "severity": "WARNING",
+      "title": "Unapplied Credits Present",
+      "detail": "Un crédito aprobado no se reasigna automáticamente a otra agrupación.",
+      "href": "/audit?enrollment=00000000-0000-4000-8000-000000000251&warning=unapplied_credits_present"
+    }
+  ],
+  "eligible_courses": [
+    {
+      "code": "1000003",
+      "name": "Álgebra lineal",
+      "credits": 4,
+      "href": "/curriculum?selected=1000003",
+      "eligibility": "ELIGIBLE",
+      "group_codes": ["FOUNDATION"],
+      "reasons": [],
+      "selected_attempt_id": null
+    }
+  ],
+  "blocked_courses": [
+    {
+      "code": "2000001",
+      "name": "Inferencia estadística",
+      "credits": 4,
+      "href": "/curriculum?selected=2000001",
+      "eligibility": "BLOCKED",
+      "group_codes": ["DISCIPLINARY"],
+      "reasons": [
+        {
+          "code": "PREREQ:2000001",
+          "purpose": "ENROLLMENT_PREREQUISITE",
+          "status": "UNSATISFIED",
+          "progress": {"current": 0, "required": 1, "unit": "boolean"},
+          "explanation_key": "rule.course_passed",
+          "facts_used": ["2010001"],
+          "evidence_refs": [],
+          "evidence": [],
+          "epistemic_status": "VERIFIED",
+          "note": "Requiere aprobar 2010001.",
+          "source_url": null
+        }
+      ],
+      "selected_attempt_id": null
+    }
+  ],
+  "unknown_courses": [],
+  "course_options": [],
+  "next_unlocks": [
+    {
+      "code": "1000003",
+      "name": "Álgebra lineal",
+      "credits": 4,
+      "href": "/curriculum?selected=1000003",
+      "status": "SATISFIED",
+      "reason": {
+        "code": "PREREQ:1000003",
+        "purpose": "ENROLLMENT_PREREQUISITE",
+        "status": "SATISFIED",
+        "progress": {"current": 1, "required": 1, "unit": "boolean"},
+        "explanation_key": "rule.course_passed",
+        "facts_used": ["1000001"],
+        "evidence_refs": [],
+        "evidence": [],
+        "epistemic_status": "VERIFIED",
+        "note": "",
+        "source_url": null
+      }
+    }
+  ],
+  "history": {"has_records": true, "attempt_count": 2, "passed_count": 1, "in_progress_count": 1, "recognition_count": 0},
+  "links": {
+    "self": "/audit?enrollment=00000000-0000-4000-8000-000000000251",
+    "history": "/history?enrollment=00000000-0000-4000-8000-000000000251",
+    "curriculum": "/curriculum?revision=00000000-0000-4000-8000-000000000253"
+  }
+}

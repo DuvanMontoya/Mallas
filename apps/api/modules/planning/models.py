@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import uuid
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
@@ -22,6 +25,8 @@ class PlanScenario(UUIDTimestampedModel):
         default=ScenarioStatus.ACTIVE.value,
     )
     version = models.PositiveIntegerField(default=1)
+    sharing_enabled = models.BooleanField(default=False)
+    share_token = models.UUIDField(default=None, unique=True, editable=False, null=True, blank=True)
     target_term = models.ForeignKey(
         "offerings.AcademicTerm",
         null=True,
@@ -52,6 +57,11 @@ class PlanScenario(UUIDTimestampedModel):
                 {"target_term": "Scenario target term must match the student institution."}
             )
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.sharing_enabled and self.share_token is None:
+            self.share_token = uuid.uuid4()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.enrollment} — {self.name}"
 
@@ -66,7 +76,15 @@ class PlannedCourse(UUIDTimestampedModel):
     term = models.ForeignKey(
         "offerings.AcademicTerm", on_delete=models.PROTECT, related_name="planned_courses"
     )
+    section = models.ForeignKey(
+        "offerings.Section",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="planned_courses",
+    )
     priority = models.PositiveIntegerField(default=0)
+    is_locked = models.BooleanField(default=False)
     source = models.CharField(
         max_length=16,
         choices=enum_choices(ScenarioCourseSource),
@@ -96,6 +114,20 @@ class PlannedCourse(UUIDTimestampedModel):
             and self.term.institution_id != self.scenario.enrollment.student.institution_id
         ):
             raise ValidationError("Planned course term and scenario institution must match.")
+        if (
+            self.course_version_id
+            and self.scenario_id
+            and self.course_version.course.institution_id
+            != self.scenario.enrollment.student.institution_id
+        ):
+            raise ValidationError("Planned course and scenario institution must match.")
+        if self.section_id:
+            if self.section.offering.term_id != self.term_id:
+                raise ValidationError({"section": "Section must belong to the planned term."})
+            if self.section.offering.course_version_id != self.course_version_id:
+                raise ValidationError(
+                    {"section": "Section must belong to the planned course version."}
+                )
 
     def __str__(self) -> str:
         return f"{self.scenario.name} — {self.course_version.course.code} — {self.term.code}"
@@ -123,3 +155,31 @@ class PlanningPreference(UUIDTimestampedModel):
     def clean(self) -> None:
         if self.min_credits_per_term > self.max_credits_per_term:
             raise ValidationError("Minimum credits cannot exceed maximum credits.")
+        if not isinstance(self.unavailable_weekdays, list) or any(
+            isinstance(day, bool) or not isinstance(day, int) or day not in range(7)
+            for day in self.unavailable_weekdays
+        ):
+            raise ValidationError(
+                {"unavailable_weekdays": "Weekdays must be integers from 0 to 6."}
+            )
+
+
+class ScenarioAuditProjection(UUIDTimestampedModel):
+    """Projected audit for a scenario; it never becomes an official audit run."""
+
+    scenario = models.OneToOneField(
+        PlanScenario, on_delete=models.PROTECT, related_name="audit_projection"
+    )
+    input_fingerprint = models.CharField(max_length=128)
+    revision_hash = models.CharField(max_length=128, blank=True)
+    engine_version = models.CharField(max_length=80)
+    result_hash = models.CharField(max_length=128)
+    generated_at = models.DateTimeField()
+    payload = models.JSONField(default=dict)
+    unknown_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["result_hash"], name="scenario_projection_hash_idx"),
+            models.Index(fields=["generated_at"], name="scenario_projection_time_idx"),
+        ]

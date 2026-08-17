@@ -30,9 +30,16 @@ from modules.curriculum.models import (
     PlanMembership,
     RequirementGroup,
 )
-from modules.governance.models import ChangeProposal, Evidence, NormativeDocument, SourceSnapshot
+from modules.governance.models import (
+    ChangeProposal,
+    Evidence,
+    ExtractionCandidate,
+    NormativeDocument,
+    SourceSnapshot,
+)
 from modules.imports.models import ImportBatch
 from modules.institutions.models import Campus, Faculty, Institution, Program
+from modules.observability.metrics import measure_job_timing
 from modules.rules.models import Requirement
 
 from .baseline import (
@@ -274,6 +281,87 @@ def _proposal_payload(revision: CurriculumRevision) -> dict[str, Any]:
     return source_payload if isinstance(source_payload, dict) else {}
 
 
+def _sync_extraction_candidates(
+    *, proposal: ChangeProposal, snapshot: SourceSnapshot, semantic: dict[str, Any]
+) -> None:
+    """Materialize the semantic diff as reviewable, idempotent candidates."""
+
+    added = semantic.get("added", {})
+    if isinstance(added, dict):
+        for entity in sorted(added):
+            rows = added[entity]
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                key = "/".join(
+                    str(row.get(field, ""))
+                    for field in {
+                        "courses": ("code",),
+                        "components": ("id",),
+                        "groups": ("id",),
+                        "memberships": ("course_code", "group"),
+                        "enrollment_requirements": ("owner_course_code", "purpose"),
+                        "graduation_requirements": ("id",),
+                        "known_ambiguities": ("course_code", "issue"),
+                    }.get(entity, ("id",))
+                )
+                ExtractionCandidate.objects.get_or_create(
+                    proposal=proposal,
+                    source_snapshot=snapshot,
+                    entity=entity,
+                    entity_key=key,
+                    operation="ADD",
+                    defaults={"after": row},
+                )
+
+    removed = semantic.get("removed", {})
+    if isinstance(removed, dict):
+        for entity in sorted(removed):
+            rows = removed[entity]
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                key = "/".join(
+                    str(row.get(field, ""))
+                    for field in {
+                        "courses": ("code",),
+                        "components": ("id",),
+                        "groups": ("id",),
+                        "memberships": ("course_code", "group"),
+                        "enrollment_requirements": ("owner_course_code", "purpose"),
+                        "graduation_requirements": ("id",),
+                        "known_ambiguities": ("course_code", "issue"),
+                    }.get(entity, ("id",))
+                )
+                ExtractionCandidate.objects.get_or_create(
+                    proposal=proposal,
+                    source_snapshot=snapshot,
+                    entity=entity,
+                    entity_key=key,
+                    operation="REMOVE",
+                    defaults={"before": row},
+                )
+
+    changed = semantic.get("changed", [])
+    if isinstance(changed, list):
+        for row in changed:
+            if not isinstance(row, dict):
+                continue
+            ExtractionCandidate.objects.get_or_create(
+                proposal=proposal,
+                source_snapshot=snapshot,
+                entity=str(row.get("entity", "unknown")),
+                entity_key=str(row.get("key", "")),
+                operation="CHANGE",
+                defaults={"before": row.get("before"), "after": row.get("after")},
+            )
+
+
+@measure_job_timing("curriculum_import")
 @transaction.atomic  # type: ignore[untyped-decorator]
 def import_curriculum_baseline(
     path: str | Path | None = DEFAULT_BASELINE,
@@ -587,6 +675,7 @@ def import_curriculum_baseline(
     if proposal.semantic_diff != semantic and proposal.status == ProposalStatus.DRAFT.value:
         proposal.semantic_diff = semantic
         proposal.save(update_fields=["semantic_diff", "updated_at"])
+    _sync_extraction_candidates(proposal=proposal, snapshot=snapshot, semantic=semantic)
 
     report = render_ingestion_report(
         document,

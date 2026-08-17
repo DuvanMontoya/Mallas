@@ -1,0 +1,113 @@
+services:
+  postgres:
+    image: postgres:18.0-alpine@sha256:48c8ad3a7284b82be4482a52076d47d879fd6fb084a1cbfccbd551f9331b0e40
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  migrate:
+    image: ${API_IMAGE:?API_IMAGE must be an immutable registry reference}
+    environment:
+      DJANGO_DEBUG: "false"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?CSRF_TRUSTED_ORIGINS is required}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
+      SECURE_PROXY_SSL_HEADER: "true"
+      TRUST_PROXY_HEADERS: "true"
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["migration"]
+
+  api:
+    image: ${API_IMAGE:?API_IMAGE must be an immutable registry reference}
+    environment:
+      DJANGO_DEBUG: "false"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
+      DATABASE_URL: ${RUNTIME_DATABASE_URL:?RUNTIME_DATABASE_URL is required}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?CSRF_TRUSTED_ORIGINS is required}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?PUBLIC_APP_URL is required}
+      PRIVATE_IMPORT_STORAGE_ROOT: /app/var/private-imports
+      SECURE_PROXY_SSL_HEADER: "true"
+      TRUST_PROXY_HEADERS: "true"
+      SECURE_SSL_REDIRECT: "false"
+      OBSERVABILITY_METRICS_TOKEN: ${OBSERVABILITY_METRICS_TOKEN:?OBSERVABILITY_METRICS_TOKEN is required}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    volumes:
+      - private_imports:/app/var/private-imports
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8000),2); s.close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: ${WEB_IMAGE:?WEB_IMAGE must be an immutable registry reference}
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: http://api:8000
+      NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL:?PUBLIC_APP_URL is required}
+    expose:
+      - "3000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  reverse-proxy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
+      TLS_EMAIL: ${TLS_EMAIL:?TLS_EMAIL is required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  private_imports:
+  caddy_data:
+  caddy_config:

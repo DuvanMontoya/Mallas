@@ -27,6 +27,13 @@ class AcademicTerm(UUIDTimestampedModel):
         choices=enum_choices(TermStatus),
         default=TermStatus.PLANNED.value,
     )
+    source_snapshot = models.ForeignKey(
+        "governance.SourceSnapshot",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="academic_terms",
+    )
 
     class Meta:
         ordering = ["-starts_at", "code"]
@@ -41,7 +48,8 @@ class AcademicTerm(UUIDTimestampedModel):
         indexes = [
             models.Index(
                 fields=["institution", "status", "starts_at"], name="term_inst_status_start_idx"
-            )
+            ),
+            models.Index(fields=["source_snapshot", "starts_at"], name="term_source_start_idx"),
         ]
 
     def clean(self) -> None:
@@ -90,6 +98,10 @@ class CourseOffering(UUIDTimestampedModel):
                     "Course and academic term must belong to the same institution."
                 )
 
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.course_version.course.code} — {self.term.code}"
 
@@ -103,7 +115,7 @@ class Section(UUIDTimestampedModel):
         default=SectionModality.UNKNOWN.value,
     )
     capacity = models.PositiveIntegerField(null=True, blank=True)
-    enrolled_count = models.PositiveIntegerField(default=0)
+    enrolled_count = models.PositiveIntegerField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -112,7 +124,9 @@ class Section(UUIDTimestampedModel):
                 fields=["offering", "group_code"], name="section_offering_group_unique"
             ),
             models.CheckConstraint(
-                condition=Q(capacity__isnull=True) | Q(enrolled_count__lte=F("capacity")),
+                condition=Q(capacity__isnull=True)
+                | Q(enrolled_count__isnull=True)
+                | Q(enrolled_count__lte=F("capacity")),
                 name="section_enrollment_within_capacity",
             ),
         ]
@@ -121,7 +135,11 @@ class Section(UUIDTimestampedModel):
         ]
 
     def clean(self) -> None:
-        if self.capacity is not None and self.enrolled_count > self.capacity:
+        if (
+            self.capacity is not None
+            and self.enrolled_count is not None
+            and self.enrolled_count > self.capacity
+        ):
             raise ValidationError({"enrolled_count": "Enrolled count cannot exceed capacity."})
 
     def __str__(self) -> str:
@@ -143,6 +161,10 @@ class Meeting(UUIDTimestampedModel):
     )
     starts_at = models.TimeField()
     ends_at = models.TimeField()
+    starts_on = models.DateField(null=True, blank=True)
+    ends_on = models.DateField(null=True, blank=True)
+    session_code = models.CharField(max_length=40, blank=True)
+    is_alternate = models.BooleanField(default=False)
     location = models.CharField(max_length=240, blank=True)
     timezone = models.CharField(max_length=64, default="America/Bogota")
 
@@ -150,6 +172,12 @@ class Meeting(UUIDTimestampedModel):
         constraints = [
             models.CheckConstraint(
                 condition=Q(ends_at__gt=F("starts_at")), name="meeting_time_range_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(ends_on__isnull=True)
+                | Q(starts_on__isnull=True)
+                | Q(ends_on__gte=F("starts_on")),
+                name="meeting_date_range_valid",
             ),
         ]
         indexes = [
@@ -161,6 +189,8 @@ class Meeting(UUIDTimestampedModel):
     def clean(self) -> None:
         if self.ends_at <= self.starts_at:
             raise ValidationError({"ends_at": "Meeting must end after it starts."})
+        if self.starts_on and self.ends_on and self.ends_on < self.starts_on:
+            raise ValidationError({"ends_on": "Meeting date range must not end before it starts."})
 
     def __str__(self) -> str:
         return f"{self.section} — day {self.day_of_week}"

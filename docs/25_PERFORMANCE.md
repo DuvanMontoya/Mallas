@@ -23,3 +23,14 @@ No optimizar con infraestructura prematura.
 ## Regression benchmarks
 
 Crear benchmarks del motor y consultas críticas; CI puede alertar en degradaciones grandes.
+
+## P21 — Baseline verificado
+
+El baseline ejecutable y las decisiones de P21 están en
+`docs/ops/PERFORMANCE_BASELINE.md` y `docs/adr/0025-performance-read-paths-and-job-bounds.md`.
+La auditoría redujo el caso válido del plan 2514 de 164 a 19 consultas al
+precargar evidencias, y la selección de enrollment dejó de sondear cinco
+estados con consultas separadas. No se introdujo una caché académica ni un
+índice sin evidencia de `EXPLAIN`. El frontend mantiene la carga diferida de
+React Flow/ELK y el optimizador tiene límites explícitos de tiempo, workers y
+jobs en vuelo.

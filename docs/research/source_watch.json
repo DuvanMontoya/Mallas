@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "policy": "observe_only_no_auto_publish",
+  "sources": [
+    {
+      "key": "unal-estadistica-plan",
+      "url": "https://ciencias.bogota.unal.edu.co/estudiar_en_la_facultad/pregrados/estadistica/plan_de_estudios/",
+      "allowed_hosts": ["ciencias.bogota.unal.edu.co"],
+      "max_age_days": 30
+    },
+    {
+      "key": "unal-estadistica-faq",
+      "url": "https://ciencias.bogota.unal.edu.co/areas_curriculares/estadistica/preguntas_frecuentes/",
+      "allowed_hosts": ["ciencias.bogota.unal.edu.co"],
+      "max_age_days": 90
+    },
+    {
+      "key": "unal-academic-calendar",
+      "url": "https://bogota.unal.edu.co/la-sede/calendario-academico",
+      "allowed_hosts": ["bogota.unal.edu.co"],
+      "max_age_days": 30
+    },
+    {
+      "key": "unal-english-requirement",
+      "url": "https://admisiones.unal.edu.co/otras-pruebas/prueba-de-ingles-pregrado/",
+      "allowed_hosts": ["admisiones.unal.edu.co"],
+      "max_age_days": 90
+    }
+  ]
+}

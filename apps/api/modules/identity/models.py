@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import connection, models
 from django.db.models import F, Q
 
 from domain.enums import UserRole, enum_choices
@@ -114,9 +114,35 @@ class RoleAssignment(UUIDTimestampedModel):
                 {"program": "The program must belong to the selected institution."}
             )
 
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         scope = self.program or self.institution or "global"
         return f"{self.user.email} — {self.role} — {scope}"
+
+
+class AuditEventQuerySet(models.QuerySet):
+    """Prevent ORM bulk APIs from bypassing the append-only model contract."""
+
+    def update(self, **kwargs: object) -> int:
+        if connection.vendor == "postgresql":
+            return super().update(**kwargs)
+        del kwargs
+        raise AuditEventImmutableError("Audit events are append-only.")
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        if connection.vendor == "postgresql":
+            return super().delete()
+        raise AuditEventImmutableError("Audit events cannot be deleted.")
+
+
+class AuditEventManager(models.Manager):
+    """Manager exposing only append-only query operations."""
+
+    def get_queryset(self) -> AuditEventQuerySet:
+        return AuditEventQuerySet(self.model, using=self._db)
 
 
 class AuditEvent(UUIDTimestampedModel):
@@ -142,6 +168,7 @@ class AuditEvent(UUIDTimestampedModel):
     request_id = models.CharField(max_length=80, blank=True)
     ip_hash = models.CharField(max_length=64, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    objects = AuditEventManager()
 
     class Meta:
         ordering = ["-created_at", "-id"]

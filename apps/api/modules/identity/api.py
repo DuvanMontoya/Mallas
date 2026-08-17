@@ -287,6 +287,14 @@ def password_reset_confirm(
 )
 def email_verification_request(request: HttpRequest) -> dict[str, str]:
     user: User = request.auth
+    if _rate_limited(request, str(user.pk), "email_verification_request"):
+        record_audit_event(
+            request,
+            action="AUTH_RATE_LIMITED",
+            actor=user,
+            metadata={"action": "email_verification_request"},
+        )
+        raise HttpError(429, "Too many authentication attempts.")
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = email_verification_token_generator.make_token(user)
     _send_link(
@@ -306,6 +314,16 @@ def email_verification_request(request: HttpRequest) -> dict[str, str]:
     response=with_problem_responses(MessageView),
 )
 def email_verification_confirm(request: HttpRequest, payload: TokenPayload) -> dict[str, str]:
+    if _rate_limited(request, payload.uid, "email_verification_confirm"):
+        record_audit_event(
+            request,
+            action="AUTH_RATE_LIMITED",
+            metadata={
+                "action": "email_verification_confirm",
+                "identifier_digest": digest_identifier(payload.uid),
+            },
+        )
+        raise HttpError(429, "Too many authentication attempts.")
     user = _decode_user(payload.uid)
     if not email_verification_token_generator.check_token(user, payload.token):
         raise HttpError(400, "Invalid or expired token.")

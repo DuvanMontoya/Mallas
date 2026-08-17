@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -11,6 +12,7 @@ from django.http import HttpRequest
 from modules.identity.models import AuditEvent
 
 _SENSITIVE_KEY_PARTS = ("password", "token", "secret", "authorization", "cookie", "email")
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 
 def digest_identifier(value: str) -> str:
@@ -71,7 +73,9 @@ def record_audit_event(
         if actor is not None
         else (request_user if getattr(request_user, "is_authenticated", False) else None)
     )
-    request_id = request.headers.get("X-Request-ID", "") if request is not None else ""
+    request_id = getattr(request, "correlation_id", "") if request is not None else ""
+    if not isinstance(request_id, str) or not _REQUEST_ID_PATTERN.fullmatch(request_id):
+        request_id = ""
     return AuditEvent.objects.create(
         actor=resolved_actor,
         action=action,

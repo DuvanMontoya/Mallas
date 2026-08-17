@@ -1,5 +1,18 @@
-import { ModuleLanding } from "@/components/module-landing";
+import { cookies } from "next/headers";
 
-export default function CurriculumPage() {
-  return <ModuleLanding eyebrow="Malla curricular" title="Explora el plan 2514" description="La malla se construye a partir de una revisión normativa versionada y evidencia visible." />;
+import { CurriculumMapPage } from "@/components/curriculum-map";
+import { getCurriculumMap } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
+
+export default async function CurriculumPage() {
+  let headers: HeadersInit | undefined;
+  try {
+    const cookieHeader = (await cookies()).toString();
+    headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
+  } catch {
+    headers = undefined;
+  }
+  const result = await getCurriculumMap({ headers });
+  return <CurriculumMapPage map={result.data} failureMessage={result.failure?.problem?.detail ?? undefined} />;
 }

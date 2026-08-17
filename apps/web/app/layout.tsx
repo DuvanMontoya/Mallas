@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { AppShell } from "@/components/app-shell";
+import { ObservabilityClient } from "@/components/observability-client";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSessionSnapshot } from "@/lib/api";
 import "./globals.css";
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="es-CO" suppressHydrationWarning>
       <body>
         <ThemeProvider>
+          <ObservabilityClient />
           <AppShell session={session}>{children}</AppShell>
         </ThemeProvider>
       </body>

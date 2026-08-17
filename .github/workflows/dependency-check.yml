@@ -1,0 +1,63 @@
+name: dependency-check
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/api/pyproject.toml"
+      - "apps/api/uv.lock"
+      - "package.json"
+      - "apps/web/package.json"
+      - "pnpm-lock.yaml"
+      - "renovate.json"
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.14"
+  NODE_VERSION: "24.19.0"
+  PNPM_VERSION: "11.21.0"
+  UV_VERSION: "0.11.19"
+
+jobs:
+  dependencies:
+    name: dependency-and-baseline-gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project apps/api --frozen
+      - name: Python advisories
+        shell: bash
+        run: |
+          uv export --project apps/api --frozen --no-dev --format requirements.txt --output-file /tmp/curriculum-requirements.txt
+          uvx --from pip-audit==2.9.0 pip-audit -r /tmp/curriculum-requirements.txt --strict
+      - name: JavaScript advisories
+        run: pnpm audit --prod --audit-level high
+      - name: Resolved baseline is reviewed
+        run: python scripts/update_technology_baseline.py --check
+      - name: State and documentation recovery
+        run: |
+          python scripts/verify_docs_clone_clean.py
+          python scripts/verify_state_recovery.py
+      - name: Frontend compatibility suite
+        run: |
+          pnpm --dir apps/web lint
+          pnpm --dir apps/web typecheck
+          pnpm --dir apps/web test

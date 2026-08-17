@@ -13,3 +13,25 @@ No es decisión de producto: se resuelve automáticamente verificando si 6.1 fin
 
 ## D-004 Integración SIA
 No asumir API ni scraping. Construir importadores propios y adaptador futuro. Cualquier integración autenticada requiere fuente/autorización.
+
+## D-005 Resolver versión estable de Next
+
+La revisión P91 observó `next@16.2.12` como canal `latest` y el proyecto
+actualmente resuelve 16.3.1. No se modifica el lockfile mientras el registry
+no sea accesible. En un runner con red, resolver la versión estable compatible,
+regenerar el lockfile y ejecutar lint, typecheck, tests, build y E2E antes de
+aceptar el cambio.
+
+## D-006 Evidencia normativa posterior a Acuerdo 496 de 2023
+
+La reauditoría P90 encontró referencias oficiales actuales al Acuerdo 496 de
+2023 y observaciones de la página vigente, pero no un snapshot normativo
+íntegro archivado que habilite mutar la revisión `PUBLISHED`. Mantener
+`UNKNOWN`/`INFERRED_PENDING_REVIEW` hasta obtener archivo y revisión humana.
+
+## D-007 Cierre de gates operativos
+
+No es una decisión de producto: P24–P26, P92 y P94 sólo pueden pasar a `done`
+cuando el runner tenga Docker/PostgreSQL, Python 3.14/Django, Node/pnpm y
+herramientas manuales accesibles. Los resultados históricos no sustituyen la
+ejecución posterior a los cambios.

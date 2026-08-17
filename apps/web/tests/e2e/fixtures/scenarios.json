@@ -1,0 +1,159 @@
+{
+  "items": [
+    {
+      "id": "00000000-0000-4000-8000-000000000501",
+      "enrollment_id": "00000000-0000-4000-8000-000000000254",
+      "name": "Ruta equilibrada",
+      "status": "ACTIVE",
+      "version": 3,
+      "target_term_id": "00000000-0000-4000-8000-000000000401",
+      "target_term_code": "2026-2S",
+      "sharing_enabled": false,
+      "share_token": null,
+      "created_at": "2026-08-15T12:00:00Z",
+      "updated_at": "2026-08-16T12:00:00Z",
+      "preferences": {
+        "id": "00000000-0000-4000-8000-000000000511",
+        "max_credits_per_term": 18,
+        "min_credits_per_term": 0,
+        "unavailable_weekdays": [],
+        "preferred_modalities": [],
+        "preferred_area_codes": [],
+        "objective_weights": {}
+      },
+      "planned_courses": [
+        {
+          "id": "00000000-0000-4000-8000-000000000521",
+          "course_version_id": "00000000-0000-4000-8000-000000000002",
+          "course_code": "1000003",
+          "course_name": "Álgebra lineal",
+          "credits": 4,
+          "term_id": "00000000-0000-4000-8000-000000000401",
+          "term_code": "2026-2S",
+          "section_id": null,
+          "section_group_code": null,
+          "priority": 0,
+          "source": "USER",
+          "notes": "",
+          "is_locked": false
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000522",
+          "course_version_id": "00000000-0000-4000-8000-000000000003",
+          "course_code": "2000001",
+          "course_name": "Modelos estadísticos",
+          "credits": 4,
+          "term_id": "00000000-0000-4000-8000-000000000402",
+          "term_code": "2027-1S",
+          "section_id": null,
+          "section_group_code": null,
+          "priority": 0,
+          "source": "USER",
+          "notes": "",
+          "is_locked": false
+        }
+      ],
+      "validation": {
+        "state": "WARNINGS",
+        "courses": [
+          {
+            "planned_course_id": "00000000-0000-4000-8000-000000000521",
+            "course_code": "1000003",
+            "term_code": "2026-2S",
+            "prerequisite_state": "SATISFIED",
+            "offering_state": "UNKNOWN",
+            "reasons": []
+          },
+          {
+            "planned_course_id": "00000000-0000-4000-8000-000000000522",
+            "course_code": "2000001",
+            "term_code": "2027-1S",
+            "prerequisite_state": "SATISFIED",
+            "offering_state": "UNKNOWN",
+            "reasons": []
+          }
+        ],
+        "warnings": [
+          {
+            "code": "OFFERING_UNKNOWN",
+            "detail": "La oferta del próximo período todavía no tiene evidencia suficiente.",
+            "severity": "WARNING",
+            "course_code": "2000001",
+            "term_code": "2027-1S"
+          }
+        ]
+      },
+      "audit_projection": {
+        "id": "00000000-0000-4000-8000-000000000531",
+        "input_fingerprint": "projection-fixture-input",
+        "revision_hash": "map-fixture-hash-2514",
+        "engine_version": "degree-audit/1.0.0",
+        "result_hash": "projection-fixture-result",
+        "generated_at": "2026-08-16T12:00:00Z",
+        "unknown_count": 1,
+        "payload": {
+          "projection": true,
+          "status": "UNKNOWN",
+          "unknowns": ["OFFERING_UNKNOWN"]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000502",
+      "enrollment_id": "00000000-0000-4000-8000-000000000254",
+      "name": "Ruta intensiva",
+      "status": "ACTIVE",
+      "version": 1,
+      "target_term_id": "00000000-0000-4000-8000-000000000402",
+      "target_term_code": "2027-1S",
+      "sharing_enabled": false,
+      "share_token": null,
+      "created_at": "2026-08-15T12:00:00Z",
+      "updated_at": "2026-08-15T12:00:00Z",
+      "preferences": {
+        "id": "00000000-0000-4000-8000-000000000512",
+        "max_credits_per_term": 18,
+        "min_credits_per_term": 0,
+        "unavailable_weekdays": [],
+        "preferred_modalities": [],
+        "preferred_area_codes": [],
+        "objective_weights": {}
+      },
+      "planned_courses": [
+        {
+          "id": "00000000-0000-4000-8000-000000000523",
+          "course_version_id": "00000000-0000-4000-8000-000000000003",
+          "course_code": "2000001",
+          "course_name": "Modelos estadísticos",
+          "credits": 4,
+          "term_id": "00000000-0000-4000-8000-000000000401",
+          "term_code": "2026-2S",
+          "section_id": null,
+          "section_group_code": null,
+          "priority": 0,
+          "source": "USER",
+          "notes": "",
+          "is_locked": false
+        }
+      ],
+      "validation": {
+        "state": "WARNINGS",
+        "courses": [],
+        "warnings": []
+      },
+      "audit_projection": {
+        "id": "00000000-0000-4000-8000-000000000532",
+        "input_fingerprint": "projection-fixture-input-2",
+        "revision_hash": "map-fixture-hash-2514",
+        "engine_version": "degree-audit/1.0.0",
+        "result_hash": "projection-fixture-result-2",
+        "generated_at": "2026-08-15T12:00:00Z",
+        "unknown_count": 0,
+        "payload": {
+          "projection": true,
+          "status": "INCOMPLETE"
+        }
+      }
+    }
+  ]
+}

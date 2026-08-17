@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -10,7 +12,16 @@ from django.conf import settings
 
 MAX_ARTIFACT_BYTES = 10 * 1024 * 1024
 ALLOWED_EXTENSIONS = {"csv", "json", "pdf"}
-_EXECUTABLE_SIGNATURES = (b"MZ", b"\x7fELF", b"PK\x03\x04")
+_EXECUTABLE_SIGNATURES = (
+    b"MZ",
+    b"\x7fELF",
+    b"PK\x03\x04",
+    b"#!",
+    b"\xca\xfe\xba\xbe",
+    b"\xce\xfa\xed\xfe",
+    b"\xfe\xed\xfa\xce",
+)
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class ArtifactValidationError(ValueError):
@@ -98,6 +109,11 @@ def private_storage_root() -> Path:
 
 def _artifact_path(*, batch_id: UUID | str, content_sha256: str) -> Path:
     root = private_storage_root()
+    if not _SHA256_PATTERN.fullmatch(content_sha256.lower()):
+        raise ArtifactValidationError("Invalid artifact content hash")
+    batch_text = str(batch_id)
+    if not batch_text or any(separator in batch_text for separator in ("/", "\\")):
+        raise ArtifactValidationError("Invalid artifact batch path")
     path = (root / "imports" / str(batch_id) / f"{content_sha256}.bin").resolve()
     if not path.is_relative_to(root):
         raise ArtifactValidationError("Invalid artifact storage path")
@@ -106,22 +122,31 @@ def _artifact_path(*, batch_id: UUID | str, content_sha256: str) -> Path:
 
 def store_artifact(*, batch_id: UUID | str, content_sha256: str, content: bytes) -> str:
     path = _artifact_path(batch_id=batch_id, content_sha256=content_sha256)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
+    root = private_storage_root()
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    try:
+        file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        file_flags |= getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, file_flags, 0o600)
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(content)
+    except FileExistsError:
         existing = path.read_bytes()
         if existing != content:
-            raise ArtifactValidationError("Artifact storage collision detected")
-        return str(path.relative_to(private_storage_root())).replace("\\", "/")
-    with path.open("xb") as stream:
-        stream.write(content)
+            raise ArtifactValidationError("Artifact storage collision detected") from None
     return str(path.relative_to(private_storage_root())).replace("\\", "/")
 
 
 def read_artifact(storage_key: str) -> bytes:
+    if not storage_key or "\x00" in storage_key:
+        raise ArtifactValidationError("Invalid artifact storage path")
     root = private_storage_root()
     path = (root / storage_key).resolve()
     if not path.is_relative_to(root):
         raise ArtifactValidationError("Invalid artifact storage path")
+    if path.is_symlink() or not path.is_file():
+        raise ArtifactValidationError("Artifact storage path is not a regular file")
     return path.read_bytes()
 
 

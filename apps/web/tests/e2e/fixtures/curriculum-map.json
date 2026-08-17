@@ -1,0 +1,134 @@
+{
+  "revision": {
+    "id": "00000000-0000-4000-8000-000000000251",
+    "plan_code": "2514",
+    "plan_title": "Plan de Estadística",
+    "revision_code": "2514-AC496-2023",
+    "status": "DRAFT",
+    "effective_from": "2023-05-09",
+    "content_hash": "map-fixture-hash-2514",
+    "total_required_credits": 141,
+    "institution_name": "Universidad Nacional de Colombia",
+    "campus_name": "Bogotá",
+    "program_code": "2514",
+    "program_name": "Estadística",
+    "normative": false,
+    "source_note": "Dataset de arranque para revisión humana; no representa una publicación interna."
+  },
+  "layout_policy": {
+    "schema_version": "1.0.0",
+    "normative": false,
+    "policy": "No se rotula una posición visual como semestre oficial.",
+    "available_layouts": [
+      {"id": "dependency-depth", "label": "Nivel de dependencias", "description": "Columnas derivadas de profundidad; no son semestres.", "official": false},
+      {"id": "suggested-path", "label": "Ruta sugerida", "description": "Se habilita cuando existe una ruta de planificación explicable.", "official": false},
+      {"id": "user-scenario", "label": "Escenario personal", "description": "Se habilita cuando existe un escenario del estudiante.", "official": false},
+      {"id": "component-lanes", "label": "Componentes y agrupaciones", "description": "Carriles por componente y agrupación.", "official": false}
+    ]
+  },
+  "components": [
+    {"code": "FOUNDATION", "label": "Fundamentación", "required_credits": 52, "group_codes": ["FOUNDATION_MATH"], "href": "/curriculum?component=FOUNDATION"},
+    {"code": "DISCIPLINARY", "label": "Formación disciplinar", "required_credits": 61, "group_codes": ["STAT_CORE"], "href": "/curriculum?component=DISCIPLINARY"}
+  ],
+  "groups": [
+    {"code": "FOUNDATION_MATH", "label": "Fundamentación matemática", "component": "FOUNDATION", "required_credits": 36, "kind": "GROUP", "href": "/curriculum?group=FOUNDATION_MATH"},
+    {"code": "STAT_CORE", "label": "Núcleo estadístico", "component": "DISCIPLINARY", "required_credits": 36, "kind": "GROUP", "href": "/curriculum?group=STAT_CORE"}
+  ],
+  "courses": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "code": "1000002",
+      "name": "Cálculo diferencial",
+      "credits": 4,
+      "personal_status": "PASSED",
+      "status_reason": "",
+      "component_codes": ["FOUNDATION"],
+      "group_codes": ["FOUNDATION_MATH"],
+      "group_labels": ["Fundamentación matemática"],
+      "membership_roles": ["MANDATORY"],
+      "dependency_depth": 0,
+      "dependency_depth_label": "Nivel de dependencias 0",
+      "dependencies": [],
+      "unlocks_directly": ["1000003"],
+      "requirements": [],
+      "offering_state": "UNKNOWN",
+      "offerings": [],
+      "source_evidence": [],
+      "href": "/curriculum?selected=1000002"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "code": "1000003",
+      "name": "Álgebra lineal",
+      "credits": 4,
+      "personal_status": "ELIGIBLE",
+      "status_reason": "rule.course_passed",
+      "component_codes": ["FOUNDATION"],
+      "group_codes": ["FOUNDATION_MATH"],
+      "group_labels": ["Fundamentación matemática"],
+      "membership_roles": ["MANDATORY"],
+      "dependency_depth": 1,
+      "dependency_depth_label": "Nivel de dependencias 1",
+      "dependencies": ["1000002"],
+      "unlocks_directly": ["2000001"],
+      "requirements": [
+        {
+          "code": "CURRICULUM:ENROLLMENT_PREREQUISITE:1000003",
+          "purpose": "ENROLLMENT_PREREQUISITE",
+          "status": "SATISFIED",
+          "epistemic_status": "VERIFIED",
+          "explanation_key": "rule.course_passed",
+          "ast": {"type": "COURSE_PASSED", "course_code": "1000002"},
+          "dependencies": ["1000002"],
+          "evidence": [],
+          "note": "Debe aprobarse Cálculo diferencial.",
+          "source_url": null,
+          "href": "/curriculum?selected=1000003"
+        }
+      ],
+      "offering_state": "UNKNOWN",
+      "offerings": [],
+      "source_evidence": [],
+      "href": "/curriculum?selected=1000003"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "code": "2000001",
+      "name": "Modelos estadísticos",
+      "credits": 4,
+      "personal_status": "BLOCKED",
+      "status_reason": "rule.course_passed",
+      "component_codes": ["DISCIPLINARY"],
+      "group_codes": ["STAT_CORE"],
+      "group_labels": ["Núcleo estadístico"],
+      "membership_roles": ["MANDATORY"],
+      "dependency_depth": 2,
+      "dependency_depth_label": "Nivel de dependencias 2",
+      "dependencies": ["1000003"],
+      "unlocks_directly": [],
+      "requirements": [
+        {
+          "code": "CURRICULUM:ENROLLMENT_PREREQUISITE:2000001",
+          "purpose": "ENROLLMENT_PREREQUISITE",
+          "status": "UNSATISFIED",
+          "epistemic_status": "VERIFIED",
+          "explanation_key": "rule.course_passed",
+          "ast": {"type": "COURSE_PASSED", "course_code": "1000003"},
+          "dependencies": ["1000003"],
+          "evidence": [{"reference": "fixture#page:5", "snapshot_sha256": "fixture", "locator": "page:5", "page": 5, "section": "Requisitos", "excerpt": "Debe aprobar Álgebra lineal.", "annotation": "Fixture de prueba", "source_title": "Acuerdo fixture", "source_url": null}],
+          "note": "Debe aprobarse Álgebra lineal.",
+          "source_url": null,
+          "href": "/curriculum?selected=2000001"
+        }
+      ],
+      "offering_state": "UNKNOWN",
+      "offerings": [],
+      "source_evidence": [],
+      "href": "/curriculum?selected=2000001"
+    }
+  ],
+  "offering_context": {"term_code": null, "term_known": false, "note": "Selecciona un período académico para consultar oferta."},
+  "personal": {"available": true, "enrollment_id": "00000000-0000-4000-8000-000000000254", "state": "INCOMPLETE", "note": "Los estados provienen de la auditoría del backend."},
+  "warnings": ["CURRICULUM_REVISION_NOT_PUBLISHED", "LAYOUTS_ARE_NOT_NORMATIVE", "OFFERING_PERIOD_NOT_SELECTED"],
+  "links": {"self": "/curriculum?revision=00000000-0000-4000-8000-000000000251", "print": "/curriculum/print?revision=00000000-0000-4000-8000-000000000251", "sources": "/sources?revision=00000000-0000-4000-8000-000000000251"}
+}

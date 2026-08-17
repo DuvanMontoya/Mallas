@@ -9,6 +9,22 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent.parent
 
+
+def _load_env_file(path: Path) -> None:
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("'\"")
+        os.environ.setdefault(key, value)
+
+
+_load_env_file(PROJECT_ROOT / ".env")
+
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in {"1", "true", "yes"}
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
@@ -26,7 +42,10 @@ ALLOWED_HOSTS = [
 ]
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    for origin in os.environ.get(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000" if DEBUG else "",
+    ).split(",")
     if origin.strip()
 ]
 CORS_ALLOWED_ORIGINS = [
@@ -60,11 +79,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "modules.identity.middleware.OriginAndSecurityMiddleware",
+    "modules.observability.middleware.ObservabilityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "modules.identity.middleware.PrivilegedMfaSessionMiddleware",
     "modules.identity.middleware.PasswordChangeSessionMiddleware",
+    "modules.identity.middleware.MutationRateLimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -168,6 +190,13 @@ PUBLIC_APP_URL = os.environ.get(
     "PUBLIC_APP_URL", os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
 )
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@curriculum.local")
+NOTIFICATIONS_EMAIL_ENABLED = os.environ.get("NOTIFICATIONS_EMAIL_ENABLED", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+ANALYTICS_MIN_CELL_SIZE = int(os.environ.get("ANALYTICS_MIN_CELL_SIZE", "5"))
+ANALYTICS_PSEUDONYMIZATION_KEY = os.environ.get("ANALYTICS_PSEUDONYMIZATION_KEY", SECRET_KEY)
 PRIVATE_IMPORT_STORAGE_ROOT = os.environ.get(
     "PRIVATE_IMPORT_STORAGE_ROOT", str(PROJECT_ROOT / "var" / "private-imports")
 )
@@ -177,6 +206,33 @@ EMAIL_VERIFICATION_REQUIRED = os.environ.get(
 AUTH_RATE_LIMIT_PER_MINUTE = int(os.environ.get("AUTH_RATE_LIMIT_PER_MINUTE", "5"))
 AUTH_RATE_LIMIT_IP_PER_MINUTE = int(os.environ.get("AUTH_RATE_LIMIT_IP_PER_MINUTE", "30"))
 PASSWORD_RESET_TIMEOUT = int(os.environ.get("PASSWORD_RESET_TIMEOUT", str(60 * 60)))
+API_MUTATION_RATE_LIMIT_PER_MINUTE = int(
+    os.environ.get("API_MUTATION_RATE_LIMIT_PER_MINUTE", "120")
+)
+API_UPLOAD_RATE_LIMIT_PER_MINUTE = int(os.environ.get("API_UPLOAD_RATE_LIMIT_PER_MINUTE", "10"))
+API_GOVERNANCE_RATE_LIMIT_PER_MINUTE = int(
+    os.environ.get("API_GOVERNANCE_RATE_LIMIT_PER_MINUTE", "60")
+)
+PRIVILEGED_MFA_REQUIRED = os.environ.get(
+    "PRIVILEGED_MFA_REQUIRED", "false" if DEBUG else "true"
+).lower() in {"1", "true", "yes"}
+PRIVILEGED_MFA_SESSION_KEY = os.environ.get(
+    "PRIVILEGED_MFA_SESSION_KEY", "privileged_mfa_verified_at"
+)
+
+SOURCE_FETCH_ALLOWED_HOSTS = os.environ.get("SOURCE_FETCH_ALLOWED_HOSTS", "")
+SOURCE_FETCH_ALLOWED_SCHEMES = os.environ.get("SOURCE_FETCH_ALLOWED_SCHEMES", "https")
+SOURCE_FETCH_MAX_BYTES = int(os.environ.get("SOURCE_FETCH_MAX_BYTES", str(25 * 1024 * 1024)))
+SOURCE_FETCH_MAX_REDIRECTS = int(os.environ.get("SOURCE_FETCH_MAX_REDIRECTS", "3"))
+SOURCE_FETCH_TIMEOUT_SECONDS = float(os.environ.get("SOURCE_FETCH_TIMEOUT_SECONDS", "10"))
+
+OTEL_SERVICE_NAME = os.environ.get("OTEL_SERVICE_NAME", "curriculum-navigator-api")
+OTEL_TRACE_CAPTURE = os.environ.get("OTEL_TRACE_CAPTURE", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+OBSERVABILITY_METRICS_TOKEN = os.environ.get("OBSERVABILITY_METRICS_TOKEN", "")
 
 API_TITLE = "Curriculum Navigator API"
 API_VERSION = "1.0.0"
@@ -188,7 +244,11 @@ API_PROBLEM_BASE_URL = os.environ.get(
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {"simple": {"format": "{levelname} {asctime} {name} {message}", "style": "{"}},
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
+    "formatters": {
+        "json": {
+            "()": "modules.observability.logging.JsonFormatter",
+        }
+    },
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "json"}},
     "root": {"handlers": ["console"], "level": "INFO"},
 }

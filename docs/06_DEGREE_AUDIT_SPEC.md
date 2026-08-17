@@ -100,3 +100,10 @@ La cobertura ejecutable está en `tests/test_degree_audit.py`,
 2514, no doble conteo, curso de 4/3 créditos, plan completo, requisito externo
 desconocido, homologación, excepción, hash reproducible, Hypothesis y
 persistencia PostgreSQL.
+
+Una publicación curricular posterior no reescribe estos resultados. La
+matrícula conserva su `revision_basis`; el impacto guarda el identificador de
+la auditoría previa, su hash y el motivo de recomputación. Una nueva auditoría
+se genera sólo después de decidir la revisión aplicable, y el resultado antiguo
+se puede explicar usando su snapshot de entrada, hash de revisión y versión
+del motor.

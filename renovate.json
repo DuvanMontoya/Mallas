@@ -1,19 +1,50 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "baseBranches": ["main"],
+  "branchPrefix": "renovate/",
+  "schedule": ["before 5am on monday"],
+  "timezone": "America/Bogota",
   "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "minimumReleaseAge": "3 days",
+  "rebaseWhen": "conflicted",
+  "platformAutomerge": false,
   "rangeStrategy": "pin",
   "labels": ["dependencies"],
   "enabledManagers": ["github-actions", "dockerfile", "npm", "pep621"],
   "packageRules": [
     {
-      "matchUpdateTypes": ["major"],
-      "automerge": false
+      "matchManagers": ["dockerfile"],
+      "extends": ["docker:pinDigests"],
+      "automerge": false,
+      "labels": ["dependencies", "container"]
     },
     {
       "matchManagers": ["npm", "pep621", "dockerfile"],
       "groupName": "runtime-dependencies",
       "automerge": false
+    },
+    {
+      "matchPackageNames": ["Django", "django-ninja", "next", "react", "react-dom", "typescript"],
+      "groupName": "framework-core",
+      "automerge": false,
+      "prPriority": -10,
+      "labels": ["dependencies", "framework"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "prCreation": "immediate",
+      "labels": ["dependencies", "breaking-change"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "automerge": false,
+      "labels": ["dependencies", "ci"]
     }
-  ]
+  ],
+  "ignorePaths": ["apps/web/tests/e2e/fixtures/**"],
+  "description": "Dependency PRs are reviewed and promoted only after production-gates, security and compatibility checks pass. Normative data is never managed by Renovate."
 }

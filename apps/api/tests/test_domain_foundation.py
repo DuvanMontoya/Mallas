@@ -3,13 +3,21 @@ from __future__ import annotations
 import datetime
 from pathlib import Path
 
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.test import TestCase
 
-from domain.enums import RevisionStatus
+from domain.enums import RequirementPurpose, RevisionStatus
 from domain.errors import PublishedRevisionImmutableError
 from modules.curriculum.application.services import CurriculumRevisionService
-from modules.curriculum.models import Course, CourseVersion, CurriculumRevision, PlanMembership
+from modules.curriculum.models import (
+    Course,
+    CourseVersion,
+    CurriculumRevision,
+    PlanMembership,
+    RequirementGroup,
+)
+from modules.rules.models import Requirement
 from tests.factories import foundation
 
 
@@ -60,6 +68,60 @@ class DomainFoundationTests(TestCase):
             CurriculumRevision.objects.filter(pk=revision.pk).update(total_required_credits=999)
         revision.refresh_from_db()
         self.assertEqual(revision.total_required_credits, 141)
+
+    def test_published_revision_children_are_immutable(self) -> None:
+        revision = self.data["revision"]
+        group = self.data["group"]
+        membership = PlanMembership.objects.create(
+            revision=revision,
+            course_version=self.data["course_version"],
+            group=group,
+            role="MANDATORY",
+        )
+        requirement = Requirement.objects.create(
+            revision=revision,
+            owner_type="COURSE",
+            owner_id=self.data["course"].pk,
+            code="TEST:PREREQUISITE",
+            purpose=RequirementPurpose.ENROLLMENT_PREREQUISITE.value,
+            ast={"type": "COURSE_PASSED", "course_code": self.data["course"].code},
+            epistemic_status="VERIFIED",
+        )
+        CurriculumRevisionService.publish(revision.pk)
+
+        group.label = "Changed after publication"
+        with self.assertRaises(PublishedRevisionImmutableError):
+            group.save(update_fields=["label", "updated_at"])
+        with self.assertRaises(PublishedRevisionImmutableError):
+            group.delete()
+
+        membership.role = "ELECTIVE_OPTION"
+        with self.assertRaises(PublishedRevisionImmutableError):
+            membership.save(update_fields=["role", "updated_at"])
+        with self.assertRaises(PublishedRevisionImmutableError):
+            membership.delete()
+
+        requirement.ast = {"type": "UNKNOWN"}
+        with self.assertRaises(ValidationError):
+            requirement.save(update_fields=["ast", "updated_at"])
+        with self.assertRaises(ValidationError):
+            requirement.delete()
+
+        with self.assertRaises(PublishedRevisionImmutableError):
+            RequirementGroup.objects.create(
+                revision=revision,
+                code="NEW_GROUP",
+                label="No mutation",
+                kind="GROUP",
+            )
+
+        if connection.vendor == "postgresql":
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                RequirementGroup.objects.filter(pk=group.pk).update(label="Bulk mutation")
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                PlanMembership.objects.filter(pk=membership.pk).delete()
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                Requirement.objects.filter(pk=requirement.pk).update(ast={"type": "UNKNOWN"})
 
     def test_superseding_is_explicit_and_does_not_mutate_content(self) -> None:
         original = self.data["revision"]

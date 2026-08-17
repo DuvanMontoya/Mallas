@@ -40,7 +40,7 @@ archivo. Los conflictos de curso/período o número de intento, duplicados de ar
 ambigüedades temporales y códigos externos quedan pendientes de decisión; nunca se
 sobrescribe un intento existente.
 
-El PDF usa `pypdf` 6.10.0 para extracción de texto solamente. Sus filas son candidatos
+El PDF usa `pypdf` 6.16.1 para extracción de texto solamente. Sus filas son candidatos
 con confianza y locator de página/línea, siempre requieren revisión humana y se
 conserva un extracto hashado como evidencia. No hay OCR ni LLM con autoridad para
 confirmar historia. `ACCEPT` crea un `CourseAttempt` de origen `IMPORT`, `EXTERNAL`

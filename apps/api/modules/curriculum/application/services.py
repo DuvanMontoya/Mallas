@@ -35,7 +35,11 @@ class CurriculumRevisionService:
         published_at: datetime.datetime | None = None,
         actor: Any | None = None,
     ) -> CurriculumRevision:
-        revision = CurriculumRevision.objects.select_for_update().get(pk=revision_id)
+        revision = (
+            CurriculumRevision.objects.select_for_update()
+            .select_related("plan__program__faculty__campus")
+            .get(pk=revision_id)
+        )
         if actor is not None and not can_publish_revision(actor, revision):
             raise RevisionTransitionError("The actor is not authorized to publish this revision.")
         if revision.status not in {
@@ -44,9 +48,36 @@ class CurriculumRevisionService:
             RevisionStatus.APPROVED.value,
         }:
             raise RevisionTransitionError(f"Cannot publish revision in state {revision.status}.")
+        current = (
+            CurriculumRevision.objects.select_for_update()
+            .filter(plan_id=revision.plan_id, status=RevisionStatus.PUBLISHED.value)
+            .exclude(pk=revision.pk)
+            .first()
+        )
+        if current is not None:
+            if revision.supersedes_id not in {None, current.pk}:
+                raise RevisionTransitionError(
+                    "The successor must supersede the plan's current published revision."
+                )
+            revision.supersedes_id = current.pk
+            current.status = RevisionStatus.SUPERSEDED.value
+            current.save(update_fields=["status", "updated_at"])
+            if actor is not None:
+                record_audit_event(
+                    None,
+                    action="CURRICULUM_REVISION_SUPERSEDED",
+                    actor=actor,
+                    object_type="CurriculumRevision",
+                    object_id=current.pk,
+                    institution_id=current.plan.program.faculty.campus.institution_id,
+                    metadata={"successor_id": revision.pk},
+                )
         revision.status = RevisionStatus.PUBLISHED.value
         revision.published_at = published_at or timezone.now()
-        revision.save(update_fields=["status", "published_at", "updated_at"])
+        update_fields = ["status", "published_at", "updated_at"]
+        if current is not None:
+            update_fields.insert(0, "supersedes")
+        revision.save(update_fields=update_fields)
         if actor is not None:
             record_audit_event(
                 None,

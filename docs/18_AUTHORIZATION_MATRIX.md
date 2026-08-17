@@ -10,8 +10,9 @@
 | Editar draft | | | ✓ | ✓ | | ✓ |
 | Aprobar/publicar | | | | ✓ | | ✓ |
 | Editar revisión publicada | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| Analítica agregada | | limitada | | | ✓ | ✓ |
-| Ver PII analítica | | según rol | | | sólo si necesario | ✓ |
+| Analítica agregada institucional | | | | | ✓ | ✓ |
+| Analítica estudiantil propia/asignada | ✓ | ✓* | | | | ✓* |
+| Ver PII analítica | | | | | ✗ | ✗ |
 
 `✓*` no significa acceso arbitrario; debe auditarse y justificarse.
 
@@ -33,3 +34,23 @@ implícita para superusuarios o mediante una asignación explícita.
 Los servicios de ciclo de vida aceptan el actor y generan `AuditEvent` cuando
 se invocan desde un flujo autorizado; las rutas de acceso sensibles no
 reciben decisiones de ownership desde el cliente.
+
+`ANALYST` y `ADMIN` son los únicos roles que habilitan la vista institucional
+de P18/P19. El acceso de `ADVISOR` queda limitado a la analítica privada de un
+estudiante con asignación vigente, nunca al agregado institucional. La
+implementación institucional no devuelve PII a ningún rol y aplica supresión
+de celdas pequeñas; una necesidad futura de PII analítica requiere una nueva
+decisión de gobernanza.
+
+## Hardening P23
+
+Las operaciones mutables quedan además cubiertas por un límite compartido en
+base de datos, y los UUID nunca sustituyen las comprobaciones de ownership,
+institución, programa y vigencia. La publicación requiere una sesión
+first-party protegida, rol `REVIEWER`/`ADMIN`, estado `APPROVED`, versión ETag,
+confirmación explícita y una persona distinta de quien creó la propuesta.
+
+En producción institucional, la asignación de `REVIEWER` o `ADMIN` debe estar
+condicionada al MFA/IdP institucional. El backend no acepta un header de MFA
+del navegador como prueba de identidad; si el despliegue no puede imponer la
+política del IdP, esos roles permanecen deshabilitados.

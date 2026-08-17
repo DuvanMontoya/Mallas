@@ -115,181 +115,320 @@
     {
       "id": "P09",
       "name": "Student dashboard & audit UX",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P06",
         "P08"
       ],
-      "prompt": "prompts/10_DASHBOARD_AUDIT_UX.md"
+      "prompt": "prompts/10_DASHBOARD_AUDIT_UX.md",
+      "completed_at": "2026-08-16T05:53:55-05:00",
+      "verification": "academic-overview focused 3 SQLite + 3 PostgreSQL; canonical SQLite 63 passed + 1 expected skip; PostgreSQL full 64 passed; OpenAPI/client freshness; migrations/check; Ruff/format/mypy; ESLint/TypeScript/Vitest 5 files/8 tests; Next build; Playwright 6/6 desktop/mobile",
+      "notes": "Backend read model and typed API expose deterministic audit facts, ledger, components/groups, requirements, evidence, UNKNOWN, warnings, eligibility and next unlocks. Frontend consumes backend facts without recalculation and keeps the 100% credit disclaimer visible. Specialized reviewer tools unavailable; manual read-only UX/code/curriculum review completed. No automatic Git commit created."
     },
     {
       "id": "P10",
       "name": "Interactive curriculum map",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P08",
         "P09"
       ],
-      "prompt": "prompts/11_CURRICULUM_MAP.md"
+      "prompt": "prompts/11_CURRICULUM_MAP.md",
+      "completed_at": "2026-08-16T06:47:33-05:00",
+      "verification": "3 focused SQLite + 66 SQLite and 1 expected skip + 67 PostgreSQL; OpenAPI/client freshness and breaking diff; migrations/check; Ruff/format/mypy; frontend 6 files/12 tests; Next standalone build; Playwright 8/8 desktop/mobile; real Django/PostgreSQL/Next/Chromium flow; pnpm audit and production deploy check",
+      "notes": "Interactive provenance-aware curriculum map implemented with dependency-depth and component/group layouts, contextual selection, filters, detailed course/evidence panel, responsive print view and persisted preferences. Layouts are explicitly non-normative; suggested path and personal scenario remain honest until planning state exists. Baseline imported as auditable DRAFT in local PostgreSQL. Specialized reviewers/feature-delivery skill unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P11",
       "name": "Dependency graph & unlock analysis",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P03",
         "P08"
       ],
-      "prompt": "prompts/12_DEPENDENCY_GRAPH.md"
+      "prompt": "prompts/12_DEPENDENCY_GRAPH.md",
+      "completed_at": "2026-08-16T11:13:13-05:00",
+      "verification": "6 focused SQLite tests; 72 SQLite + 1 expected skip; 73 PostgreSQL; OpenAPI/client freshness; migrations/check; Ruff/format/mypy; frontend 8 files/15 tests; Next standalone build; Playwright 10/10 desktop/mobile; real Django/PostgreSQL/Next/Chromium graph focus flow; audit and pip checks",
+      "notes": "Semantic AST graph projection, condition nodes, direct/transitive paths, focus/unlock analysis, cycle detection, React Flow/ELK lazy graph, textual alternative, filters and provenance implemented. Corrected openapi-fetch query serialization and added regression coverage. Specialized reviewers/feature-delivery skill unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P12",
       "name": "Academic terms, offerings, sections, schedules",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P07"
       ],
-      "prompt": "prompts/13_OFFERINGS_SCHEDULES.md"
+      "prompt": "prompts/13_OFFERINGS_SCHEDULES.md",
+      "completed_at": "2026-08-16T12:24:00-05:00",
+      "verification": "5 focused offering tests; scripts/verify.py PASS with 77 passed + 1 expected PostgreSQL-trigger skip; migrations/OpenAPI/client/Ruff/format/mypy/ESLint/TypeScript; frontend 9 files/18 Vitest+axe; Next build; Playwright 12/12 desktop/mobile; PostgreSQL import/API/ETag/conflict flow and standalone Chromium /offerings flow",
+      "notes": "Temporal offering model, source snapshots/freshness, safe adapter/importer, exact timezone-aware conflict engine, scoped term CRUD, offerings API and responsive /offerings UI implemented. Public SIA research is documented; authenticated/private scraping and real-time capacity claims are intentionally excluded. Specialized reviewers and feature-delivery/api-change skills were unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P13",
       "name": "Planner scenarios",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P10",
         "P12"
       ],
-      "prompt": "prompts/14_PLANNER.md"
+      "prompt": "prompts/14_PLANNER.md",
+      "completed_at": "2026-08-16T16:20:00-05:00",
+      "verification": "6 focused planning tests; 83 backend tests + 1 expected PostgreSQL-trigger skip; scripts/verify.py; migrations/OpenAPI/client; Ruff/format/mypy/ESLint/TypeScript; Vitest 20/20 + axe; Next build; Playwright 14/14 desktop/mobile; PostgreSQL HTTP scenario/share/archive flow and Next standalone BFF/planner flow; audit/pip/secret/TODO/diff checks",
+      "notes": "Versioned private planning scenarios, planned courses, pure validation, projected audit, locks, duplicate/archive/compare/share/revoke and accessible planner implemented. planning.0004 applied locally. Specialized reviewers and feature-delivery/api-change skills unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P14",
       "name": "Constraint optimizer",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P13",
         "P04"
       ],
-      "prompt": "prompts/15_OPTIMIZER.md"
+      "prompt": "prompts/15_OPTIMIZER.md",
+      "completed_at": "2026-08-16T17:50:00-05:00",
+      "verification": "11 focused optimization tests including Hypothesis/golden/regression/API cases; 94 backend tests + 1 expected PostgreSQL-trigger skip; scripts/verify.py; optimization migration in SQLite/PostgreSQL; OpenAPI/client; Ruff/format/mypy/ESLint/TypeScript; Vitest 21/21 + axe; Next build; Playwright 14/14 desktop/mobile; Postgres/Django/Next BFF real optimizer flow; audit/pip/deploy/secret/diff checks",
+      "notes": "Pure CP-SAT optimizer with explicit UNKNOWN policy, lexicographic objectives, cancellation/time limits, persisted snapshots/hashes/explanations, API/client/BFF/panel and ADR-0019 implemented. Fixed locked-candidate preflight regression and prevented scheduling passed courses. Specialized reviewers and feature-delivery skill unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P15",
       "name": "Curriculum backoffice & semantic diff",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P02",
         "P05",
         "P08"
       ],
       "prompt": "prompts/16_ADMIN_GOVERNANCE.md"
+      ,"completed_at": "2026-08-16T18:51:03-05:00"
+      ,"verification": "4 focused governance tests in SQLite and PostgreSQL; 98 backend tests + 1 expected PostgreSQL-trigger skip; scripts/verify.py PASS; governance.0003 applied in SQLite/PostgreSQL; OpenAPI/client freshness; Ruff/format/mypy/ESLint/TypeScript; Vitest 23/23 + axe; Next production build; Playwright 16/16 desktop/mobile; real PostgreSQL/Django HTTP login, inbox/detail, submit and request-changes restoration; audit/pip/diff checks"
+      ,"notes": "Source inbox, archived document/snapshot viewers, extraction candidate review, AST/human explanation/evidence inspector, semantic diff, validation/impact report, review queue, editor/reviewer separation, optimistic locking, safe preview-token bulk operations, immutable publication receipt and complete related audit trail implemented. ADR-0020 and backoffice/provenance docs updated. Specialized reviewers/skills were unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P16",
       "name": "Revision publication & impact analysis",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P15",
         "P04"
       ],
-      "prompt": "prompts/17_PUBLICATION_IMPACT.md"
+      "prompt": "prompts/17_PUBLICATION_IMPACT.md",
+      "completed_at": "2026-08-16T19:50:00-05:00",
+      "verification": "3 focused publication-impact tests in SQLite and PostgreSQL; 102 PostgreSQL backend tests; 101 SQLite backend tests + 1 expected PostgreSQL-trigger skip; scripts/verify.py PASS; governance.0004 and notifications.0001 applied; OpenAPI/client freshness; Ruff/format/mypy/ESLint/TypeScript; Vitest 23/23 + axe; Next production build; Playwright 16/16 desktop/mobile; pnpm audit, uv pip check, diff and UTF-8 TODO guard PASS",
+      "notes": "Implemented transactional revision publication, supersession, immutable PublicationEvent, per-enrollment PublicationImpact, durable post-commit notification outbox, impact API/UI and related audit visibility. Old enrollment revision basis and old audits remain unchanged; corrections require new revisions. Fixed PostgreSQL synchronous optimization connection cleanup and isolated mutable E2E fixture state. Added ADR-0021 and updated versioning/provenance/audit/backoffice/event/notification/API docs. Specialized reviewers/skills were unavailable; manual read-only review completed. Prompt-referenced docs/24_PUBLICATION_AND_IMPACT.md and docs/05_AUDIT_AND_CREDIT_ALLOCATION.md are absent; available equivalents were used. No automatic Git commit created."
     },
     {
       "id": "P17",
       "name": "Notifications",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P12",
         "P16"
       ],
-      "prompt": "prompts/18_NOTIFICATIONS.md"
+      "prompt": "prompts/18_NOTIFICATIONS.md",
+      "completed_at": "2026-08-16T20:48:04-05:00",
+      "verification": "5 focused notification tests in SQLite and PostgreSQL; 106 backend tests + 1 expected PostgreSQL-trigger skip through scripts/verify.py; notifications.0002 applied and migrate/makemigrations checks PASS; OpenAPI/client freshness and cursor contract PASS; Ruff/format/mypy/ESLint/TypeScript; Vitest 26/26 + axe; Next production build; Playwright 18/18 desktop/mobile; pnpm audit, uv pip check, deploy check with explicit production security settings, diff and UTF-8 TODO guard PASS",
+      "notes": "Implemented immutable NotificationEvent, deduplicated NotificationDelivery, per-event NotificationPreference, retryable transactional outbox dispatcher and management command, localized privacy-safe templates, optional idempotent email adapter, in-app notification center with accessible unread/read state and preferences, cursor pagination, API/OpenAPI/client integration, unit/API/E2E coverage, ADR-0022 and notification/security/event/ERD/API documentation. feature-delivery and specialized reviewer tools were unavailable; manual read-only architecture, code, security and UX review completed. No automatic Git commit created."
     },
     {
       "id": "P18",
       "name": "Student analytics",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P09",
         "P13"
       ],
-      "prompt": "prompts/19_ANALYTICS.md"
+      "prompt": "prompts/19_ANALYTICS.md",
+      "completed_at": "2026-08-16T21:33:18-05:00",
+      "verification": "4 focused SQLite + 4 PostgreSQL analytics tests; scripts/verify.py 110 passed + 1 expected trigger skip; OpenAPI/client/migrations/Ruff/format/mypy; Vitest 30/30 + axe; Next build; Playwright 20/20 desktop/mobile",
+      "notes": "Student analytics derives only from persisted audit snapshots on PUBLISHED revisions: credits, requirements, trends, bottlenecks and scenarios. Institutional analytics and privacy controls were delivered with P19 in the same prompt block. No automatic Git commit created."
     },
     {
       "id": "P19",
       "name": "Institutional analytics & privacy controls",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P18",
         "P05"
       ],
-      "prompt": "prompts/19_ANALYTICS.md"
+      "prompt": "prompts/19_ANALYTICS.md",
+      "completed_at": "2026-08-16T21:33:18-05:00",
+      "verification": "4 focused SQLite + 4 PostgreSQL analytics tests; role/scope/suppression/export checks; scripts/verify.py 110 passed + 1 expected trigger skip; OpenAPI/client/Ruff/format/mypy; Vitest 30/30 + axe; Next build; Playwright 20/20 desktop/mobile",
+      "notes": "Institutional views are aggregate-only and role-gated to ANALYST/ADMIN with explicit institution/program scope, minimum cell suppression, HMAC route keys, audit-logged JSON/CSV export and no opaque risk scoring. ADR-0023 and docs/22_ANALYTICS.md updated. No automatic Git commit created."
     },
     {
       "id": "P20",
       "name": "Observability & operational tooling",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P05"
       ],
-      "prompt": "prompts/20_OBSERVABILITY.md"
+      "prompt": "prompts/20_OBSERVABILITY.md",
+      "completed_at": "2026-08-16T22:25:25-05:00",
+      "verification": "7 focused observability tests; scripts/verify.py 117 backend passed + 1 expected trigger skip and 33 frontend tests; PostgreSQL migrate/makemigrations check, migration plan 0 and 118 passed; OpenAPI/client; Ruff/format/mypy/ESLint/TypeScript; Next build; Playwright 20/20 desktop/mobile; real API/Web smoke; pnpm audit; uv pip check; deploy check",
+      "notes": "Implemented privacy-safe JSON logs, request correlation, W3C/OTel traces, RED/job/domain metrics, liveness/readiness/metrics health endpoints, frontend error/Web Vitals adapter, timing instrumentation, dashboard/runbook/smoke artifacts and ADR-0024. OTel OTLP HTTP 1.44.0 is opt-in; no SLO invented before baseline. Specialized reviewers and feature-delivery/security-change skills unavailable; manual read-only review completed. No automatic Git commit created."
     },
     {
       "id": "P21",
       "name": "Performance & scale hardening",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P14",
         "P20"
       ],
-      "prompt": "prompts/21_PERFORMANCE.md"
+      "prompt": "prompts/21_PERFORMANCE.md",
+      "completed_at": "2026-08-16T23:07:28-05:00",
+      "verification": "4 focused performance tests; 122 PostgreSQL backend tests; scripts/verify.py PASS with 33 frontend tests; service benchmark p95 rules 16.489 us, map 172.191 ms, graph 168.314 ms, valid audit 239.645 ms; audit queries 164 to 19; EXPLAIN/index analysis; bundle audit; load probe; Next build; Playwright 20/20; smoke/API/Web real; migrations plan 0; deploy check; pnpm audit; uv pip check",
+      "notes": "Eliminated the evidence-prefetch N+1 in audit snapshots, collapsed prioritized enrollment lookup to one SQL query, reused graph adjacency/reverse unlock indexes, bounded optimizer to 300 seconds/2 workers/20 in-flight jobs with auditable REJECTED capacity, and added reproducible performance/load/bundle tooling. No speculative index, Redis or academic cache was introduced. Specialized reviewer/feature-delivery tools unavailable; manual read-only architecture/code/curriculum/security/UX review completed. No automatic Git commit created."
     },
     {
       "id": "P22",
       "name": "Accessibility & cross-device hardening",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P10",
         "P13"
       ],
-      "prompt": "prompts/22_ACCESSIBILITY_E2E.md"
+      "prompt": "prompts/22_ACCESSIBILITY_E2E.md",
+      "completed_at": "2026-08-17T00:04:53-05:00",
+      "verification": "axe-core 4.13.0: 20/20 critical pages desktop/mobile with zero violations; Playwright full suite 50/50 desktop/mobile after final landmark repair; Vitest 33/33; ESLint; TypeScript; Next 16.3.1 standalone build; keyboard-only focus/skip-link/menu/Escape/curriculum/graph/planner; 200% zoom equivalent; reduced-motion; mobile planner; student journey; editor-reviewer-publish journey",
+      "notes": "Implemented page-level axe E2E, explicit mobile menu focus management, curriculum drawer focus return, graph focus announcement and textual alternative, valid React Flow handles, planner accessible movement naming, contrast token correction and manual NVDA/VoiceOver checklist. Fixed duplicate nested main landmark in governance backoffice. No architecture change or ADR required. Specialized reviewers/feature-delivery skill unavailable; manual read-only architecture/code/curriculum/security/UX review completed. No automatic Git commit created."
     },
     {
       "id": "P23",
       "name": "Security hardening & threat remediation",
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         "P15",
         "P20"
       ],
-      "prompt": "prompts/23_SECURITY_HARDENING.md"
+      "prompt": "prompts/23_SECURITY_HARDENING.md",
+      "completed_at": "2026-08-17T01:08:00-05:00",
+      "verification": "scripts/verify.py PASS: 131 backend passed, 1 expected trigger skip, 33 frontend passed; focused security/history/identity 34 passed and 10 subtests; pypdf 6.16.1 parser 23 passed and 1 skip; secret scan, SAST, pip-audit 2.9.0, uv pip check, pnpm audit, migrations, OpenAPI/client, Ruff, mypy, ESLint and TypeScript PASS",
+      "notes": "Threat model, IDOR/BOLA matrix, SSRF source fetch hardening, mutation rate limits, secure headers, upload hardening, audit immutability, secret/SAST gates, least-privilege SQL reference and security runbook implemented. pypdf 6.10.0 vulnerability findings were remediated by upgrading and locking pypdf 6.16.1. Specialized reviewers unavailable; manual read-only review documented. External MFA/IdP, malware scanning and network egress remain deployment prerequisites. No automatic Git commit created."
     },
     {
       "id": "P24",
       "name": "CI/CD, backup, restore, deployment",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "P20",
         "P23"
       ],
-      "prompt": "prompts/24_DEPLOYMENT_DR.md"
+      "prompt": "prompts/24_DEPLOYMENT_DR.md",
+      "verification": "Static deployment assets, secret scan, docs/state checks and py_compile pass; Docker build, image scan, Compose smoke and PostgreSQL backup/restore are blocked by Docker Engine ACL in this environment.",
+      "notes": "Production Dockerfiles, immutable Compose, CI gates, backup/restore scripts and runbooks implemented. Runtime proof remains external; no gate is marked green without execution."
     },
     {
       "id": "P25",
       "name": "Full-system production audit",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "P21",
         "P22",
         "P24"
       ],
-      "prompt": "prompts/25_FULL_SYSTEM_AUDIT.md"
+      "prompt": "prompts/25_FULL_SYSTEM_AUDIT.md",
+      "verification": "Traceability matrix, system audit, docs clone-clean, deployment/static checks and historical suite evidence recorded; current canonical verify and runtime gates remain blocked by Python/Node/Docker permissions.",
+      "notes": "No PARTIAL/MISSING functional module was hidden; BLOCKED_EXTERNAL gates are explicit."
     },
     {
       "id": "P26",
       "name": "Continuous dependency & normative maintenance",
-      "status": "pending",
+      "status": "in_progress",
       "depends_on": [
         "P25"
       ],
-      "prompt": "prompts/26_CONTINUOUS_MAINTENANCE.md"
+      "prompt": "prompts/26_CONTINUOUS_MAINTENANCE.md",
+      "verification": "Renovate/source-watch/workflows, unknown-rule queue, maintenance command, baseline checker and state recovery pass static checks; scheduled CI and live source freshness are not runnable here.",
+      "notes": "No auto-publish path was added. Current source watcher is UNKNOWN offline and ERROR under network sandbox; P91 identifies stable Next downgrade pending lockfile regeneration."
+    },
+    {
+      "id": "P90",
+      "name": "Curriculum source re-audit",
+      "status": "in_progress",
+      "depends_on": [
+        "P26"
+      ],
+      "prompt": "prompts/90_CURRICULUM_SOURCE_REAUDIT.md",
+      "verification": "Official plan/FAQ/legal index/English/practice sources reaudited; semantic diff has no confirmed change and published revision was not mutated. Remote byte-level archival and specialized curriculum reviewer are pending.",
+      "notes": "Report and snapshot manifest stored under docs/research/reaudits; remote sources remain REMOTE_REFERENCE_ONLY."
+    },
+    {
+      "id": "P91",
+      "name": "Dependency upgrade audit",
+      "status": "in_progress",
+      "depends_on": [
+        "P90"
+      ],
+      "prompt": "prompts/91_DEPENDENCY_UPGRADE.md",
+      "verification": "Inventory, official release/advisory review and baseline check pass; safe Next 16.2.12 downgrade is identified but npm registry/lockfile regeneration and compatibility suite are blocked externally.",
+      "notes": "No blind update and no manually fabricated pnpm lockfile. An isolated uv Python 3.14 install was attempted under the workspace but failed with WinError 10013 while downloading; offline pnpm dependency recreation lacks registry metadata."
+    },
+    {
+      "id": "P92",
+      "name": "UI polish and cognitive audit",
+      "status": "in_progress",
+      "depends_on": [
+        "P91"
+      ],
+      "prompt": "prompts/92_UI_POLISH_AND_COGNITIVE_AUDIT.md",
+      "verification": "Static UI/accessibility review and existing build bundle audit pass; historical E2E 50/50 and axe 20/20 recorded; current fixture runtime rerun blocked by node_modules EPERM.",
+      "notes": "No domain change; low-priority English backoffice headings noted for editorial copy review."
+    },
+    {
+      "id": "P93",
+      "name": "Bug fix protocol",
+      "status": "done",
+      "depends_on": [
+        "P92"
+      ],
+      "prompt": "prompts/93_BUG_FIX_PROTOCOL.md",
+      "verification": "No active reproducible bug found; regression inventory and environment limitations documented in docs/audit/BUG_REVIEW_2026-08-17.md.",
+      "notes": "No speculative code fix created."
+    },
+    {
+      "id": "P94",
+      "name": "Add new program architecture proof",
+      "status": "in_progress",
+      "depends_on": [
+        "P93"
+      ],
+      "prompt": "prompts/94_ADD_NEW_PROGRAM.md",
+      "verification": "Synthetic Statistics/Computer Science isolation and shared AST round-trip test added and py_compile passes; Django test execution is blocked by Python 3.14 runtime access.",
+      "notes": "No official second curriculum was published and no AST fork was added."
+    },
+    {
+      "id": "P95",
+      "name": "Production incident protocol",
+      "status": "done",
+      "depends_on": [
+        "P94"
+      ],
+      "prompt": "prompts/95_PRODUCTION_INCIDENT.md",
+      "verification": "Incident response runbook added; no active production incident exists in the checkout and no hotfix was invented.",
+      "notes": "Runbook links containment, evidence, security, restore, rollback and postmortem responsibilities."
+    },
+    {
+      "id": "P98",
+      "name": "Anti-MVP completeness audit",
+      "status": "in_progress",
+      "depends_on": [
+        "P95"
+      ],
+      "prompt": "prompts/98_ANTI_MVP_COMPLETENESS_AUDIT.md",
+      "verification": "Anti-MVP static gate scans 196 product files with zero issues; TODO release gate scans 508 files with functional_hits=0 and PASS; canonical SPEC/REQUIREMENTS/ACCEPTANCE indexes and audit matrix added; runtime/restore/source/lockfile gates remain external.",
+      "notes": "No functional PARTIAL/MISSING gap was hidden; product is not declared READY while external gates remain unexecuted. The TODO guard now prunes dependency stores/caches and classifies nonfunctional references."
+    },
+    {
+      "id": "P99",
+      "name": "Autonomous resume verification",
+      "status": "done",
+      "depends_on": [
+        "P98"
+      ],
+      "prompt": "prompts/99_RESUME_AUTONOMOUS.md",
+      "verification": "State recovery, deployment assets, technology baseline, TODO release gate and anti-MVP checks pass; canonical verify reports honest failures/blockers and identifies P24 as first incomplete milestone.",
+      "notes": "COPY_PASTE_ORDER.md and README.md were read as prompt instructions; no new milestone was inferred from them."
     }
   ]
 }

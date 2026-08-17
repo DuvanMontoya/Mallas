@@ -23,6 +23,9 @@ def run(label: str, cmd: list[str], cwd: Path | None = None, required: bool = Tr
             return False
         print(f"SKIP: {cmd[0]} not installed yet")
         return True
+    except PermissionError as exc:
+        print(f"BLOCKED: cannot execute {cmd[0]} in this environment: {exc}")
+        return False
     if p.returncode:
         print(f"FAIL [{p.returncode}]: {' '.join(cmd)}")
         return False
@@ -30,6 +33,13 @@ def run(label: str, cmd: list[str], cwd: Path | None = None, required: bool = Tr
 
 def main() -> int:
     ok = True
+    ok &= run("secret scan", [sys.executable, "scripts/scan_secrets.py"])
+    ok &= run("high-confidence SAST", [sys.executable, "scripts/sast.py"])
+    ok &= run("deployment assets", [sys.executable, "scripts/verify_deployment.py"])
+    ok &= run("documentation clone-clean", [sys.executable, "scripts/verify_docs_clone_clean.py"])
+    ok &= run("state recovery", [sys.executable, "scripts/verify_state_recovery.py"])
+    ok &= run("TODO release gate", [sys.executable, "scripts/check_no_todos.py"])
+    ok &= run("anti-MVP static gate", [sys.executable, "scripts/anti_mvp_audit.py"])
     ok &= run("curriculum invariants", [sys.executable, "scripts/validate_curriculum.py"])
     api = ROOT / "apps/api"
     web = ROOT / "apps/web"
@@ -38,16 +48,17 @@ def main() -> int:
         if shutil.which("uv"):
             ok &= run(
                 "OpenAPI freshness",
-                ["uv", "run", "--frozen", "python", "..\\..\\scripts\\check_openapi.py"],
+                ["uv", "run", "--frozen", "python", str(ROOT / "scripts" / "check_openapi.py")],
                 api,
             )
+            base_revision = os.environ.get("OPENAPI_BASE_REVISION", "HEAD")
             ok &= run(
-                "OpenAPI breaking-diff self-check",
+                "OpenAPI breaking-diff against versioned baseline",
                 [
                     sys.executable,
                     "scripts/check_openapi_breaking.py",
-                    "--base",
-                    "artifacts/openapi.json",
+                    "--base-revision",
+                    base_revision,
                     "--current",
                     "artifacts/openapi.json",
                 ],
@@ -72,7 +83,11 @@ def main() -> int:
                 ["uv", "run", "--frozen", "python", "manage.py", "migrate", "--check"],
                 api,
             )
-            ok &= run("backend tests", ["uv", "run", "--frozen", "pytest"], api)
+            ok &= run(
+                "backend tests",
+                ["uv", "run", "--frozen", "python", "-m", "pytest"],
+                api,
+            )
             ok &= run("backend ruff", ["uv", "run", "--frozen", "ruff", "check", "."], api)
             ok &= run("backend format check", ["uv", "run", "--frozen", "ruff", "format", "--check", "."], api)
             ok &= run("backend typecheck", ["uv", "run", "--frozen", "mypy", "config", "modules", "tests"], api)

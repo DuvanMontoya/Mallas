@@ -7,26 +7,35 @@ import { StatusBadge, type StatusTone } from "./status-badge";
 export interface CourseCardProps {
   code: string;
   name: string;
-  credits: number;
+  credits: number | null;
   status: StatusTone;
   statusLabel?: string;
   metadata?: string;
   action?: ReactNode;
+  selected?: boolean;
+  dimmed?: boolean;
+  context?: "selected" | "dependency" | "unlock" | "neutral";
+  onSelect?: () => void;
 }
 
 export function CourseStatusBadge({ tone, label }: { tone: StatusTone; label?: string }) {
   return <StatusBadge tone={tone} label={label} />;
 }
 
-export function CourseCard({ code, name, credits, status, statusLabel, metadata, action }: CourseCardProps) {
-  return (
-    <article className="course-card panel">
+export function CourseCard({ code, name, credits, status, statusLabel, metadata, action, selected = false, dimmed = false, context = "neutral", onSelect }: CourseCardProps) {
+  const content = (
+    <>
       <div className="course-card-header">
         <span className="course-code-label">{code}</span>
         <CourseStatusBadge tone={status} label={statusLabel} />
       </div>
       <h3>{name}</h3>
-      <p className="course-card-meta">{credits} créditos{metadata ? ` · ${metadata}` : ""}</p>
+      <p className="course-card-meta">{credits === null ? "Créditos por verificar" : `${credits} créditos`}{metadata ? ` · ${metadata}` : ""}</p>
+    </>
+  );
+  return (
+    <article className={`course-card panel course-context-${context}${selected ? " course-selected" : ""}${dimmed ? " course-dimmed" : ""}`} data-course-code={code}>
+      {onSelect ? <button className="course-card-select" type="button" onClick={onSelect} aria-pressed={selected}>{content}</button> : content}
       {action ? <div className="course-card-action">{action}</div> : null}
     </article>
   );
@@ -61,11 +70,11 @@ export function CreditLedger({ earned, applied, unapplied, unit = "créditos" }:
   );
 }
 
-export function ComponentProgressCard({ label, value, required, tone = "neutral" }: { label: string; value: number; required: number; tone?: StatusTone }) {
+export function ComponentProgressCard({ label, value, required, progressPercent, tone = "neutral" }: { label: string; value: number; required: number; progressPercent?: number; tone?: StatusTone }) {
   return (
     <article className={`component-progress-card panel component-${tone}`}>
       <div className="component-card-heading"><h3>{label}</h3><span>{value}/{required}</span></div>
-      <ProgressMeter value={value} max={required} label={`${label}: progreso`} />
+      <ProgressMeter value={value} max={required} percentage={progressPercent} label={`${label}: progreso`} />
     </article>
   );
 }

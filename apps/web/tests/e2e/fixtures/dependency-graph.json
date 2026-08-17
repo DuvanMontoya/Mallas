@@ -1,0 +1,219 @@
+{
+  "revision": {
+    "id": "00000000-0000-4000-8000-000000000251",
+    "plan_code": "2514",
+    "plan_title": "Plan de Estadística",
+    "revision_code": "2514-AC496-2023",
+    "status": "DRAFT",
+    "effective_from": "2023-05-09",
+    "content_hash": "graph-fixture-hash-2514",
+    "total_required_credits": 141,
+    "institution_name": "Universidad Nacional de Colombia",
+    "campus_name": "Bogotá",
+    "program_code": "2514",
+    "program_name": "Estadística",
+    "normative": false,
+    "source_note": "Dataset de arranque para revisión humana; no representa una publicación interna."
+  },
+  "nodes": [
+    {
+      "id": "condition:2000001:REQ_MODELS:0",
+      "kind": "CONDITION",
+      "label": "Todas las condiciones",
+      "course_code": null,
+      "condition_type": "ALL",
+      "requirement_code": "REQ_MODELS",
+      "path": [],
+      "state": "UNSATISFIED",
+      "epistemic_status": "VERIFIED",
+      "component_codes": ["DISCIPLINARY"],
+      "group_codes": ["STAT_CORE"],
+      "credits": null,
+      "evidence_count": 1,
+      "explanation_key": "rule.all",
+      "href": "/curriculum?selected=2000001"
+    },
+    {
+      "id": "condition:2000001:REQ_MODELS:1",
+      "kind": "CONDITION",
+      "label": "Umbral de créditos en agrupación",
+      "course_code": null,
+      "condition_type": "CREDITS_IN_GROUP",
+      "requirement_code": "REQ_MODELS",
+      "path": [1],
+      "state": "UNKNOWN",
+      "epistemic_status": "UNKNOWN",
+      "component_codes": ["DISCIPLINARY"],
+      "group_codes": ["STAT_CORE"],
+      "credits": null,
+      "evidence_count": 0,
+      "explanation_key": "rule.credits_in_group",
+      "href": "/curriculum?selected=2000001"
+    },
+    {
+      "id": "course:1000002",
+      "kind": "COURSE",
+      "label": "Cálculo diferencial",
+      "course_code": "1000002",
+      "condition_type": null,
+      "requirement_code": null,
+      "path": [],
+      "state": "PASSED",
+      "epistemic_status": "UNKNOWN",
+      "component_codes": ["FOUNDATION"],
+      "group_codes": ["FOUNDATION_MATH"],
+      "credits": 4,
+      "evidence_count": 0,
+      "explanation_key": "course.curriculum_reference",
+      "href": "/curriculum?selected=1000002"
+    },
+    {
+      "id": "course:1000003",
+      "kind": "COURSE",
+      "label": "Álgebra lineal",
+      "course_code": "1000003",
+      "condition_type": null,
+      "requirement_code": null,
+      "path": [],
+      "state": "ELIGIBLE",
+      "epistemic_status": "UNKNOWN",
+      "component_codes": ["FOUNDATION"],
+      "group_codes": ["FOUNDATION_MATH"],
+      "credits": 4,
+      "evidence_count": 0,
+      "explanation_key": "course.curriculum_reference",
+      "href": "/curriculum?selected=1000003"
+    },
+    {
+      "id": "course:2000001",
+      "kind": "COURSE",
+      "label": "Modelos estadísticos",
+      "course_code": "2000001",
+      "condition_type": null,
+      "requirement_code": null,
+      "path": [],
+      "state": "BLOCKED",
+      "epistemic_status": "UNKNOWN",
+      "component_codes": ["DISCIPLINARY"],
+      "group_codes": ["STAT_CORE"],
+      "credits": 4,
+      "evidence_count": 0,
+      "explanation_key": "course.curriculum_reference",
+      "href": "/curriculum?selected=2000001"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge:REQ_LINEAR:root:PREREQUISITE:course:1000002->course:1000003",
+      "source": "course:1000002",
+      "target": "course:1000003",
+      "kind": "PREREQUISITE",
+      "semantic": "PASSED",
+      "label": "Prerrequisito",
+      "requirement_code": "REQ_LINEAR",
+      "direct": true
+    },
+    {
+      "id": "edge:REQ_MODELS:1:CONDITION_INPUT:course:1000003->condition:2000001:REQ_MODELS:0",
+      "source": "course:1000003",
+      "target": "condition:2000001:REQ_MODELS:0",
+      "kind": "CONDITION_INPUT",
+      "semantic": "ALL",
+      "label": "Entrada de condición",
+      "requirement_code": "REQ_MODELS",
+      "direct": true
+    },
+    {
+      "id": "edge:REQ_MODELS:1:CONDITION_INPUT:condition:2000001:REQ_MODELS:1->condition:2000001:REQ_MODELS:0",
+      "source": "condition:2000001:REQ_MODELS:1",
+      "target": "condition:2000001:REQ_MODELS:0",
+      "kind": "CONDITION_INPUT",
+      "semantic": "ALL",
+      "label": "Entrada de condición",
+      "requirement_code": "REQ_MODELS",
+      "direct": true
+    },
+    {
+      "id": "edge:REQ_MODELS:root:CONDITION_SATISFIES:condition:2000001:REQ_MODELS:0->course:2000001",
+      "source": "condition:2000001:REQ_MODELS:0",
+      "target": "course:2000001",
+      "kind": "CONDITION_SATISFIES",
+      "semantic": "ALL",
+      "label": "Condición para cursar",
+      "requirement_code": "REQ_MODELS",
+      "direct": true
+    }
+  ],
+  "direct_relations": [
+    {
+      "source_course": "1000002",
+      "target_course": "1000003",
+      "relation_type": "PREREQUISITE",
+      "semantic": "PASSED",
+      "requirement_code": "REQ_LINEAR",
+      "condition_node_id": null,
+      "direct": true
+    },
+    {
+      "source_course": "1000003",
+      "target_course": "2000001",
+      "relation_type": "CONDITION_INPUT",
+      "semantic": "ALL",
+      "requirement_code": "REQ_MODELS",
+      "condition_node_id": "condition:2000001:REQ_MODELS:0",
+      "direct": true
+    }
+  ],
+  "focus": {
+    "course_code": "1000003",
+    "course_name": "Álgebra lineal",
+    "direct_prerequisites": [
+      {
+        "source_course": "1000002",
+        "target_course": "1000003",
+        "relation_type": "PREREQUISITE",
+        "semantic": "PASSED",
+        "requirement_code": "REQ_LINEAR",
+        "condition_node_id": null,
+        "direct": true
+      }
+    ],
+    "direct_corequisites": [],
+    "direct_unlocks": [
+      {
+        "source_course": "1000003",
+        "target_course": "2000001",
+        "relation_type": "CONDITION_INPUT",
+        "semantic": "ALL",
+        "requirement_code": "REQ_MODELS",
+        "condition_node_id": "condition:2000001:REQ_MODELS:0",
+        "direct": true
+      }
+    ],
+    "ancestors": [{"course_code": "1000002", "distance": 1, "direct": true}],
+    "descendants": [{"course_code": "2000001", "distance": 1, "direct": true}],
+    "shortest_unlock_paths": [
+      {
+        "target_course": "2000001",
+        "node_ids": [
+          "course:1000003",
+          "condition:2000001:REQ_MODELS:0",
+          "course:2000001"
+        ],
+        "node_labels": ["Álgebra lineal", "Todas las condiciones", "Modelos estadísticos"],
+        "edge_kinds": ["CONDITION_INPUT", "CONDITION_SATISFIES"],
+        "distance": 1,
+        "direct": true,
+        "explanation": "1000003 abre una ruta hacia 2000001 mediante Álgebra lineal → Todas las condiciones → Modelos estadísticos."
+      }
+    ],
+    "requirement_codes": ["REQ_LINEAR", "REQ_MODELS"]
+  },
+  "cycles": [],
+  "warnings": ["CURRICULUM_REVISION_NOT_PUBLISHED", "LAYOUTS_ARE_NOT_NORMATIVE"],
+  "links": {
+    "self": "/graph?revision=00000000-0000-4000-8000-000000000251&selected=1000003",
+    "curriculum": "/curriculum?revision=00000000-0000-4000-8000-000000000251&selected=1000003",
+    "sources": "/sources?revision=00000000-0000-4000-8000-000000000251"
+  }
+}

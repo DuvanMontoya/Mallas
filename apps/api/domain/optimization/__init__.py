@@ -1,0 +1,45 @@
+"""Pure CP-SAT optimization contracts and solver."""
+
+from .model import (
+    GROUP_ROLE_MANDATORY,
+    SOLVER_VERSION,
+    UNKNOWN_OFFERING_ALLOW,
+    UNKNOWN_OFFERING_REQUIRE,
+    CandidateFact,
+    CourseFact,
+    DecisionExplanation,
+    GroupFact,
+    GroupMembershipFact,
+    LockedChoice,
+    OptimizationInput,
+    OptimizationObjective,
+    OptimizationPreferences,
+    OptimizationResult,
+    OptimizationStatus,
+    SelectedCourse,
+    TermFact,
+    canonical_hash,
+)
+from .solver import solve_optimization
+
+__all__ = [
+    "CandidateFact",
+    "CourseFact",
+    "DecisionExplanation",
+    "GROUP_ROLE_MANDATORY",
+    "GroupFact",
+    "GroupMembershipFact",
+    "LockedChoice",
+    "OptimizationInput",
+    "OptimizationObjective",
+    "OptimizationPreferences",
+    "OptimizationResult",
+    "OptimizationStatus",
+    "SOLVER_VERSION",
+    "SelectedCourse",
+    "TermFact",
+    "UNKNOWN_OFFERING_ALLOW",
+    "UNKNOWN_OFFERING_REQUIRE",
+    "canonical_hash",
+    "solve_optimization",
+]
