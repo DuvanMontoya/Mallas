@@ -378,6 +378,33 @@ class ManualHistoryServiceTests(TransactionTestCase):
             3,
         )
 
+    def test_annulled_status_requires_the_dedicated_operation(self) -> None:
+        with self.assertRaises(HistoryMutationError) as create_error:
+            create_manual_attempt(
+                actor=self.user,
+                enrollment_id=self.data["enrollment"].pk,
+                course_version_id=self.data["course_version"].pk,
+                term_id=self.data["term"].pk,
+                status=AttemptStatus.ANNULLED.value,
+            )
+        self.assertEqual(create_error.exception.code, "annul_operation_required")
+
+        attempt, _ = create_manual_attempt(
+            actor=self.user,
+            enrollment_id=self.data["enrollment"].pk,
+            course_version_id=self.data["course_version"].pk,
+            term_id=self.data["term"].pk,
+            status=AttemptStatus.PASSED.value,
+            credits_earned=4,
+        )
+        with self.assertRaises(HistoryMutationError) as update_error:
+            update_attempt(
+                actor=self.user,
+                attempt_id=attempt.pk,
+                changes={"status": AttemptStatus.ANNULLED.value},
+            )
+        self.assertEqual(update_error.exception.code, "annul_operation_required")
+
     def test_manual_update_is_not_an_idor(self) -> None:
         attempt, _ = create_manual_attempt(
             actor=self.user,
@@ -447,10 +474,22 @@ class HistoryApiTests(TransactionTestCase):
         preview = self.client.get(f"/api/v1/history/imports/{batch_id}")
         self.assertEqual(preview.status_code, 200)
         confirm = self.client.post(
-            f"/api/v1/history/imports/{batch_id}/confirm", {}, **self.headers()
+            f"/api/v1/history/imports/{batch_id}/confirm",
+            {},
+            HTTP_IF_MATCH=f'"{preview.json()["version"]}"',
+            **self.headers(),
         )
         self.assertEqual(confirm.status_code, 200, confirm.content)
         self.assertEqual(confirm.json()["created_attempts"], 1)
+        retry = self.client.post(
+            f"/api/v1/history/imports/{batch_id}/confirm",
+            {},
+            HTTP_IF_MATCH=f'"{preview.json()["version"]}"',
+            **self.headers(),
+        )
+        self.assertEqual(retry.status_code, 200, retry.content)
+        self.assertTrue(retry.json()["idempotent"])
+        self.assertEqual(CourseAttempt.objects.filter(import_batch_id=batch_id).count(), 1)
         attempts = self.client.get(
             f"/api/v1/history/attempts?enrollment_id={self.data['enrollment'].pk}"
         )
@@ -458,6 +497,63 @@ class HistoryApiTests(TransactionTestCase):
         self.assertEqual(len(attempts.json()["items"]), 1)
         self.assertEqual(attempts.json()["total"], 1)
         self.assertTrue(AuditEvent.objects.filter(action="HISTORY_IMPORT_APPLIED").exists())
+
+    def test_api_manual_resolution_refreshes_batch_version_before_confirm(self) -> None:
+        create_manual_attempt(
+            actor=self.user,
+            enrollment_id=self.data["enrollment"].pk,
+            course_version_id=self.data["course_version"].pk,
+            term_id=self.data["term"].pk,
+            status=AttemptStatus.PASSED.value,
+            grade="3.0",
+            credits_earned=4,
+        )
+        content = history_payload(
+            course_code=self.data["course"].code,
+            term_code=self.data["term"].code,
+        )
+        uploaded = self.client.post(
+            "/api/v1/history/imports",
+            {
+                "enrollment_id": str(self.data["enrollment"].pk),
+                "file": SimpleUploadedFile(
+                    "manual-resolution.json", content, content_type="application/json"
+                ),
+            },
+            HTTP_IDEMPOTENCY_KEY="api-history-manual-resolution",
+            **self.headers(),
+        )
+        self.assertEqual(uploaded.status_code, 200, uploaded.content)
+        original_version = uploaded.json()["version"]
+        candidate = uploaded.json()["candidates"][0]
+        resolved = self.client.post(
+            f"/api/v1/history/imports/{uploaded.json()['id']}/candidates/{candidate['id']}/resolve",
+            json.dumps(
+                {
+                    "decision": ReconciliationDecision.ACCEPT.value,
+                    "selected_course_version_id": str(self.data["course_version"].pk),
+                    "external_code": "",
+                    "note": "Reviewed as a separate attempt.",
+                }
+            ),
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{candidate["version"]}"',
+            **self.headers(),
+        )
+        self.assertEqual(resolved.status_code, 200, resolved.content)
+
+        refreshed = self.client.get(f"/api/v1/history/imports/{uploaded.json()['id']}")
+        self.assertEqual(refreshed.status_code, 200, refreshed.content)
+        self.assertNotEqual(refreshed.json()["version"], original_version)
+        self.assertEqual(refreshed.json()["unresolved_count"], 0)
+        confirmed = self.client.post(
+            f"/api/v1/history/imports/{uploaded.json()['id']}/confirm",
+            {},
+            HTTP_IF_MATCH=f'"{refreshed.json()["version"]}"',
+            **self.headers(),
+        )
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+        self.assertEqual(confirmed.json()["created_attempts"], 1)
 
     def test_api_edits_require_if_match_and_emit_etag(self) -> None:
         payload = json.dumps(

@@ -14,7 +14,6 @@ from domain.enums import (
 from domain.errors import PublishedRevisionImmutableError
 from modules.common.models import UUIDTimestampedModel
 
-
 IMMUTABLE_REVISION_STATUSES = frozenset(
     {
         RevisionStatus.PUBLISHED.value,
@@ -27,7 +26,9 @@ IMMUTABLE_REVISION_STATUSES = frozenset(
 def _assert_revision_editable(revision_id: object) -> None:
     if not revision_id:
         return
-    status = CurriculumRevision.objects.filter(pk=revision_id).values_list("status", flat=True).first()
+    status = (
+        CurriculumRevision.objects.filter(pk=revision_id).values_list("status", flat=True).first()
+    )
     if status in IMMUTABLE_REVISION_STATUSES:
         raise PublishedRevisionImmutableError(
             "Curriculum revision contents cannot be edited after publication or retirement."
@@ -37,9 +38,12 @@ def _assert_revision_editable(revision_id: object) -> None:
 def _revision_ids_for_write(instance: models.Model, revision_id: object) -> set[object]:
     revision_ids = {revision_id}
     if instance.pk:
-        previous_revision_id = type(instance).objects.filter(pk=instance.pk).values_list(
-            "revision_id", flat=True
-        ).first()
+        previous_revision_id = (
+            type(instance)
+            .objects.filter(pk=instance.pk)
+            .values_list("revision_id", flat=True)
+            .first()
+        )
         revision_ids.add(previous_revision_id)
     return {value for value in revision_ids if value}
 
@@ -294,6 +298,13 @@ class PlanMembership(UUIDTimestampedModel):
     def clean(self) -> None:
         if self.group_id and self.group.revision_id != self.revision_id:
             raise ValidationError({"group": "The group must belong to the membership revision."})
+        if self.course_version_id and self.revision_id:
+            plan_institution_id = self.revision.plan.program.faculty.campus.institution_id
+            course_institution_id = self.course_version.course.institution_id
+            if course_institution_id != plan_institution_id:
+                raise ValidationError(
+                    "Plan membership course and program must belong to the same institution."
+                )
 
     def save(self, *args: object, **kwargs: object) -> None:
         self.full_clean()

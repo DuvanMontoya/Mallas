@@ -1064,3 +1064,174 @@ veredicto continúa `NOT_READY`; este bloque es la referencia más reciente.
   ruta en esta sesión; la trazabilidad equivalente quedó en este archivo,
   `ROADMAP_STATUS.json`, `SESSION_LOG.md`, `RISKS.md`, `OPEN_DECISIONS.md` y
   la auditoría final.
+
+## Authoritative latest snapshot (EOF) — 2026-08-17 11:56 -05:00
+
+Durante esta continuación se cerraron hallazgos reproducibles de las
+revisiones de arquitectura, seguridad, código y UX, sin marcar los gates de
+runtime como verdes:
+
+- Inmutabilidad curricular: `RequirementGroup`, `PlanMembership` y
+  `Requirement` validan y bloquean mutaciones de revisiones publicadas,
+  superseded o retired; se añadieron triggers PostgreSQL para filas hijas,
+  enlaces de evidencia y scopes de malla. `PlanMembership` también rechaza
+  cursos de otra institución.
+- Integridad multi-programa/multi-sede: se añadieron migraciones de triggers
+  para membership, grupos, términos, ofertas, matrículas y course attempts;
+  términos, perfiles y attempts ejecutan `full_clean()` en el guardado.
+- Seguridad: MFA privilegiado continúa fail-closed y sólo consume la marca de
+  sesión del adaptador IdP; la composición de producción la pasa explícitamente.
+  Se reforzó el alcance editorial por institución/programa, se bloqueó la
+  edición administrativa de `RoleAssignment`, y se rechazaron rangos IP no
+  globales en el fetcher SSRF.
+- Operaciones: backup/restore nunca ponen contraseñas en `argv`, el restore
+  falla si no puede eliminar su base temporal, valida tablas críticas, y el
+  preflight exige imágenes por digest, roles de base separados, secreto real y
+  MFA. Todas las GitHub Actions ahora están ancladas a commits de 40
+  caracteres y `scripts/check_action_pins.py` quedó en `scripts/verify.py`.
+- UX: el centro de notificaciones restaura foco al disparador y enfoca el
+  encabezado al abrir; la alternativa textual del grafo conserva nodos de
+  condición y relaciones visibles; el live region del backoffice ya no cubre
+  todo el detalle; se homogeneizaron encabezados internos en español.
+
+### Verificaciones de esta continuación
+
+- PASS: `py_compile` de todos los archivos Python modificados que no requieren
+  sintaxis exclusiva de 3.14; `scripts/check_action_pins.py`; deployment
+  assets; secret scan; docs clone-clean; state recovery; TODO release gate
+  (`functional_hits=0`); anti-MVP (`196` archivos, `0` issues); curriculum
+  invariants; OpenAPI breaking diff; operational helper assertions; y
+  `git diff --check`.
+- PASS focalizado estático: `scripts/verify.py` llega a todos los checks,
+  incluyendo el nuevo action-pin gate; no se ocultaron errores ni se
+  degradaron aserciones.
+- BLOQUEADO/NO PASS actual: SAST requiere Python 3.14; `uv` no puede iniciar
+  el entorno; Django, pytest, migraciones, Ruff y mypy no son ejecutables;
+  Node/pnpm no puede abrir los binarios bajo `node_modules` por `EPERM`; falta
+  `openapi-typescript` accesible; Docker/PostgreSQL/Compose no están
+  disponibles. Los resultados históricos 131/1 backend, 33 Vitest, 50/50 E2E
+  y 20/20 axe siguen etiquetados como históricos, no como rerun posterior a
+  estas modificaciones.
+
+### Siguiente acción exacta
+
+En un runner autorizado con Python 3.14, uv/Django, Node/pnpm reparables,
+Docker Engine, PostgreSQL y Chromium: ejecutar primero `uv run --frozen
+python scripts/verify.py`, después migraciones/checks/tests backend, lint,
+typecheck/build/frontend, integración, E2E/axe, backup/restore/smoke y
+Compose/production preflight; resolver regresiones y actualizar esta matriz.
+
+`.codex/STATUS.md` sigue sin ser editable por la ACL de esta sesión; no se
+intentó forzarla y este bloque es la trazabilidad equivalente permitida.
+
+## Authoritative latest snapshot (EOF) — 2026-08-17 12:18 -05:00
+
+Se corrigió un defecto de configuración descubierto en la última revisión del
+workflow: el servicio PostgreSQL de `production-gates.yml` crea
+`curriculum_runtime`, por lo que su healthcheck, migration gate y canonical
+verification ahora usan ese mismo usuario. El job separado de restore conserva
+su usuario `curriculum`, que sí es el que crea explícitamente en su contenedor.
+
+Verificaciones estáticas repetidas después de la corrección:
+
+- `scripts/check_action_pins.py` PASS.
+- `scripts/verify_deployment.py` PASS.
+- `scripts/check_no_todos.py` PASS: `files_scanned=525`,
+  `functional_hits=0`.
+- `scripts/anti_mvp_audit.py` PASS: `product_files_scanned=200`,
+  `bounded_contexts=14`, `anti_mvp_issues=0`.
+- `scripts/validate_curriculum.py`, `scripts/verify_docs_clone_clean.py`,
+  `scripts/source_freshness.py --offline`, `scripts/verify_state_recovery.py`,
+  `scripts/scan_secrets.py`, `git diff --check` y `py_compile` focalizado PASS.
+
+El verificador canónico se ejecutó completo y continúa en FAIL honesto: SAST
+necesita Python 3.14 para parsear seis archivos válidos del proyecto; `uv` no
+puede iniciar por WinError 5; los binarios Node bajo `node_modules` devuelven
+EPERM; falta `openapi-typescript` accesible; y Docker/PostgreSQL no están
+disponibles. No se reclasificó ningún gate bloqueado como PASS.
+
+Siguiente acción exacta: en un runner autorizado, ejecutar primero
+`uv run --frozen python scripts/verify.py` y después la matriz de
+`docs/ACCEPTANCE.md`, incluyendo Django/PostgreSQL/migraciones, cliente
+OpenAPI, lint/typecheck/build/Vitest, Playwright/axe, Docker/Compose,
+backup/restore, smoke e integración; corregir regresiones y actualizar la
+matriz antes de cerrar el Goal.
+
+`.codex/STATUS.md` sigue sin poder editarse por la ACL de sólo lectura de la
+ruta; el detalle equivalente está actualizado aquí, en `ROADMAP_STATUS.json`,
+`SESSION_LOG.md`, `RISKS.md`, `OPEN_DECISIONS.md` y las auditorías.
+
+## Authoritative latest snapshot (EOF) — 2026-08-17 13:08 -05:00
+
+Se completó una auditoría interactiva en la sesión real de Chrome, primero
+como administrador y luego como estudiante, observando simultáneamente la
+consola del navegador y las respuestas de la aplicación. Se recorrieron las
+rutas principales, se probaron escrituras reales y se corrigieron los defectos
+reproducibles encontrados.
+
+### Terminado
+
+- La portada y la navegación ahora dependen de capacidades y perfil: un
+  administrador editorial puro no cae en onboarding estudiantil, y la malla es
+  la acción principal tanto en el inicio editorial como en el estudiantil.
+- La malla invalida de forma coherente una selección que queda fuera de los
+  filtros y explica el estado, sin mostrar simultáneamente cero resultados y
+  el detalle de un curso oculto.
+- Se eliminó el hydration mismatch real del tablero de planificación.
+- Historia académica dejó de ser una superficie placeholder: permite crear,
+  editar y anular intentos, registra recursadas con `attempt_number`, recupera
+  todas las páginas y reserva `ANNULLED` para la operación auditable. El backend
+  también rechaza crear o actualizar directamente ese estado.
+- Importación de historia incorpora carga, preview, reconciliación y
+  confirmación; valida 10 MiB en cliente, limpia el payload según decisión,
+  permite mapear `ACCEPT`, exige nota en conflictos, mejora semántica accesible
+  y usa `If-Match` para impedir confirmaciones obsoletas.
+- La confirmación/resolución de importaciones bloquea lote y candidatos en
+  orden estable. Las respuestas privadas relevantes usan `private, no-store`.
+- `/sources` nunca cae al backoffice ante un fallo público; estudiantes ven
+  procedencia pública y roles editoriales conservan gobernanza.
+- En Chrome real se verificaron login/logout, separación admin/estudiante,
+  malla, auditoría, grafo, oferta, planificación, analítica, historia,
+  importación y fuentes. También se creó un escenario, se agregó un curso y se
+  creó/anuló un intento académico sintético para validar escrituras y auditoría.
+
+### Verificaciones finales
+
+- `python scripts/verify.py`: `PASS`.
+- Backend: `149 passed`, `1 skipped` esperado para trigger exclusivo de
+  PostgreSQL; Django checks, migraciones, Ruff, formato y mypy pasan.
+- Frontend: ESLint y TypeScript pasan; Vitest `15` archivos / `39` pruebas.
+- OpenAPI y cliente TypeScript generado están sincronizados y el diff de
+  contrato no introduce ruptura.
+- Secret scan, SAST, deployment assets, action pins, documentación, estado,
+  TODO release gate, anti-MVP e invariantes curriculares pasan.
+- Revisiones read-only de seguridad, UX y código: `0 Critical`, `0 High`. La
+  revisión final de código se repitió después de cerrar la vía backend de
+  `ANNULLED`, el refresh de versión tras reconciliar y el retry idempotente de
+  confirmación.
+
+### No terminado / riesgos vivos
+
+- La prueba de navegación bajo carga se ejecutó contra servidores de desarrollo:
+  una primera ronda tuvo latencias de aproximadamente 5,8 s promedio, un máximo
+  de 12 s y un timeout de navegación. El recorrido posterior quedó funcional y
+  sin nuevos errores de consola, pero esto no sustituye carga contra build de
+  producción, PostgreSQL y observabilidad desplegada.
+- El parser PDF continúa siendo síncrono y necesita aislamiento por proceso/job
+  con límites de memoria y tiempo para cerrar el riesgo DoS.
+- `raw_payload` de importación requiere política explícita de allowlist/redacción
+  y retención para minimizar PII.
+- La recuperación completa de historia usa offsets; una inserción concurrente
+  durante el recorrido puede duplicar u omitir filas. Debe evolucionar a cursor
+  estable o snapshot.
+- La reconciliación de importación aún expone algunos enums y JSON técnico; debe
+  traducirse y resumirse por fila/campo, dejando el detalle en un disclosure.
+- Docker/Compose, restore drill y carga E2E en un entorno de producción siguen
+  siendo gates de P24/P25, no cubiertos por esta sesión de Chrome local.
+
+### Siguiente acción exacta
+
+Ejecutar el build standalone con PostgreSQL y Compose, correr Playwright/axe y
+la prueba de carga instrumentada contra ese build, completar el restore drill,
+aislar el parser PDF y aplicar minimización/retención a `raw_payload`. No se
+creó commit, no se hizo push y no se desplegó.

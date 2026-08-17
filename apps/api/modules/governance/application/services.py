@@ -231,9 +231,7 @@ def get_document(actor: Any, document_id: UUID | str) -> dict[str, Any]:
         pk=document_id,
         snapshots__change_proposals__in=_accessible_proposals(actor),
     ).exists():
-        raise GovernanceError(
-            "The normative document was not found.", code="document_not_found"
-        )
+        raise GovernanceError("The normative document was not found.", code="document_not_found")
     try:
         document = NormativeDocument.objects.prefetch_related("snapshots__evidence").get(
             pk=document_id

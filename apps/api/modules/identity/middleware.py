@@ -65,7 +65,7 @@ class PasswordChangeSessionMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         user = getattr(request, "user", None)
-        if getattr(user, "is_authenticated", False):
+        if user is not None and getattr(user, "is_authenticated", False):
             changed_at = getattr(user, "password_changed_at", None)
             expected = changed_at.isoformat() if changed_at else ""
             if request.session.get("password_changed_at", "") != expected:
@@ -88,11 +88,9 @@ class PrivilegedMfaSessionMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         user = getattr(request, "user", None)
-        if getattr(user, "is_authenticated", False):
-            setattr(
-                user,
-                "_privileged_mfa_verified",
-                bool(request.session.get(settings.PRIVILEGED_MFA_SESSION_KEY)),
+        if user is not None and getattr(user, "is_authenticated", False):
+            user._privileged_mfa_verified = bool(
+                request.session.get(settings.PRIVILEGED_MFA_SESSION_KEY)
             )
         return self.get_response(request)
 

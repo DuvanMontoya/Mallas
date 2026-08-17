@@ -68,8 +68,25 @@ class ObservabilityMiddleware:
             )
             if response is not None:
                 response["X-Request-ID"] = correlation_id
+                private_prefixes = (
+                    "/api/v1/auth/",
+                    "/api/v1/history/",
+                    "/api/v1/imports/",
+                    "/api/v1/scenarios",
+                    "/api/v1/audit",
+                    "/api/v1/analytics/student",
+                    "/api/v1/notifications",
+                    "/api/v1/academic-overview",
+                    "/api/v1/curriculum-map",
+                    "/api/v1/dependency-graph",
+                    "/api/v1/offerings",
+                    "/api/v1/optimization-runs",
+                )
                 if request.path.startswith("/api/v1/health/"):
                     response["Cache-Control"] = "no-store"
+                elif request.path.startswith(private_prefixes):
+                    response["Cache-Control"] = "private, no-store"
+                    response["Pragma"] = "no-cache"
                 if span_context is not None and span_context.is_valid:
                     response["X-Trace-ID"] = f"{span_context.trace_id:032x}"
                 record_log(

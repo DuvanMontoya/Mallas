@@ -4896,6 +4896,24 @@
               "type": "string"
             },
             "required": true
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The batch version returned by the reviewed preview.",
+              "title": "If-Match"
+            },
+            "required": false,
+            "description": "The batch version returned by the reviewed preview."
           }
         ],
         "responses": {

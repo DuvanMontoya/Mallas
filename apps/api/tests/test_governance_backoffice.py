@@ -130,6 +130,47 @@ class GovernanceBackofficeTests(TestCase):
         self.assertEqual(snapshot.status_code, 200, snapshot.content)
         self.assertFalse(snapshot.json()["archived_content"]["available"])
 
+    def test_scoped_editor_cannot_enumerate_another_program_source_inbox(self) -> None:
+        other = foundation(suffix="-governance-other")
+        other_document = NormativeDocument.objects.create(
+            issuer="Other University",
+            document_type="RESOLUTION",
+            number="2",
+            year=2026,
+            title="Other curriculum source",
+        )
+        other_snapshot = SourceSnapshot.objects.create(
+            document=other_document,
+            captured_at=timezone.now(),
+            sha256="d" * 64,
+            mime_type="application/pdf",
+            storage_key="private/sources/other.pdf",
+        )
+        other_proposal = ChangeProposal.objects.create(
+            proposal_key="test:governance:other",
+            title="Other governance proposal",
+            status=ProposalStatus.DRAFT.value,
+            candidate_revision=other["revision"],
+            source_snapshot=other_snapshot,
+            content_fingerprint="e" * 64,
+            semantic_diff={"added": {}, "removed": {}, "changed": [], "has_changes": False},
+            rationale="A proposal outside the editor's assigned scope.",
+            created_by=self.editor,
+        )
+        self._login(self.editor)
+
+        inbox = self.client.get("/api/v1/governance/inbox")
+        self.assertEqual(inbox.status_code, 200, inbox.content)
+        self.assertEqual(
+            {item["id"] for item in inbox.json()["proposals"]}, {str(self.proposal.pk)}
+        )
+        self.assertNotIn(str(other_document.pk), {item["id"] for item in inbox.json()["documents"]})
+        self.assertNotIn(str(other_snapshot.pk), {item["id"] for item in inbox.json()["snapshots"]})
+        other_detail = self.client.get(f"/api/v1/governance/proposals/{other_proposal.pk}")
+        self.assertEqual(other_detail.status_code, 403, other_detail.content)
+        other_snapshot_detail = self.client.get(f"/api/v1/governance/snapshots/{other_snapshot.pk}")
+        self.assertEqual(other_snapshot_detail.status_code, 404, other_snapshot_detail.content)
+
     def test_editor_cannot_approve_and_optimistic_lock_conflict_is_visible(self) -> None:
         self._login(self.editor)
         version = self.proposal.updated_at.isoformat()

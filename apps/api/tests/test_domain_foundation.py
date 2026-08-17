@@ -106,6 +106,11 @@ class DomainFoundationTests(TestCase):
             requirement.save(update_fields=["ast", "updated_at"])
         with self.assertRaises(ValidationError):
             requirement.delete()
+        # m2m clear runs inside an atomic block without its own savepoint. Use
+        # one here so the expected signal rejection does not poison the
+        # surrounding TestCase transaction before subsequent assertions.
+        with transaction.atomic(), self.assertRaises(ValidationError):
+            requirement.evidence.clear()
 
         with self.assertRaises(PublishedRevisionImmutableError):
             RequirementGroup.objects.create(
@@ -122,6 +127,16 @@ class DomainFoundationTests(TestCase):
                 PlanMembership.objects.filter(pk=membership.pk).delete()
             with self.assertRaises(DatabaseError), transaction.atomic():
                 Requirement.objects.filter(pk=requirement.pk).update(ast={"type": "UNKNOWN"})
+
+    def test_plan_membership_cannot_cross_institution_scope(self) -> None:
+        other = foundation(suffix="-scope")
+        with self.assertRaises(ValidationError):
+            PlanMembership.objects.create(
+                revision=self.data["revision"],
+                course_version=other["course_version"],
+                group=self.data["group"],
+                role="MANDATORY",
+            )
 
     def test_superseding_is_explicit_and_does_not_mutate_content(self) -> None:
         original = self.data["revision"]

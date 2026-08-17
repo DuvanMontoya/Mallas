@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 
 import { PlannerBoard } from "@/components/planner-board";
-import { getAcademicTerms, getCurriculumMap, getScenarioCompare, getScenarios } from "@/lib/api";
+import { SessionRequired } from "@/components/session-required";
+import { getAcademicOverview, getAcademicTerms, getCurriculumMap, getScenarioCompare, getScenarios, getSessionSnapshot } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,22 @@ export default async function PlannerPage({ searchParams }: PlannerPageProps) {
   } catch {
     headers = undefined;
   }
+  const session = await getSessionSnapshot(headers);
+  if (session.state !== "authenticated") {
+    return <SessionRequired nextPath="/planner" title="Inicia sesión para planear" description="Los escenarios son privados, versionados y están vinculados a una matrícula concreta." />;
+  }
+  const isEditorialOnly = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) && !session.user.student_profile_id && !session.user.roles.includes("STUDENT");
+  if (isEditorialOnly) {
+    return <SessionRequired nextPath="/planner" title="No hay una matrícula disponible" description="Los escenarios pertenecen a una matrícula estudiantil. Esta cuenta administrativa no tiene un espacio de planificación propio." showSignIn={false} />;
+  }
+  const overviewResult = await getAcademicOverview({ headers });
+  const enrollmentId = overviewResult.data?.enrollment.id;
+  if (!enrollmentId) {
+    return <SessionRequired nextPath="/planner" title="No hay una matrícula disponible" description="El planificador necesita una matrícula activa para mantener escenarios privados y recalcular su auditoría." showSignIn={false} />;
+  }
 
   const [scenariosResult, termsResult, mapResult] = await Promise.all([
-    getScenarios({ headers }),
+    getScenarios({ enrollmentId, headers }),
     getAcademicTerms({ headers }),
     getCurriculumMap({ headers }),
   ]);

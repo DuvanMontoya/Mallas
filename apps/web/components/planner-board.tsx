@@ -380,7 +380,7 @@ export function PlannerBoard({
       <section className="planner-section" aria-labelledby="planner-board-title">
         <div className="section-heading"><div><p className="eyebrow">Malla personal</p><h2 id="planner-board-title">Ordena tus próximos períodos</h2></div><span className="tag tag-outline">Versión {scenario.version}</span></div>
         <p className="planner-instruction" id="planner-board-instruction">Arrastra una tarjeta a otra columna. Si no puedes arrastrar, usa el selector «Mover a» de cada tarjeta.</p>
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd} accessibility={{ screenReaderInstructions: { draggable: "Para mover este curso, usa las flechas del teclado o el selector Mover a." } }}>
+        <DndContext id="planner-board-dnd" sensors={sensors} onDragEnd={handleDragEnd} accessibility={{ screenReaderInstructions: { draggable: "Para mover este curso, usa las flechas del teclado o el selector Mover a." } }}>
           <div className="planner-term-grid" aria-describedby="planner-board-instruction">
             {scenarioTerms.map((term) => <TermDropColumn key={term.id} term={term} terms={scenarioTerms} courses={courseByTerm(term.id)} pending={pending} onMove={moveCourse} onToggleLock={toggleLock} onDelete={removeCourse} />)}
           </div>

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { AcademicDashboard } from "@/components/academic-dashboard";
-import { getAcademicOverview } from "@/lib/api";
+import { getAcademicOverview, getSessionSnapshot } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -49,14 +49,14 @@ function EmptyDashboardHome() {
           <span className="tag tag-outline">Sin historia todavía</span>
         </div>
         <div className="start-grid">
-          <Link className="start-card" href="/history/import">
+          <Link className="start-card" href="/curriculum">
             <span className="start-number">01</span>
-            <span><strong>Carga tu historia</strong><small>CSV/JSON o registro guiado con vista previa</small></span>
+            <span><strong>Explora la malla</strong><small>Conoce la revisión curricular y sus agrupaciones</small></span>
             <span aria-hidden="true">↗</span>
           </Link>
-          <Link className="start-card" href="/curriculum">
+          <Link className="start-card" href="/history/import">
             <span className="start-number">02</span>
-            <span><strong>Explora el plan</strong><small>Conoce la revisión curricular y sus agrupaciones</small></span>
+            <span><strong>Carga tu historia</strong><small>CSV/JSON o registro guiado con vista previa</small></span>
             <span aria-hidden="true">↗</span>
           </Link>
           <Link className="start-card" href="/planner">
@@ -70,8 +70,28 @@ function EmptyDashboardHome() {
   );
 }
 
+function EditorialHome() {
+  return (
+    <div className="content-grid">
+      <section className="hero panel">
+        <div>
+          <p className="eyebrow accent">Gobernanza curricular · plan 2514</p>
+          <h1>La malla publicada,<br /><em>antes que el backoffice.</em></h1>
+          <p className="hero-copy">Inspecciona primero el producto que reciben los estudiantes y entra a fuentes sólo cuando necesites revisar evidencia o una nueva revisión.</p>
+          <div className="hero-actions"><Link className="button button-primary" href="/curriculum">Abrir la malla <span aria-hidden="true">→</span></Link><Link className="text-link" href="/sources">Gobernar fuentes</Link></div>
+        </div>
+      </section>
+      <section className="panel empty-state-panel" aria-labelledby="editorial-start-title"><div className="section-heading"><div><p className="eyebrow">Flujo editorial</p><h2 id="editorial-start-title">Publica sin perder procedencia</h2></div><span className="tag tag-outline">Separación de funciones</span></div><div className="start-grid"><Link className="start-card" href="/curriculum"><span className="start-number">01</span><span><strong>Verifica la experiencia</strong><small>Malla, reglas visibles y estados no normativos</small></span><span aria-hidden="true">↗</span></Link><Link className="start-card" href="/sources"><span className="start-number">02</span><span><strong>Revisa evidencia</strong><small>Snapshots, propuestas y recibos inmutables</small></span><span aria-hidden="true">↗</span></Link><Link className="start-card" href="/graph"><span className="start-number">03</span><span><strong>Inspecciona dependencias</strong><small>Relaciones completas y alternativa textual</small></span><span aria-hidden="true">↗</span></Link></div></section>
+    </div>
+  );
+}
+
 export default async function HomePage() {
-  const overview = await getAcademicOverview({ headers: await requestHeaders() });
+  const headers = await requestHeaders();
+  const session = await getSessionSnapshot(headers);
+  const editorialOnly = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) && !session.user.student_profile_id && !session.user.roles.includes("STUDENT");
+  if (editorialOnly) return <EditorialHome />;
+  const overview = await getAcademicOverview({ headers });
 
   return (
     <div className="content-grid">
@@ -81,14 +101,9 @@ export default async function HomePage() {
           <h1>Tu mapa académico,<br /><em>con reglas visibles.</em></h1>
           <p className="hero-copy">Consulta progreso, requisitos, bloqueos y rutas posibles con una explicación que siempre apunta a su evidencia.</p>
           <div className="hero-actions">
-            <Link className="button button-primary" href="/audit">Abrir auditoría <span aria-hidden="true">→</span></Link>
-            <Link className="text-link" href="/curriculum">Explorar la malla</Link>
+            <Link className="button button-primary" href="/curriculum">Explorar la malla <span aria-hidden="true">→</span></Link>
+            <Link className="text-link" href="/audit">Abrir auditoría</Link>
           </div>
-        </div>
-        <div className="hero-orbit" aria-hidden="true">
-          <div className="orbit orbit-one"><span>AST</span></div>
-          <div className="orbit orbit-two"><span>DATA</span></div>
-          <div className="orbit-core"><span>CN</span></div>
         </div>
       </section>
 

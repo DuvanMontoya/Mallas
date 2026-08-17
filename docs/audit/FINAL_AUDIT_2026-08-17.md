@@ -38,7 +38,7 @@ La revisión se hizo contra los índices canónicos y sus documentos enlazados:
 
 | Área | Evidencia | Estado actual | Cierre requerido |
 |---|---|---|---|
-| Alcance y bounded contexts | Gate anti-MVP: 196 archivos, 14 contextos, 0 señales | `PASS_STATIC` | Rerun dinámico completo |
+| Alcance y bounded contexts | Gate anti-MVP: 200 archivos, 14 contextos, 0 señales | `PASS_STATIC` | Rerun dinámico completo |
 | Dominio y reglas | Invariantes locales: `courses=102`, `memberships=97`, `requirements=73`; golden/property tests históricos | `PASS_HISTORICAL` / `BLOCKED_CURRENT` | Ejecutar suite Django/Python 3.14 y confirmar golden cases actuales |
 | Currículo/procedencia | Baseline 2514-AC496-2023, snapshot P90, estados epistemológicos y no-publicación | `UNKNOWN_REVIEW_REQUIRED` | Archivar evidencia normativa íntegra y revisión curricular humana; resolver B1 sin inferir |
 | Auditoría de grado | Backend histórico 131 passed/1 skip y trazabilidad documentada | `PASS_HISTORICAL` / `BLOCKED_CURRENT` | Rerun con DB real y verificar no doble conteo/explicaciones |
@@ -65,7 +65,7 @@ Pasaron en esta sesión:
 - `python scripts/verify_deployment.py`.
 - `python scripts/verify_state_recovery.py` — 27 fases `done`, 8 `in_progress`,
   sin errores estructurales.
-- `python scripts/anti_mvp_audit.py` — 196 archivos, 14 contextos, 0 issues.
+- `python scripts/anti_mvp_audit.py` — 200 archivos, 14 contextos, 0 issues.
 - `python scripts/verify_docs_clone_clean.py`.
 - `python scripts/update_technology_baseline.py --check`.
 - `python scripts/source_freshness.py --offline` — cuatro `UNKNOWN` explícitos.
@@ -74,7 +74,7 @@ Pasaron en esta sesión:
   conversión de fin de línea de Git en Windows.
 - `node scripts/audit-bundle.mjs` desde `apps/web`.
 - `scripts/check_no_todos.py`: PASS después de corregir su alcance de recorrido;
-  `files_scanned=508`, `functional_hits=0`, `TODO_RELEASE_GATE=PASS`; las
+  `files_scanned=525`, `functional_hits=0`, `TODO_RELEASE_GATE=PASS`; las
   referencias no funcionales quedan clasificadas y no bloquean el gate.
 
 Se ejecutaron y terminaron con bloqueo/fallo reproducible:
@@ -126,3 +126,28 @@ honesto, pero **no se declara conforme ni terminado**. El criterio de
 `BLOCKED_EXTERNAL` sin evidencia reproducible. La siguiente sesión debe cerrar
 los gates operativos enumerados y volver a ejecutar la matriz completa; sólo
 entonces puede evaluarse `update_goal(status="complete")`.
+
+## Correcciones posteriores a la auditoría especializada — 2026-08-17 11:56
+
+Se resolvieron dentro del repositorio los hallazgos que no requerían un
+servicio externo:
+
+- La inmutabilidad de una revisión publicada ahora cubre grupos, memberships,
+  requisitos y enlaces de evidencia, tanto en modelo/señal como en triggers
+  PostgreSQL; también se añadieron triggers de aislamiento entre institución,
+  sede, programa, plan, curso, término, matrícula y course attempt.
+- La autorización editorial aplica scope por institución/programa en inbox,
+  documentos, snapshots y propuestas; `RoleAssignment` no se puede editar
+  desde Django admin; la barrera MFA privilegiada falla cerrada y se propaga
+  explícitamente en Compose de producción.
+- Backup/restore eliminan contraseñas de `argv`, hacen fallar cleanup no
+  confirmado y validan tablas críticas; los workflows usan SHA completos y el
+  nuevo `check_action_pins.py` está integrado al verificador canónico.
+- SSRF rechaza también rangos no globales; la UI corrigió foco de
+  notificaciones, alternativa textual de condiciones y live-region ruidoso.
+
+La clasificación no cambia: **`NOT_READY`**. Estas reparaciones todavía
+requieren ejecutar en un runner compatible Django/3.14, PostgreSQL, Node/pnpm,
+Docker/Compose y navegador; la suite histórica no sustituye ese rerun. La
+auditoría curricular remota sigue sin bytes normativos íntegros y por tanto no
+se publicó ninguna inferencia.

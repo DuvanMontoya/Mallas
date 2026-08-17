@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from django.core import mail
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction
 from django.test import Client, TestCase, override_settings
 from django.utils import timezone
@@ -215,6 +216,20 @@ class AuthorizationAndOwnershipTests(TestCase):
         self.assertTrue(can_view_student(advisor, second["student"]))
         self.assertFalse(can_view_student(advisor, first["student"]))
 
+    def test_role_assignment_cannot_cross_program_institution_scope(self) -> None:
+        first = foundation(suffix="role-scope-a")
+        second = foundation(suffix="role-scope-b")
+        reviewer = User.objects.create_user(
+            email="scope-reviewer@example.test", password="safe-password"
+        )
+        with self.assertRaises(ValidationError):
+            RoleAssignment.objects.create(
+                user=reviewer,
+                role=UserRole.REVIEWER.value,
+                institution=first["institution"],
+                program=second["program"],
+            )
+
     def test_editor_cannot_publish_reviewer_can_and_published_is_not_editable(self) -> None:
         data = foundation(suffix="rbac")
         editor = User.objects.create_user(email="editor@example.test", password="safe-password")
@@ -242,6 +257,28 @@ class AuthorizationAndOwnershipTests(TestCase):
                 action="CURRICULUM_REVISION_PUBLISHED", actor=reviewer
             ).exists()
         )
+
+    @override_settings(PRIVILEGED_MFA_REQUIRED=True)  # type: ignore[untyped-decorator]
+    def test_privileged_publication_fails_closed_until_server_side_mfa_assurance(self) -> None:
+        data = foundation(suffix="mfa-gate")
+        reviewer = User.objects.create_user(
+            email="mfa-reviewer@example.test", password="safe-password"
+        )
+        RoleAssignment.objects.create(
+            user=reviewer,
+            role=UserRole.REVIEWER.value,
+            institution=data["institution"],
+            program=data["program"],
+        )
+
+        reviewer._privileged_mfa_verified = False
+        self.assertFalse(can_publish_revision(reviewer, data["revision"]))
+
+        # The authorization boundary consumes only the server-side assurance
+        # marker populated by the trusted IdP/session adapter. A request header
+        # is intentionally not part of this contract.
+        reviewer._privileged_mfa_verified = True
+        self.assertTrue(can_publish_revision(reviewer, data["revision"]))
 
 
 class AppendOnlyAuditEventTests(TestCase):

@@ -42,8 +42,8 @@ regenerarse con el registro inaccesible; el producto no se declara `READY`.
 
 | Señal | Comprobación | Resultado |
 |---|---|---|
-| `TODO/FIXME/HACK/XXX` funcional | `scripts/check_no_todos.py` (`files_scanned=508`, `functional_hits=0`, `TODO_RELEASE_GATE=PASS`) + clasificación de hits | No hay hit funcional; todas las referencias no funcionales quedan clasificadas como guard, docs, prompts o metadata |
-| `pass`/stub/NotImplemented | `scripts/anti_mvp_audit.py`, revisión de excepciones | 196 archivos de producto escaneados; 0 issues; sólo no-op explícito de telemetry allowlisted |
+| `TODO/FIXME/HACK/XXX` funcional | `scripts/check_no_todos.py` (`files_scanned=525`, `functional_hits=0`, `TODO_RELEASE_GATE=PASS`) + clasificación de hits | No hay hit funcional; todas las referencias no funcionales quedan clasificadas como guard, docs, prompts o metadata |
+| `pass`/stub/NotImplemented | `scripts/anti_mvp_audit.py`, revisión de excepciones | 200 archivos de producto escaneados; 0 issues; sólo no-op explícito de telemetry allowlisted |
 | reglas hardcoded por curso | regex anti-literal + revisión de `domain/rules`, audit, optimizer, graph | 0 comparación literal de curso en producto; los códigos en tests/fixtures son datos |
 | mocks/fake API en producción | separación `tests/`, fixture E2E y rutas reales | mocks confinados a tests; producción usa APIs/BFF y estados honestos |
 | botones/rutas placeholder | suites de interacción y rutas de app | acciones tienen handler/API/error state; no se detectó endpoint placeholder |

@@ -7265,7 +7265,10 @@ export interface operations {
     modules_imports_api_confirm_import: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The batch version returned by the reviewed preview. */
+                "If-Match"?: string | null;
+            };
             path: {
                 batch_id: string;
             };

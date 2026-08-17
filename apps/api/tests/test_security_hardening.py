@@ -54,7 +54,12 @@ class SourceFetchSecurityTests(SimpleTestCase):
         self.assertEqual(validated.host_header, "official.example.edu")
 
     def test_private_ipv4_and_metadata_ranges_are_rejected(self) -> None:
-        for url in ("https://127.0.0.1/", "https://10.0.0.1/", "https://169.254.169.254/"):
+        for url in (
+            "https://127.0.0.1/",
+            "https://10.0.0.1/",
+            "https://100.64.0.1/",
+            "https://169.254.169.254/",
+        ):
             with self.subTest(url=url), self.assertRaisesRegex(SourceFetchError, "private"):
                 validate_source_url(url, policy=self.policy, resolver=_literal_resolver)
 

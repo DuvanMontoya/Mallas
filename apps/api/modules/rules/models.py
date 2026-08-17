@@ -57,9 +57,9 @@ class Requirement(UUIDTimestampedModel):
         self.full_clean()
         revision_ids = {self.revision_id}
         if self.pk:
-            previous_revision_id = type(self).objects.filter(pk=self.pk).values_list(
-                "revision_id", flat=True
-            ).first()
+            previous_revision_id = (
+                type(self).objects.filter(pk=self.pk).values_list("revision_id", flat=True).first()
+            )
             revision_ids.add(previous_revision_id)
         immutable_ids = {revision_id for revision_id in revision_ids if revision_id}
         statuses = set(
@@ -72,9 +72,12 @@ class Requirement(UUIDTimestampedModel):
         super().save(*args, **kwargs)
 
     def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
-        if self.revision_id and CurriculumRevision.objects.filter(
-            pk=self.revision_id, status__in=IMMUTABLE_REVISION_STATUSES
-        ).exists():
+        if (
+            self.revision_id
+            and CurriculumRevision.objects.filter(
+                pk=self.revision_id, status__in=IMMUTABLE_REVISION_STATUSES
+            ).exists()
+        ):
             raise ValidationError(
                 "Requirements belonging to a published, superseded, or retired revision are immutable."
             )

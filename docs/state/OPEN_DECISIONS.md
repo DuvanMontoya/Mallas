@@ -35,3 +35,11 @@ No es una decisión de producto: P24–P26, P92 y P94 sólo pueden pasar a `done
 cuando el runner tenga Docker/PostgreSQL, Python 3.14/Django, Node/pnpm y
 herramientas manuales accesibles. Los resultados históricos no sustituyen la
 ejecución posterior a los cambios.
+
+## D-008 Decisiones cerradas durante la auditoría — 2026-08-17
+
+La defensa de inmutabilidad y aislamiento de scope se implementó como
+defensa en profundidad modelo + señal + trigger PostgreSQL y quedó registrada
+en `docs/adr/0029-database-enforced-curriculum-scope.md`. No requiere elección
+del usuario; la ejecución real de sus migraciones sigue siendo un gate
+operativo externo.

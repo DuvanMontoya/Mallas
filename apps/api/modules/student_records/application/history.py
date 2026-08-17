@@ -172,6 +172,11 @@ def create_manual_attempt(
     )
     term = _term(enrollment, term_id=term_id, term_code=term_code)
     normalized_status = _status(status)
+    if normalized_status == AttemptStatus.ANNULLED.value:
+        raise HistoryMutationError(
+            "Use the dedicated annul operation to preserve audit semantics.",
+            code="annul_operation_required",
+        )
     requested_number = attempt_number or 1
     if requested_number < 1:
         raise HistoryMutationError(
@@ -253,7 +258,13 @@ def update_attempt(
             f"Unsupported fields: {', '.join(unknown)}", code="mass_assignment_blocked"
         )
     if "status" in changes:
-        attempt.status = _status(str(changes["status"]))
+        next_status = _status(str(changes["status"]))
+        if next_status == AttemptStatus.ANNULLED.value:
+            raise HistoryMutationError(
+                "Use the dedicated annul operation to preserve audit semantics.",
+                code="annul_operation_required",
+            )
+        attempt.status = next_status
     if "grade" in changes:
         attempt.grade = _grade(changes["grade"])
     if "credits_earned" in changes:

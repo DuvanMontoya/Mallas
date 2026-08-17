@@ -419,17 +419,6 @@ export function CurriculumMapPage({ map, failureMessage, printMode = false }: { 
     if (query !== current) router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }, [defaultLayout, map, pathname, preferences, preferencesReady, printMode, router, searchParams]);
 
-  const selected = map?.courses.find((course) => course.code === preferences.selected) ?? null;
-  useEffect(() => {
-    const selectedCode = selected?.code ?? null;
-    if (selectedCode && selectedCode !== previousSelectedRef.current) {
-      window.queueMicrotask(() => courseDetailHeadingRef.current?.focus());
-    } else if (!selectedCode && previousSelectedRef.current) {
-      window.queueMicrotask(() => selectionReturnRef.current?.focus());
-    }
-    previousSelectedRef.current = selectedCode;
-  }, [selected]);
-
   const visibleCourses = useMemo(() => {
     if (!map) return [];
     const query = preferences.query.trim().toLocaleLowerCase("es-CO");
@@ -443,6 +432,16 @@ export function CurriculumMapPage({ map, failureMessage, printMode = false }: { 
       return matchesQuery && matchesComponent && matchesGroup && matchesStatus && matchesCredits && matchesOffering;
     });
   }, [map, preferences]);
+  const selected = visibleCourses.find((course) => course.code === preferences.selected) ?? null;
+  useEffect(() => {
+    const selectedCode = selected?.code ?? null;
+    if (selectedCode && selectedCode !== previousSelectedRef.current) {
+      window.queueMicrotask(() => courseDetailHeadingRef.current?.focus());
+    } else if (!selectedCode && previousSelectedRef.current) {
+      window.queueMicrotask(() => selectionReturnRef.current?.focus());
+    }
+    previousSelectedRef.current = selectedCode;
+  }, [selected]);
 
   if (!map) return <CurriculumMapUnavailable message={failureMessage ?? "La API no devolvió una revisión curricular verificable."} />;
 
@@ -458,14 +457,14 @@ export function CurriculumMapPage({ map, failureMessage, printMode = false }: { 
 
   return (
     <div className={`curriculum-map-page${printMode ? " curriculum-map-print" : ""}`} data-layout={layout?.id ?? defaultLayout}>
-      {!printMode ? <section className="curriculum-map-hero panel"><div><p className="eyebrow accent">Malla curricular · {map.revision.program_code}</p><h1>Explora el plan sin convertir el dibujo en una regla.</h1><p>Esta vista separa la revisión curricular, el layout visual y tu posible escenario. Las columnas derivadas no son semestres oficiales.</p></div><div className="curriculum-map-hero-meta"><StatusBadge tone={map.revision.normative ? "passed" : "unknown"} label={map.revision.normative ? "Revisión publicada" : "Fuente en revisión"} /><span>{map.revision.revision_code}</span><span>{map.revision.total_required_credits} créditos requeridos</span></div></section> : null}
+      {!printMode ? <section className="curriculum-map-hero panel"><div><p className="eyebrow accent">Malla curricular · {map.revision.program_code}</p><h1>Explora el plan sin convertir el dibujo en una regla.</h1><p>Esta vista separa la revisión curricular, el layout visual y tu posible escenario. Las columnas derivadas no son semestres oficiales.</p></div><div className="curriculum-map-hero-meta"><StatusBadge tone={map.revision.status === "PUBLISHED" ? "passed" : "unknown"} label={map.revision.status === "PUBLISHED" ? "Revisión publicada" : "Revisión en proceso editorial"} /><span>{map.revision.revision_code}</span><span>{map.revision.total_required_credits} créditos requeridos</span></div></section> : null}
       {map.warnings.length && !printMode ? <div className="curriculum-map-alerts">{map.warnings.map((warning) => <Alert key={warning} tone="info"><strong>{warning === "CURRICULUM_REVISION_NOT_PUBLISHED" ? "La revisión no está publicada." : warning === "LAYOUTS_ARE_NOT_NORMATIVE" ? "Los layouts son ayudas visuales no normativas." : warning === "OFFERING_PERIOD_NOT_SELECTED" ? "La oferta no se infiere sin seleccionar un período." : warning}</strong></Alert>)}</div> : null}
       {!printMode ? <section className="curriculum-map-toolbar panel"><div className="field-group"><label htmlFor="curriculum-layout">Layout de visualización</label><select id="curriculum-layout" value={layout?.id ?? defaultLayout} onChange={(event) => updatePreference("layout", event.target.value)}>{map.layout_policy.available_layouts.map((item) => <option key={item.id} value={item.id}>{item.label} · no normativo</option>)}</select></div><div className="curriculum-toolbar-actions"><button className="button button-secondary" type="button" onClick={() => window.print()}><Printer size={15} aria-hidden="true" /> Imprimir vista</button><Link className="button button-secondary" href={map.links.print}>Vista para imprimir</Link></div></section> : null}
       {!printMode ? <FilterBar map={map} preferences={preferences} visibleCount={visibleCourses.length} onChange={updatePreference} onReset={reset} /> : null}
       <MapLegend />
       <section className="curriculum-map-layout" aria-label="Malla curricular interactiva">
         <div className="curriculum-map-main">
-          {!printMode && preferences.selected && !selected ? <Alert tone="info">La asignatura seleccionada no coincide con esta revisión o fue ocultada por la fuente.</Alert> : null}
+          {!printMode && preferences.selected && !selected ? <Alert tone="info"><strong>La asignatura seleccionada quedó fuera de los filtros.</strong> Restablece los filtros para volver a mostrarla.</Alert> : null}
           <LayoutContextNotice layout={layout} />
           {layout?.id === "component-lanes" ? <ComponentLanesLayout courses={visibleCourses} components={map.components} groups={map.groups} selected={selected} onSelect={(code) => updatePreference("selected", code)} /> : <DependencyDepthLayout courses={visibleCourses} selected={selected} onSelect={(code) => updatePreference("selected", code)} />}
           {!visibleCourses.length ? <section className="panel curriculum-map-empty"><EmptyState title="Ningún curso coincide" description="Ajusta o restablece los filtros para recuperar el contexto de la malla." action={<Button variant="secondary" type="button" onClick={reset}>Restablecer filtros</Button>} /></section> : null}

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from django.db import migrations
 
-
 TRIGGER_SQL = """
 CREATE OR REPLACE FUNCTION protect_published_curriculum_child()
 RETURNS trigger

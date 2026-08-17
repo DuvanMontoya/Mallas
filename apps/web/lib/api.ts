@@ -460,6 +460,14 @@ export type GovernanceBulkCandidatePayload = ApiComponents["schemas"]["BulkCandi
 export type GovernanceBulkPreview = ApiComponents["schemas"]["BulkPreviewView"];
 export type GovernanceRequirement = ApiComponents["schemas"]["GovernanceRequirementView"];
 export type GovernancePublicationImpact = ApiComponents["schemas"]["PublicationImpactView"];
+export type HistoryAttempt = ApiComponents["schemas"]["AttemptView"];
+export type HistoryAttemptPage = ApiComponents["schemas"]["AttemptPage"];
+export type HistoryAttemptCreatePayload = ApiComponents["schemas"]["ManualAttemptPayload"];
+export type HistoryAttemptPatchPayload = ApiComponents["schemas"]["AttemptPatchPayload"];
+export type HistoryImportPreview = ApiComponents["schemas"]["ImportPreviewView"];
+export type HistoryImportCandidate = ApiComponents["schemas"]["CandidateView"];
+export type HistoryImportResolutionPayload = ApiComponents["schemas"]["ResolvePayload"];
+export type HistoryImportApplyResult = ApiComponents["schemas"]["ApplyView"];
 
 type ScenarioMutationOptions = {
   csrfToken?: string;
@@ -480,6 +488,171 @@ function failureFromResult(result: { error?: unknown; response?: Response }): Ap
     correlationId: correlationId(result.response),
     unavailable: false,
   };
+}
+
+export async function getHistoryAttempts(options: {
+  enrollmentId: string;
+  limit?: number;
+  offset?: number;
+  status?: string;
+  sort?: "term" | "course" | "status";
+  headers?: HeadersInit;
+}): Promise<{ data: HistoryAttemptPage | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/history/attempts", {
+      headers: options.headers,
+      params: {
+        query: {
+          enrollment_id: options.enrollmentId,
+          limit: options.limit,
+          offset: options.offset,
+          status: options.status,
+          sort: options.sort,
+        },
+      },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function createHistoryAttempt(
+  body: HistoryAttemptCreatePayload,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: HistoryAttempt | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/history/attempts", {
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updateHistoryAttempt(
+  attemptId: string,
+  body: HistoryAttemptPatchPayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: HistoryAttempt | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PATCH("/api/v1/history/attempts/{attempt_id}", {
+      params: { path: { attempt_id: attemptId } },
+      body,
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function annulHistoryAttempt(
+  attemptId: string,
+  options: ScenarioMutationOptions,
+): Promise<{ data: HistoryAttempt | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.DELETE("/api/v1/history/attempts/{attempt_id}", {
+      params: { path: { attempt_id: attemptId } },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getHistoryImport(
+  batchId: string,
+  options?: { headers?: HeadersInit },
+): Promise<{ data: HistoryImportPreview | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/history/imports/{batch_id}", {
+      params: { path: { batch_id: batchId } },
+      headers: options?.headers,
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function uploadHistoryImport(
+  enrollmentId: string,
+  file: File,
+  idempotencyKey: string,
+): Promise<{ data: HistoryImportPreview | null; failure: ApiFailure | null }> {
+  try {
+    const body = new FormData();
+    body.append("enrollment_id", enrollmentId);
+    body.append("file", file);
+    const response = await fetch("/api/v1/history/imports", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        ...(await mutationHeaders()),
+        "Idempotency-Key": idempotencyKey,
+      },
+      body,
+    });
+    const payload: unknown = await response.json().catch(() => null);
+    if (response.ok) return { data: payload as HistoryImportPreview, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(payload),
+        correlationId: correlationId(response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function resolveHistoryImportCandidate(
+  batchId: string,
+  candidateId: string,
+  body: HistoryImportResolutionPayload,
+  options: ScenarioMutationOptions,
+): Promise<{ data: HistoryImportCandidate | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/history/imports/{batch_id}/candidates/{candidate_id}/resolve",
+      {
+        params: { path: { batch_id: batchId, candidate_id: candidateId } },
+        body,
+        headers: await mutationHeaders(options),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function confirmHistoryImport(
+  batchId: string,
+  options?: ScenarioMutationOptions,
+): Promise<{ data: HistoryImportApplyResult | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/history/imports/{batch_id}/confirm", {
+      params: { path: { batch_id: batchId } },
+      headers: await mutationHeaders(options),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
 }
 
 export async function getScenarios(options?: {

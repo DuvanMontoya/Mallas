@@ -25,6 +25,21 @@ describe("curriculum map read model and interaction", () => {
     expect(screen.getAllByText(/sin estado personal/i).length).toBeGreaterThan(0);
   });
 
+  it("separates a published revision from its non-normative visual layout", () => {
+    const publishedMap = structuredClone(fixture);
+    publishedMap.revision.status = "PUBLISHED";
+    publishedMap.revision.normative = false;
+    publishedMap.warnings = publishedMap.warnings.filter(
+      (warning) => warning !== "CURRICULUM_REVISION_NOT_PUBLISHED",
+    );
+
+    render(<CurriculumMapPage map={publishedMap as CurriculumMap} />);
+
+    expect(screen.getByText("Revisión publicada")).toBeInTheDocument();
+    expect(screen.getByText(/los layouts son ayudas visuales no normativas/i)).toBeInTheDocument();
+    expect(screen.queryByText(/revisión en proceso editorial/i)).not.toBeInTheDocument();
+  });
+
   it("selects a course, highlights only direct context and filters by state", () => {
     render(<CurriculumMapPage map={fixture as CurriculumMap} />);
 

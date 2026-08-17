@@ -269,9 +269,22 @@ def resolve_candidate(
 @router.post(
     "/imports/{batch_id}/confirm", auth=django_auth, response=with_problem_responses(ApplyView)
 )
-def confirm_import(request: HttpRequest, batch_id: UUID) -> dict[str, Any]:
+def confirm_import(
+    request: HttpRequest,
+    batch_id: UUID,
+    if_match: str | None = Header(  # type: ignore[type-arg]
+        None,
+        alias="If-Match",
+        description="The batch version returned by the reviewed preview.",
+    ),
+) -> dict[str, Any]:
     try:
-        result = confirm_history_import(actor=request.auth, batch_id=batch_id, request=request)
+        result = confirm_history_import(
+            actor=request.auth,
+            batch_id=batch_id,
+            expected_version=require_if_match(if_match),
+            request=request,
+        )
     except HistoryImportError as error:
         _error(error)
     return {

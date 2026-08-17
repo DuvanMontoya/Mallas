@@ -121,7 +121,8 @@ def _is_unsafe_ip(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> boo
     mapped = getattr(address, "ipv4_mapped", None)
     effective = mapped or address
     return bool(
-        effective.is_private
+        not effective.is_global
+        or effective.is_private
         or effective.is_loopback
         or effective.is_link_local
         or effective.is_multicast
@@ -200,6 +201,12 @@ def validate_source_url(
     hostname = _normalise_hostname(parts.hostname)
     if hostname == "localhost" or hostname.endswith(_UNSAFE_HOST_SUFFIXES):
         raise SourceFetchError("Local and internal source hostnames are not allowed")
+    try:
+        literal_address = ipaddress.ip_address(hostname)
+    except ValueError:
+        literal_address = None
+    if literal_address is not None and _is_unsafe_ip(literal_address):
+        raise SourceFetchError("private or non-global source addresses are not allowed")
     if not _host_is_allowed(hostname, active_policy.allowed_hosts):
         raise SourceFetchError("The source hostname is not on the configured allowlist")
     default_port = 443 if scheme == "https" else 80

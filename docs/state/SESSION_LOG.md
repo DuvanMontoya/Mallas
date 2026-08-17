@@ -492,3 +492,74 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
   pnpm necesita metadata local de `@testing-library/react` que no está
   disponible en el mirror accesible. Se detuvo el proceso de probe iniciado
   por esta sesión.
+
+## Continuación del Goal — 2026-08-17 11:56 -05:00 — reparación de integridad y gates de seguridad
+
+- Revisé los hallazgos read-only de arquitectura, seguridad, código y UX.
+- Implementé inmutabilidad de filas hijas de revisiones publicadas y enlaces
+  de evidencia; añadí validaciones de scope para plan membership, grupos,
+  términos, ofertas, matrículas y course attempts, con migraciones PostgreSQL
+  para proteger también `QuerySet`/cargas masivas.
+- Reforcé el fetcher SSRF contra direcciones no globales, la autorización MFA
+  fail-closed y el alcance editorial por institución/programa. `RoleAssignment`
+  ya no es editable desde admin.
+- Añadí protección `m2m_changed` para evidencia de requisitos publicados,
+  pruebas de MFA/scoping/operaciones, el helper de cleanup del restore y el
+  verificador de pins inmutables para GitHub Actions.
+- Anclé los workflows a commits verificados de las releases usadas y pasé
+  explícitamente `PRIVILEGED_MFA_REQUIRED` a Compose de producción.
+- PASS ejecutable en esta estación: py_compile focalizado de cambios,
+  action pins, deployment assets, secret scan, docs clone-clean, state
+  recovery, TODO gate, anti-MVP, curriculum invariants, OpenAPI breaking diff,
+  helpers operativos y `git diff --check`.
+- `scripts/verify.py` se ejecutó completo y terminó `FAIL` honesto: SAST no
+  puede parsear Python 3.14 con el bundled 3.12; uv/Django/pytest/Ruff/mypy,
+  Node/pnpm/openapi-typescript y Docker/PostgreSQL siguen bloqueados por ACL,
+  red o ausencia de herramienta. No se actualizaron lockfiles ni se hicieron
+  commits.
+
+## Continuación del Goal — 2026-08-17 12:18 -05:00 — corrección del workflow y cierre estático
+
+- La revisión de `.github/workflows/production-gates.yml` encontró que el
+  servicio PostgreSQL declaraba `POSTGRES_USER: curriculum_runtime`, mientras
+  el healthcheck y dos gates usaban `curriculum`. Se corrigieron esos tres
+  usos; el job de restore mantiene su usuario explícito independiente.
+- Repetí `check_action_pins`, `verify_deployment`, `check_no_todos`,
+  `anti_mvp_audit`, `validate_curriculum`, `verify_docs_clone_clean`,
+  `source_freshness --offline`, `verify_state_recovery`, `scan_secrets`,
+  `git diff --check` y `py_compile` focalizado: PASS. Los conteos actuales son
+  525 archivos escaneados por el guard TODO, 0 funcionales, y 200 archivos de
+  producto en el gate anti-MVP, 14 contextos, 0 issues.
+- `scripts/verify.py` volvió a terminar en FAIL reproducible por el mismo
+  conjunto externo: Python 3.12 no puede validar sintaxis 3.14, uv/Django no
+  arrancan, Node/pnpm tiene EPERM en `node_modules`, falta el paquete
+  accesible del cliente OpenAPI y no hay Docker/PostgreSQL. No se falsificó un
+  PASS ni se modificaron lockfiles.
+
+## Continuación del Goal — 2026-08-17 13:08 -05:00 — Chrome real y cierre funcional
+
+- Se controló la sesión actual de Chrome y se recorrió la aplicación como
+  administrador y estudiante, inspeccionando consola y estado visible.
+- Se validaron rutas públicas, editoriales y privadas; login/logout; separación
+  de capacidades; filtros y detalle de malla; creación de escenario y curso;
+  creación y anulación auditable de un intento académico.
+- Se corrigieron home/navigation role-aware, selección filtrada de malla,
+  hydration del planner, historia completa, importación/reconciliación,
+  procedencia pública, control de concurrencia `If-Match`, locks de import,
+  `ANNULLED` reservado al comando dedicado y cache privado `no-store`.
+- Se exportó OpenAPI y regeneró el cliente TypeScript.
+- `python scripts/verify.py` terminó `PASS`: backend `149 passed, 1 skipped`
+  esperado; frontend `15 files, 39 tests`; Ruff/format/mypy/ESLint/TypeScript,
+  migraciones, Django, contrato, secretos, SAST y gates documentales pasan.
+- Reviewers read-only de seguridad y UX reportaron `0 Critical / 0 High`; se
+  pidió revisión final de código después de cerrar la última vía backend de
+  `ANNULLED`.
+- No se creó commit, push ni despliegue. Permanecen como trabajo explícito la
+  prueba production-like/Compose, parser PDF aislado, minimización de
+  `raw_payload`, cursor estable de historia y traducción del detalle técnico de
+  importación.
+- Una revisión final encontró y se cerraron dos regresiones de concurrencia:
+  la UI refresca la versión autoritativa del lote después de cada resolución y
+  un retry del mismo confirm ya aplicado devuelve éxito idempotente sin crear
+  registros duplicados. Los tests HTTP cubren ambos caminos; el reviewer final
+  confirmó `0 Critical / 0 High`.

@@ -42,6 +42,10 @@ class StudentProfile(UUIDTimestampedModel):
     def __str__(self) -> str:
         return self.display_name or self.user.email
 
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class StudentAdvisorAssignment(UUIDTimestampedModel):
     """Explicit, time-bounded ownership delegation for advisor access."""
@@ -218,6 +222,10 @@ class CourseAttempt(UUIDTimestampedModel):
             raise ValidationError("Attempt course and student institution must match.")
         if self.grade is not None and not 0 <= self.grade <= 5:
             raise ValidationError({"grade": "Grade must be between 0 and 5."})
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.enrollment} — {self.course_version.course.code}"

@@ -188,6 +188,32 @@ def _require_success(result: subprocess.CompletedProcess[str], operation: str) -
         raise RestoreError(f"{operation} failed ({result.returncode}): {detail}")
 
 
+def _drop_drill_database(
+    *,
+    target: DatabaseTarget,
+    drill_database: str,
+    container: str | None,
+    container_env_file: Path | None,
+) -> None:
+    """Drop the isolated database and fail the drill if cleanup is uncertain."""
+
+    quoted_database = f'"{drill_database}"'
+    drop = _client_command(
+        target,
+        "psql",
+        "postgres",
+        container=container,
+        container_env_file=container_env_file,
+        extra=["--command", f"DROP DATABASE IF EXISTS {quoted_database}"],
+    )
+    dropped = _run(drop, target=target, container=bool(container))
+    if dropped.returncode:
+        detail = (dropped.stderr or "")[-500:].strip()
+        raise RestoreError(
+            f"cleanup failed: could not drop temporary database {drill_database}: {detail}"
+        )
+
+
 def restore_drill(
     *,
     database_url: str,
@@ -288,20 +314,12 @@ def restore_drill(
     finally:
         try:
             if created:
-                drop = _client_command(
-                    target,
-                    "psql",
-                    admin_database,
+                _drop_drill_database(
+                    target=target,
+                    drill_database=drill_database,
                     container=container,
                     container_env_file=container_env_file,
-                    extra=["--command", f"DROP DATABASE IF EXISTS {quoted_database}"],
                 )
-                dropped = _run(drop, target=target, container=bool(container))
-                if dropped.returncode:
-                    detail = (dropped.stderr or "")[-500:].strip()
-                    raise RestoreError(
-                        f"cleanup failed: could not drop temporary database {drill_database}: {detail}"
-                    )
         finally:
             if container_env_file is not None and container_env_file.exists():
                 container_env_file.unlink()

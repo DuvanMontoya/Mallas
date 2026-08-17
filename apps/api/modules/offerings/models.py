@@ -56,6 +56,10 @@ class AcademicTerm(UUIDTimestampedModel):
         if self.campus_id and self.campus.institution_id != self.institution_id:
             raise ValidationError({"campus": "Campus must belong to the term institution."})
 
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return f"{self.institution.display_name} — {self.code}"
 

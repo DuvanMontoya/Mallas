@@ -25,7 +25,7 @@ describe("dependency graph explorer", () => {
     const { container } = render(<DependencyGraphExplorer graph={fixture as DependencyGraph} />);
 
     expect(screen.getByRole("heading", { name: /entiende qué desbloquea/i })).toBeInTheDocument();
-    expect(screen.getByText(/todas las condiciones/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/todas las condiciones/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/lista textual de relaciones/i)).toBeInTheDocument();
     expect(screen.getByText(/1000003 abre una ruta hacia 2000001/i)).toBeInTheDocument();
     expect(screen.getByText(/sin modificar reglas/i)).toBeInTheDocument();
@@ -37,9 +37,9 @@ describe("dependency graph explorer", () => {
 
     fireEvent.change(screen.getByLabelText("Tipo de nodo"), { target: { value: "CONDITION" } });
     expect(screen.getByTestId("dependency-graph-canvas")).toHaveTextContent("2 nodos");
-    expect(screen.getByText("Todas las condiciones")).toBeInTheDocument();
-    expect(screen.getByText("Umbral de créditos en agrupación")).toBeInTheDocument();
-    expect(screen.getByText(/tipo ALL/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Todas las condiciones").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Umbral de créditos en agrupación").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/tipo ALL/i).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("Buscar curso o condición"), { target: { value: "no-existe" } });
     expect(screen.getAllByText(/ningún nodo coincide/i).length).toBeGreaterThan(0);

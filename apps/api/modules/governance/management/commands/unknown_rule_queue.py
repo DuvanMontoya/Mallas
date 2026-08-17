@@ -14,7 +14,6 @@ from django.core.management.base import BaseCommand, CommandError
 from domain.enums import EpistemicStatus
 from modules.rules.models import Requirement
 
-
 _QUEUE_STATUSES = (
     EpistemicStatus.INFERRED_PENDING_REVIEW.value,
     EpistemicStatus.UNKNOWN.value,
@@ -30,7 +29,9 @@ def _row(requirement: Requirement) -> dict[str, Any]:
             "id": str(item.pk),
             "snapshot_id": str(item.snapshot_id),
             "snapshot_sha256": item.snapshot.sha256,
-            "locator": item.line_locator or item.section or (f"page:{item.page}" if item.page else "source"),
+            "locator": item.line_locator
+            or item.section
+            or (f"page:{item.page}" if item.page else "source"),
             "source_url": item.snapshot.source_url or item.snapshot.document.canonical_url or None,
         }
         for item in evidence

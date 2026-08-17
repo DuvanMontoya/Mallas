@@ -315,8 +315,8 @@
         "P23"
       ],
       "prompt": "prompts/24_DEPLOYMENT_DR.md",
-      "verification": "Static deployment assets, secret scan, docs/state checks and py_compile pass; Docker build, image scan, Compose smoke and PostgreSQL backup/restore are blocked by Docker Engine ACL in this environment.",
-      "notes": "Production Dockerfiles, immutable Compose, CI gates, backup/restore scripts and runbooks implemented. Runtime proof remains external; no gate is marked green without execution."
+      "verification": "Static deployment assets, secret scan, docs/state checks, action pinning and focused py_compile pass; Docker build, image scan, Compose smoke and PostgreSQL backup/restore are blocked by Docker Engine ACL in this environment.",
+      "notes": "Production Dockerfiles, immutable Compose, split runtime/migration DB URLs, explicit MFA propagation, backup/restore scripts and runbooks implemented. Runtime proof remains external; no gate is marked green without execution."
     },
     {
       "id": "P25",
@@ -328,8 +328,8 @@
         "P24"
       ],
       "prompt": "prompts/25_FULL_SYSTEM_AUDIT.md",
-      "verification": "Traceability matrix, system audit, docs clone-clean, deployment/static checks and historical suite evidence recorded; current canonical verify and runtime gates remain blocked by Python/Node/Docker permissions.",
-      "notes": "No PARTIAL/MISSING functional module was hidden; BLOCKED_EXTERNAL gates are explicit."
+      "verification": "Traceability matrix and real Chrome admin/student audit recorded; canonical scripts/verify.py PASS with 149 backend passed + 1 expected PostgreSQL-trigger skip and 39 frontend tests; Django/migrations/Ruff/mypy/ESLint/TypeScript/OpenAPI/security gates pass. Docker/Compose, restore and production-like load remain pending.",
+      "notes": "Chrome real-route/write testing fixed planner hydration, role-aware navigation/home, filtered map selection, history/import workflows, stale import confirmation and private caching. Security/UX reviewers report zero Critical/High; production runtime/load and operational restore gates remain explicit, so the phase stays in_progress."
     },
     {
       "id": "P26",
@@ -339,7 +339,7 @@
         "P25"
       ],
       "prompt": "prompts/26_CONTINUOUS_MAINTENANCE.md",
-      "verification": "Renovate/source-watch/workflows, unknown-rule queue, maintenance command, baseline checker and state recovery pass static checks; scheduled CI and live source freshness are not runnable here.",
+      "verification": "Renovate/source-watch/workflows, immutable action pins, unknown-rule queue, maintenance command, baseline checker and state recovery pass static checks; scheduled CI and live source freshness are not runnable here.",
       "notes": "No auto-publish path was added. Current source watcher is UNKNOWN offline and ERROR under network sandbox; P91 identifies stable Next downgrade pending lockfile regeneration."
     },
     {
@@ -372,8 +372,8 @@
         "P91"
       ],
       "prompt": "prompts/92_UI_POLISH_AND_COGNITIVE_AUDIT.md",
-      "verification": "Static UI/accessibility review and existing build bundle audit pass; historical E2E 50/50 and axe 20/20 recorded; current fixture runtime rerun blocked by node_modules EPERM.",
-      "notes": "No domain change; low-priority English backoffice headings noted for editorial copy review."
+      "verification": "Real Chrome admin/student route and write audit plus console inspection; ESLint, TypeScript and Vitest 15 files/39 tests pass. Role-aware home/navigation, map filtered-selection consistency, planner hydration, history/import and sources UX were corrected; production-like Playwright/axe/load rerun remains pending.",
+      "notes": "The curriculum map is now the primary surface, editorial-only users avoid student onboarding, sources fail safely, ANNULLED is a dedicated auditable action, and critical import controls are accessible. UX reviewer reports zero Critical/High; technical import localization and production-like cross-device proof remain explicit debt."
     },
     {
       "id": "P93",
@@ -394,8 +394,8 @@
         "P93"
       ],
       "prompt": "prompts/94_ADD_NEW_PROGRAM.md",
-      "verification": "Synthetic Statistics/Computer Science isolation and shared AST round-trip test added and py_compile passes; Django test execution is blocked by Python 3.14 runtime access.",
-      "notes": "No official second curriculum was published and no AST fork was added."
+      "verification": "Synthetic Statistics/Computer Science isolation and shared AST round-trip test, model scope guards and PostgreSQL scope migrations added; py_compile passes; Django/PostgreSQL execution is blocked by runtime access.",
+      "notes": "No official second curriculum was published and no AST fork was added. Defense-in-depth scope enforcement is recorded in ADR-0029."
     },
     {
       "id": "P95",
@@ -416,8 +416,8 @@
         "P95"
       ],
       "prompt": "prompts/98_ANTI_MVP_COMPLETENESS_AUDIT.md",
-      "verification": "Anti-MVP static gate scans 196 product files with zero issues; TODO release gate scans 508 files with functional_hits=0 and PASS; canonical SPEC/REQUIREMENTS/ACCEPTANCE indexes and audit matrix added; runtime/restore/source/lockfile gates remain external.",
-      "notes": "No functional PARTIAL/MISSING gap was hidden; product is not declared READY while external gates remain unexecuted. The TODO guard now prunes dependency stores/caches and classifies nonfunctional references."
+      "verification": "Anti-MVP static gate scans 200 product files with zero issues; TODO release gate scans 525 files with functional_hits=0 and PASS; action pinning, canonical SPEC/REQUIREMENTS/ACCEPTANCE indexes and audit matrix pass; runtime/restore/source/lockfile gates remain external.",
+      "notes": "No functional PARTIAL/MISSING gap was hidden; product is not declared READY while external gates remain unexecuted. The TODO guard prunes dependency stores/caches and classifies nonfunctional references; follow-up integrity/security/UX fixes are recorded in the final audit."
     },
     {
       "id": "P99",
@@ -427,7 +427,7 @@
         "P98"
       ],
       "prompt": "prompts/99_RESUME_AUTONOMOUS.md",
-      "verification": "State recovery, deployment assets, technology baseline, TODO release gate and anti-MVP checks pass; canonical verify reports honest failures/blockers and identifies P24 as first incomplete milestone.",
+      "verification": "State recovery, deployment assets, immutable GitHub Action pinning, technology baseline, TODO release gate, anti-MVP and operational helper checks pass; canonical verify reports honest failures/blockers and identifies P24 as first incomplete milestone.",
       "notes": "COPY_PASTE_ORDER.md and README.md were read as prompt instructions; no new milestone was inferred from them."
     }
   ]

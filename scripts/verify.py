@@ -36,6 +36,7 @@ def main() -> int:
     ok &= run("secret scan", [sys.executable, "scripts/scan_secrets.py"])
     ok &= run("high-confidence SAST", [sys.executable, "scripts/sast.py"])
     ok &= run("deployment assets", [sys.executable, "scripts/verify_deployment.py"])
+    ok &= run("GitHub Action pinning", [sys.executable, "scripts/check_action_pins.py"])
     ok &= run("documentation clone-clean", [sys.executable, "scripts/verify_docs_clone_clean.py"])
     ok &= run("state recovery", [sys.executable, "scripts/verify_state_recovery.py"])
     ok &= run("TODO release gate", [sys.executable, "scripts/check_no_todos.py"])

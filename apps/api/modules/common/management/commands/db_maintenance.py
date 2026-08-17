@@ -11,7 +11,10 @@ from django.db.migrations.executor import MigrationExecutor
 
 def _pending_migrations() -> list[str]:
     executor = MigrationExecutor(connection)
-    return [f"{migration.app_label}.{migration.name}" for migration, _ in executor.migration_plan(executor.loader.graph.leaf_nodes())]
+    return [
+        f"{migration.app_label}.{migration.name}"
+        for migration, _ in executor.migration_plan(executor.loader.graph.leaf_nodes())
+    ]
 
 
 def _analyze() -> str:
@@ -35,7 +38,9 @@ class Command(BaseCommand):
     help = "Check migration state and optionally run bounded database statistics maintenance."
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument("--check-only", action="store_true", help="only check for pending migrations")
+        parser.add_argument(
+            "--check-only", action="store_true", help="only check for pending migrations"
+        )
         parser.add_argument("--analyze", action="store_true", help="refresh planner statistics")
         parser.add_argument("--json", action="store_true", dest="as_json")
 

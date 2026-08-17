@@ -1,5 +1,5 @@
 import axe from "axe-core";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -25,6 +25,30 @@ describe("product shell", () => {
     const { container } = renderShell();
     const results = await axe.run(container);
     expect(results.violations).toEqual([]);
+  });
+
+  it("keeps editorial-only accounts out of private student navigation", () => {
+    renderWithProviders(
+      <AppShell session={{ state: "authenticated", correlationId: null, user: { id: 7, email: "admin@example.test", email_verified: true, roles: ["ADMIN"], student_profile_id: null } }}>
+        <div>Gobernanza</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "Fuentes" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Historia" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Planificador" })).not.toBeInTheDocument();
+  });
+
+  it("supports legacy student accounts without an explicit STUDENT role", () => {
+    renderWithProviders(
+      <AppShell session={{ state: "authenticated", correlationId: null, user: { id: 8, email: "student@example.test", email_verified: true, roles: [], student_profile_id: "profile-8" } }}>
+        <div>Malla</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "Historia" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Planificador" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Fuentes" })).not.toBeInTheDocument();
   });
 });
 

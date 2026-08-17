@@ -58,12 +58,11 @@ HTML no sustituyen esa prueba manual.
 ## Microcopy y observaciones editoriales
 
 La UI mantiene las frases de decisión en español y deja nombres técnicos (AST,
-semantic diff, `UNKNOWN`) donde sirven como identificadores editoriales. La
-principal deuda de pulido es homogeneizar algunos encabezados internos en inglés
-del backoffice (`Source Inbox`, `Publication event`, `Rule inspector`) si la
-audiencia editorial final no es bilingüe. No se cambia automáticamente porque
-la decisión es editorial y no afecta la corrección ni la semántica de dominio;
-queda como mejora de copy de prioridad baja.
+semantic diff, `UNKNOWN`) donde sirven como identificadores editoriales. Los
+encabezados internos del backoffice quedaron homogeneizados en español
+(`Bandeja de fuentes`, `Evento`, `Inspector`); `Diferencia semántica`, `Informe
+de validación` y `Trazabilidad de auditoría` también se muestran en el idioma
+de la audiencia editorial.
 
 No se identificaron estados codificados únicamente por color, interacción sin
 alternativa de teclado ni una flecha de grafo usada como autoridad normativa.
@@ -88,3 +87,17 @@ El diseño no requiere una corrección de código detectable por esta auditoría
 P92 permanece **pendiente de repetición runtime** hasta recuperar acceso a las
 dependencias frontend y ejecutar el recorrido fixture completo, axe, teclado,
 zoom y reduced motion en el mismo checkout.
+
+## Correcciones posteriores a la revisión especializada — 2026-08-17
+
+- `NotificationCenter` enfoca el encabezado al abrir y devuelve el foco al
+  disparador al cerrar por botón, Escape o toggle.
+- La alternativa textual del grafo enumera todos los nodos visibles,
+  incluyendo condiciones `ALL`/`ANY`/umbral y sus aristas semánticas, en lugar
+  de limitarse a cursos.
+- El backoffice usa un `role=status` dedicado para anuncios; el contenedor
+  completo del detalle ya no es una región viva que provoque lecturas
+  repetitivas.
+- Estas correcciones tienen validaciones unitarias actualizadas, pero el
+  rerun de Vitest, typecheck, build, axe y E2E sigue `BLOCKED_EXTERNAL` por
+  `node_modules` inaccesible.

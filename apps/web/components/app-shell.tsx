@@ -36,14 +36,17 @@ type NavigationItem = {
   icon: typeof LayoutDashboard;
 };
 
-const primaryNavigation: NavigationItem[] = [
+const publicNavigation: NavigationItem[] = [
   { href: "/", label: messages["es-CO"].home, shortLabel: "Inicio", icon: LayoutDashboard },
   { href: "/curriculum", label: messages["es-CO"].curriculum, shortLabel: "Malla", icon: Map },
+  { href: "/graph", label: messages["es-CO"].graph, shortLabel: "Grafo", icon: Network },
+  { href: "/offerings", label: messages["es-CO"].offerings, shortLabel: "Oferta", icon: BookOpen },
+];
+
+const studentNavigation: NavigationItem[] = [
   { href: "/audit", label: messages["es-CO"].audit, shortLabel: "Auditoría", icon: ClipboardCheck },
   { href: "/analytics", label: messages["es-CO"].analytics, shortLabel: "Analítica", icon: BarChart3 },
-  { href: "/graph", label: messages["es-CO"].graph, shortLabel: "Grafo", icon: Network },
   { href: "/planner", label: messages["es-CO"].planner, shortLabel: "Plan", icon: CalendarClock },
-  { href: "/offerings", label: messages["es-CO"].offerings, shortLabel: "Oferta", icon: BookOpen },
   { href: "/history", label: messages["es-CO"].history, shortLabel: "Historia", icon: History },
 ];
 
@@ -94,6 +97,11 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
   const [isPending, startTransition] = useTransition();
   const isAuthRoute = pathname === "/login";
   const canSeeEditorial = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) ?? false;
+  // Student is the default product persona and older accounts can legitimately
+  // have no explicit STUDENT assignment. Editorial-only accounts must opt in.
+  const canSeeStudentWorkspace = Boolean(session.user?.student_profile_id) || (session.user?.roles.includes("STUDENT") ?? false);
+  const visibleNavigation = canSeeStudentWorkspace ? [...publicNavigation, ...studentNavigation] : publicNavigation;
+  const allVisibleNavigation = canSeeEditorial ? [...visibleNavigation, ...editorialNavigation] : visibleNavigation;
 
   useEffect(() => {
     if (isAuthRoute) return;
@@ -153,7 +161,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
           <span><strong>{messages["es-CO"].brandName}</strong><span>{messages["es-CO"].brandProduct}</span></span>
         </Link>
         <nav className="main-nav" aria-label={messages["es-CO"].navigationLabel}>
-          <NavigationLinks items={primaryNavigation} pathname={pathname} />
+          <NavigationLinks items={visibleNavigation} pathname={pathname} />
           {canSeeEditorial ? (
             <div className="nav-section">
               <p className="nav-section-label">Editorial</p>
@@ -171,7 +179,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
         <header className="topbar">
           <div>
             <p className="eyebrow">{messages["es-CO"].workspaceLabel}</p>
-            <p className="breadcrumb" aria-live="polite">{primaryNavigation.find((item) => isActive(pathname, item.href))?.label ?? messages["es-CO"].workspaceLabel}</p>
+            <p className="breadcrumb" aria-live="polite">{allVisibleNavigation.find((item) => isActive(pathname, item.href))?.label ?? messages["es-CO"].workspaceLabel}</p>
           </div>
           <div className="topbar-actions">
             <NotificationCenter enabled={session.state === "authenticated" && Boolean(session.user)} />
@@ -221,7 +229,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
       </div>
 
       <nav className="mobile-nav" aria-label={`${messages["es-CO"].navigationLabel} móvil`}>
-        <NavigationLinks items={primaryNavigation.slice(0, 5)} pathname={pathname} mobile />
+        <NavigationLinks items={visibleNavigation.slice(0, 5)} pathname={pathname} mobile />
         <button ref={mobileMenuToggleRef} className="mobile-menu-toggle" type="button" aria-expanded={mobileMenuOpen} aria-controls="mobile-more-menu" onClick={() => setMobileMenuOpen((open) => !open)}>
           {mobileMenuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
           <span>{mobileMenuOpen ? messages["es-CO"].closeMenu : messages["es-CO"].menu}</span>
@@ -229,7 +237,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
       </nav>
       {mobileMenuOpen ? (
         <nav ref={mobileMoreMenuRef} className="mobile-more-menu" id="mobile-more-menu" aria-label="Más opciones de navegación">
-          <NavigationLinks items={primaryNavigation.slice(5)} pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} />
+          <NavigationLinks items={visibleNavigation.slice(5)} pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} />
           {canSeeEditorial ? <NavigationLinks items={editorialNavigation} pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} /> : null}
         </nav>
       ) : null}

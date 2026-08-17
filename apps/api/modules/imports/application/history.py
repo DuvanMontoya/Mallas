@@ -462,6 +462,10 @@ def resolve_history_candidate(
     request: Any | None = None,
 ) -> CandidateRecord:
     batch = _get_editable_batch(actor, batch_id)
+    # Reconciliation and confirmation always acquire the batch lock first,
+    # then candidate locks. This prevents a stale resolver from writing after
+    # the batch has been applied by a concurrent confirmation.
+    batch = ImportBatch.objects.select_for_update().get(pk=batch.pk)
     if batch.status == ImportStatus.APPLIED.value:
         raise HistoryImportError(
             "Applied imports cannot be changed.", code="import_already_applied"
@@ -543,6 +547,8 @@ def resolve_history_candidate(
         else CandidateStatus.RESOLVED.value
     )
     candidate.save(update_fields=["status", "updated_at"])
+    # A reconciliation decision changes the reviewed batch snapshot.
+    batch.save(update_fields=["updated_at"])
     record_audit_event(
         request,
         action="HISTORY_IMPORT_CANDIDATE_RESOLVED",
@@ -633,7 +639,11 @@ def _evidence_excerpt(candidate: CandidateRecord) -> tuple[str, str, dict[str, A
 
 @transaction.atomic  # type: ignore[untyped-decorator]
 def confirm_history_import(
-    *, actor: Any, batch_id: UUID | str, request: Any | None = None
+    *,
+    actor: Any,
+    batch_id: UUID | str,
+    expected_version: str | None = None,
+    request: Any | None = None,
 ) -> ImportApplyResult:
     batch = _get_editable_batch(actor, batch_id)
     # Lock only the batch row. PostgreSQL cannot apply FOR UPDATE to nullable
@@ -642,6 +652,9 @@ def confirm_history_import(
     # confirmation and idempotent replay serialize.
     batch = ImportBatch.objects.select_for_update().get(pk=batch.pk)
     if batch.status == ImportStatus.APPLIED.value:
+        # Confirmation is an idempotent command. A client that lost the first
+        # response must be able to replay the same request even though applying
+        # the batch advanced updated_at. No mutation is performed in this path.
         latest = batch.enrollment.audit_runs.order_by("-generated_at").first()
         return ImportApplyResult(
             batch=batch,
@@ -651,10 +664,24 @@ def confirm_history_import(
             audit_run_id=str(latest.pk) if latest else None,
             idempotent=True,
         )
+    if expected_version is not None and expected_version.strip('"') != batch.updated_at.isoformat():
+        raise HistoryImportError(
+            "The import changed since it was reviewed; reload the preview before confirming.",
+            code="stale_resource",
+        )
     if batch.status != ImportStatus.PREVIEW.value:
         raise HistoryImportError(
             "Only a preview batch can be confirmed.", code="import_status_invalid"
         )
+    # Lock candidate base rows in a stable order before reading their nullable
+    # related mappings. This serializes confirmation with reconciliation
+    # without applying FOR UPDATE to nullable joins.
+    list(
+        CandidateRecord.objects.select_for_update()
+        .filter(batch=batch)
+        .order_by("row_number", "id")
+        .values_list("id", flat=True)
+    )
     candidates = list(
         batch.candidate_records.select_related(
             "reconciliation",

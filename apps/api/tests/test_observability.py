@@ -32,6 +32,13 @@ class ObservabilityTests(TestCase):
         self.assertNotEqual(response["X-Request-ID"], "id with spaces")
         self.assertRegex(response["X-Request-ID"], r"^[0-9a-f-]{36}$")
 
+    def test_private_api_responses_are_never_cached(self) -> None:
+        response = self.client.get("/api/v1/auth/me")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response["Cache-Control"], "private, no-store")
+        self.assertEqual(response["Pragma"], "no-cache")
+
     def test_formatter_redacts_sensitive_values_and_exception_details(self) -> None:
         formatter = JsonFormatter()
         record = logging.LogRecord(
