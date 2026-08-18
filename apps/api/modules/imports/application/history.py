@@ -27,7 +27,10 @@ from modules.identity.application.authorization import (
     can_edit_student_history,
     can_view_enrollment,
 )
-from modules.imports.application.parser_isolation import parse_pdf_history_isolated
+from modules.imports.application.parser_isolation import (
+    ParserCapacityError,
+    parse_pdf_history_isolated,
+)
 from modules.imports.application.retention import purge_applied_batch_payloads
 from modules.imports.application.storage import (
     ArtifactValidationError,
@@ -331,6 +334,8 @@ def create_history_import(
                 mime_type=validated.mime_type,
             )
         )
+    except ParserCapacityError as exc:
+        raise HistoryImportError(str(exc), code="parser_capacity_exhausted") from exc
     except (ValueError, HistoryFormatError) as exc:
         raise HistoryImportError(str(exc), code="history_format_invalid") from exc
     return _persist_history_import(
@@ -612,24 +617,35 @@ def _grade(value: Any) -> Decimal | None:
 
 def _credits(normalized: dict[str, Any], *, status: str, course_version: CourseVersion) -> int:
     raw = normalized.get("credits_earned")
+    supplied: int | None = None
     if raw not in (None, ""):
         try:
-            value = int(raw)
+            supplied = int(raw)
         except (TypeError, ValueError) as exc:
             raise HistoryImportError(
                 "credits_earned must be an integer.", code="credits_invalid"
             ) from exc
-        if value < 0:
+        if supplied < 0:
             raise HistoryImportError("credits_earned cannot be negative.", code="credits_invalid")
-        return value
     if status in {
         AttemptStatus.PASSED.value,
         AttemptStatus.VALIDATED.value,
         AttemptStatus.HOMOLOGATED.value,
         AttemptStatus.TRANSFERRED.value,
     }:
-        return course_version.credits or 0
-    return 0
+        if course_version.credits is None:
+            raise HistoryImportError(
+                "The course version has no verified credit value.", code="credits_unknown"
+            )
+        expected = course_version.credits
+    else:
+        expected = 0
+    if supplied is not None and supplied != expected:
+        raise HistoryImportError(
+            "Earned credits must match the course version and attempt status.",
+            code="credits_inconsistent",
+        )
+    return expected
 
 
 def _next_attempt_number(

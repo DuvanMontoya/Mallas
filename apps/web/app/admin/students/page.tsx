@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 
 import { SessionRequired } from "@/components/session-required";
 import { StudentAdministrationWorkspace } from "@/components/student-administration-workspace";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getAdminEnrollments, getSessionSnapshot, getStudentAdminCatalog } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +23,7 @@ export default async function StudentAdministrationPage() {
     getAdminEnrollments({ headers }),
   ]);
   if (!catalog.data || !enrollments.data) {
-    return <SessionRequired nextPath="/admin/students" title="No pudimos abrir la administración" description={catalog.failure?.problem?.detail ?? enrollments.failure?.problem?.detail ?? "Reintenta cuando la API administrativa esté disponible."} showSignIn={false} />;
+    return <div className="page-shell"><EmptyState tone="unknown" title="No pudimos abrir la administración" description={catalog.failure?.problem?.detail ?? enrollments.failure?.problem?.detail ?? "La API administrativa no está disponible temporalmente."} action={<><Link className="button button-primary" href="/admin/students">Reintentar</Link><Link className="button button-secondary" href="/curriculum">Abrir malla</Link></>} /></div>;
   }
-  return <StudentAdministrationWorkspace catalog={catalog.data} initialEnrollments={enrollments.data.items} />;
+  return <StudentAdministrationWorkspace catalog={catalog.data} initialPage={enrollments.data} />;
 }
-

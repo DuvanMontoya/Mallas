@@ -4,6 +4,8 @@ import ctypes
 import multiprocessing
 import os
 import queue
+import threading
+from importlib import import_module
 from multiprocessing.context import SpawnContext
 from typing import Any
 
@@ -17,17 +19,18 @@ class IsolatedParserError(HistoryFormatError):
     """Safe public failure from the bounded parser process."""
 
 
+class ParserCapacityError(IsolatedParserError):
+    """Transient failure when the bounded parser slot is already occupied."""
+
+
 def _apply_posix_memory_limit(memory_bytes: int) -> None:
     if os.name == "nt":
         return
     try:
-        import resource
-
+        resource: Any = import_module("resource")
         resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
-    except ImportError, OSError, ValueError:
-        # Some platforms do not expose RLIMIT_AS. The parent timeout and process
-        # boundary still apply; production readiness verifies the effective limit.
-        return
+    except (ImportError, OSError, ValueError) as exc:
+        raise RuntimeError("PDF parser memory isolation is unavailable") from exc
 
 
 def _pdf_worker(
@@ -140,7 +143,10 @@ def _close_windows_handle(handle: int | None) -> None:
         kernel32.CloseHandle(handle)
 
 
-def parse_pdf_history_isolated(content: bytes, *, source_name: str) -> ParseReport:
+_PARSER_CAPACITY = threading.BoundedSemaphore(1)
+
+
+def _parse_pdf_history_isolated(content: bytes, *, source_name: str) -> ParseReport:
     timeout_seconds = float(settings.HISTORY_PDF_PARSE_TIMEOUT_SECONDS)
     memory_bytes = int(settings.HISTORY_PDF_PARSE_MEMORY_MIB) * 1024 * 1024
     context: SpawnContext = multiprocessing.get_context("spawn")
@@ -156,6 +162,8 @@ def parse_pdf_history_isolated(content: bytes, *, source_name: str) -> ParseRepo
     process.start()
     try:
         try:
+            if process.pid is None:
+                raise OSError("Parser process did not expose a process identifier")
             windows_job = _assign_windows_memory_job(process.pid, memory_bytes)
         except OSError as exc:
             process.terminate()
@@ -185,3 +193,12 @@ def parse_pdf_history_isolated(content: bytes, *, source_name: str) -> ParseRepo
             process.join(timeout=1)
         _close_windows_handle(windows_job)
         result_queue.close()
+
+
+def parse_pdf_history_isolated(content: bytes, *, source_name: str) -> ParseReport:
+    if not _PARSER_CAPACITY.acquire(blocking=False):
+        raise ParserCapacityError("PDF parser capacity is busy; retry shortly")
+    try:
+        return _parse_pdf_history_isolated(content, source_name=source_name)
+    finally:
+        _PARSER_CAPACITY.release()

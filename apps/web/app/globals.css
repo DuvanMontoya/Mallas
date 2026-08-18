@@ -212,6 +212,7 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .alert small { display: block; margin-top: .35rem; opacity: .8; }
 .alert-mark { display: grid; width: 1.1rem; height: 1.1rem; flex: none; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .64rem; font-weight: 800; }
 .alert-info { background: var(--surface-1); color: var(--text-body); }
+.alert-warning { background: color-mix(in srgb, var(--status-current) 12%, var(--surface-0)); color: var(--text-strong); }
 .alert-success { background: color-mix(in srgb, var(--status-passed) 10%, var(--surface-0)); color: var(--status-passed); }
 .alert-error { background: color-mix(in srgb, var(--status-blocked) 10%, var(--surface-0)); color: var(--status-blocked); }
 
@@ -1246,6 +1247,10 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .student-command-copy .eyebrow { min-width: max-content; }
 .student-command-actions { margin: 0 0 0 auto; }
 .student-progress-summary { min-width: 230px; padding: 0; border: 0; }
+.student-progress-summary > span { color: var(--text-body); }
+.student-progress-summary > strong { color: var(--text-strong); font-size: 1.65rem; font-weight: 750; letter-spacing: -.04em; }
+.student-progress-summary > strong small,
+.student-progress-summary > small { color: var(--text-body); }
 
 @media (max-width: 820px) {
   .audit-decision-hero, .offerings-decision-hero, .planner-decision-hero, .history-decision-hero, .graph-decision-hero, .analytics-decision-hero, .editorial-command, .governance-decision-hero, .student-command { align-items: stretch; flex-direction: column; }

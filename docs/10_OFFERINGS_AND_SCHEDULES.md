@@ -71,3 +71,14 @@ El API devuelve por separado `offered_state`, `eligibility_state` y
   selección de horarios se solapa;
 - cualquier estado + `UNKNOWN`: falta evidencia suficiente y se explica la
   razón, sin convertirla en un booleano.
+
+## Alcance de períodos por matrícula
+
+`GET /api/v1/academic-terms?enrollment_id=...` autoriza primero la matrícula y
+devuelve únicamente períodos de su institución y campus, más períodos institucionales
+sin campus. Si se suministra además un filtro incompatible de institución o campus, la
+petición se rechaza; planificador e historia no consumen un catálogo global.
+
+Los triggers PostgreSQL de término y oferta son funciones separadas por tabla. Cada
+función sólo accede a columnas existentes en su propio registro y valida que campus,
+institución, curso y período permanezcan en el mismo alcance.

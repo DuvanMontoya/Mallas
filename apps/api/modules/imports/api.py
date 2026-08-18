@@ -86,7 +86,9 @@ class ApplyView(Schema):
 
 def _error(error: HistoryImportError) -> NoReturn:
     status = (
-        403
+        503
+        if error.code == "parser_capacity_exhausted"
+        else 403
         if error.code == "history_forbidden"
         else 404
         if error.code.endswith("_not_found")

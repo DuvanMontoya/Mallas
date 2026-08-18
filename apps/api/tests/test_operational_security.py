@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -58,6 +59,26 @@ class OperationalSecurityTests(SimpleTestCase):
                 container=None,
                 container_env_file=None,
             )
+
+    def test_restore_drill_requires_backup_metadata_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            backup = Path(directory) / "backup.dump"
+            backup.write_bytes(b"not-a-real-dump")
+            with self.assertRaisesRegex(restore_drill.RestoreError, "manifest is required"):
+                restore_drill.restore_drill(
+                    database_url="postgresql://backup:secret@db.example.test:5432/curriculum",
+                    backup_path=backup,
+                )
+
+    def test_container_restore_uses_stdin_without_a_dash_filename(self) -> None:
+        backup = Path("C:/tmp/curriculum.dump")
+        container_args = restore_drill._restore_extra_args(backup, container=True)
+        host_args = restore_drill._restore_extra_args(backup, container=False)
+
+        self.assertNotIn("-", container_args)
+        self.assertNotIn(str(backup), container_args)
+        self.assertEqual(host_args[-1], str(backup))
+        self.assertIn("audit_degreeauditrun", restore_drill.CRITICAL_TABLES)
 
     def test_production_preflight_requires_split_roles_mfa_and_immutable_images(self) -> None:
         valid = {

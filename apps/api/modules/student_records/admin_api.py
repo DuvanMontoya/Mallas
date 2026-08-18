@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from typing import Any, NoReturn
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from ninja.security import django_auth
 from modules.common.api import raise_problem, with_problem_responses
 from modules.student_records.application.administration import (
     StudentAdministrationError,
+    administered_enrollment_view,
     create_administered_enrollment,
     list_administered_enrollments,
     student_admin_catalog,
@@ -44,6 +46,8 @@ class AdminRevisionView(Schema):
     plan_id: UUID
     code: str
     status: str
+    effective_from: date
+    effective_to: date | None
 
 
 class AdminTermView(Schema):
@@ -52,6 +56,8 @@ class AdminTermView(Schema):
     campus_id: UUID | None
     code: str
     status: str
+    starts_at: datetime
+    ends_at: datetime
 
 
 class StudentAdminCatalogView(Schema):
@@ -81,6 +87,11 @@ class AdminEnrollmentView(Schema):
 
 class AdminEnrollmentCollectionView(Schema):
     items: list[AdminEnrollmentView]
+    total: int
+    limit: int
+    offset: int
+    next_offset: int | None
+    previous_offset: int | None
 
 
 class AdminEnrollmentCreatePayload(Schema):
@@ -127,9 +138,13 @@ def admin_catalog(request: HttpRequest) -> dict[str, Any]:
     auth=django_auth,
     response=with_problem_responses(AdminEnrollmentCollectionView),
 )
-def admin_enrollments(request: HttpRequest, search: str = "") -> dict[str, Any]:
+def admin_enrollments(
+    request: HttpRequest, search: str = "", limit: int = 50, offset: int = 0
+) -> dict[str, Any]:
     try:
-        return {"items": list_administered_enrollments(request.auth, search=search)}
+        return list_administered_enrollments(
+            request.auth, search=search, limit=limit, offset=offset
+        )
     except StudentAdministrationError as error:
         _error(error)
 
@@ -150,7 +165,4 @@ def admin_enrollment_create(
         )
     except StudentAdministrationError as error:
         _error(error)
-    row = next(
-        item for item in list_administered_enrollments(request.auth) if item["id"] == enrollment.pk
-    )
-    return Status(201, row)
+    return Status(201, administered_enrollment_view(enrollment))

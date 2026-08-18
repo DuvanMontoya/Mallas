@@ -132,7 +132,9 @@ class RawArtifact(UUIDTimestampedModel):
     content_sha256 = models.CharField(max_length=64)
     size_bytes = models.PositiveBigIntegerField()
     mime_type = models.CharField(max_length=120)
-    storage_key = models.CharField(max_length=500)
+    storage_key = models.CharField(max_length=500, blank=True)
+    content_expires_at = models.DateTimeField(default=history_raw_payload_expiry)
+    content_purged_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=enum_choices(ImportArtifactStatus),
@@ -150,6 +152,10 @@ class RawArtifact(UUIDTimestampedModel):
         indexes = [
             models.Index(fields=["content_sha256"], name="artifact_content_hash_idx"),
             models.Index(fields=["status", "created_at"], name="artifact_status_time_idx"),
+            models.Index(
+                fields=["content_purged_at", "content_expires_at"],
+                name="artifact_retention_idx",
+            ),
         ]
 
     def clean(self) -> None:

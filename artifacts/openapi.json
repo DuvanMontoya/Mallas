@@ -631,6 +631,143 @@
         ]
       }
     },
+    "/api/v1/auth/password/change": {
+      "post": {
+        "operationId": "modules_identity_api_password_change",
+        "summary": "Password Change",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Identity"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/logout": {
       "post": {
         "operationId": "modules_identity_api_logout_view",
@@ -5834,6 +5971,26 @@
               "type": "string"
             },
             "required": false
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            },
+            "required": false
           }
         ],
         "responses": {
@@ -10674,6 +10831,10 @@
               }
             ],
             "title": "Student Profile Id"
+          },
+          "must_change_password": {
+            "title": "Must Change Password",
+            "type": "boolean"
           }
         },
         "required": [
@@ -10681,7 +10842,8 @@
           "email",
           "email_verified",
           "roles",
-          "student_profile_id"
+          "student_profile_id",
+          "must_change_password"
         ],
         "title": "UserView",
         "type": "object"
@@ -10715,6 +10877,24 @@
           "detail"
         ],
         "title": "MessageView",
+        "type": "object"
+      },
+      "PasswordChangePayload": {
+        "properties": {
+          "current_password": {
+            "title": "Current Password",
+            "type": "string"
+          },
+          "new_password": {
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "title": "PasswordChangePayload",
         "type": "object"
       },
       "PasswordResetRequestPayload": {
@@ -15461,13 +15641,32 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective To"
           }
         },
         "required": [
           "id",
           "plan_id",
           "code",
-          "status"
+          "status",
+          "effective_from",
+          "effective_to"
         ],
         "title": "AdminRevisionView",
         "type": "object"
@@ -15503,6 +15702,16 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
           }
         },
         "required": [
@@ -15510,7 +15719,9 @@
           "institution_id",
           "campus_id",
           "code",
-          "status"
+          "status",
+          "starts_at",
+          "ends_at"
         ],
         "title": "AdminTermView",
         "type": "object"
@@ -15571,10 +15782,49 @@
             },
             "title": "Items",
             "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          },
+          "previous_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Offset"
           }
         },
         "required": [
-          "items"
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "next_offset",
+          "previous_offset"
         ],
         "title": "AdminEnrollmentCollectionView",
         "type": "object"

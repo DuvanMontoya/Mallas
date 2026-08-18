@@ -27,7 +27,10 @@ from modules.imports.application.history import (
     get_import_batch_for_view,
     resolve_history_candidate,
 )
-from modules.imports.application.retention import purge_expired_candidate_payloads
+from modules.imports.application.retention import (
+    purge_expired_candidate_payloads,
+    purge_expired_raw_artifacts,
+)
 from modules.imports.application.storage import ArtifactValidationError, validate_artifact
 from modules.imports.models import ImportBatch, ImportEvidence
 from modules.student_records.application.history import (
@@ -342,7 +345,18 @@ class HistoryImportServiceTests(TransactionTestCase):
         self.assertEqual(expired.raw_payload, {})
         self.assertIsNotNone(expired.raw_payload_purged_at)
 
-    @override_settings(HISTORY_PDF_PARSE_TIMEOUT_SECONDS=0.001)
+        artifact = second.batch.artifact
+        stored_path = self.storage_dir / artifact.storage_key
+        self.assertTrue(stored_path.is_file())
+        artifact.content_expires_at = timezone.now() - timedelta(seconds=1)
+        artifact.save(update_fields=["content_expires_at", "updated_at"])
+        self.assertEqual(purge_expired_raw_artifacts(), 1)
+        artifact.refresh_from_db()
+        self.assertFalse(stored_path.exists())
+        self.assertEqual(artifact.storage_key, "")
+        self.assertIsNotNone(artifact.content_purged_at)
+
+    @override_settings(HISTORY_PDF_PARSE_TIMEOUT_SECONDS=0.001)  # type: ignore[untyped-decorator]
     def test_pdf_parser_fails_closed_when_isolated_process_exceeds_timeout(self) -> None:
         with self.assertRaisesRegex(HistoryImportError, "time or memory budget"):
             self.create_preview(
@@ -481,6 +495,33 @@ class ManualHistoryServiceTests(TransactionTestCase):
             )
         self.assertEqual(update_error.exception.code, "annul_operation_required")
 
+    def test_internal_attempt_credits_are_derived_from_normative_course_version(self) -> None:
+        with self.assertRaises(HistoryMutationError) as inconsistent:
+            create_manual_attempt(
+                actor=self.user,
+                enrollment_id=self.data["enrollment"].pk,
+                course_version_id=self.data["course_version"].pk,
+                term_id=self.data["term"].pk,
+                status=AttemptStatus.PASSED.value,
+                credits_earned=99,
+            )
+        self.assertEqual(inconsistent.exception.code, "credits_inconsistent")
+
+        attempt, _ = create_manual_attempt(
+            actor=self.user,
+            enrollment_id=self.data["enrollment"].pk,
+            course_version_id=self.data["course_version"].pk,
+            term_id=self.data["term"].pk,
+            status=AttemptStatus.PASSED.value,
+        )
+        self.assertEqual(attempt.credits_earned, self.data["course_version"].credits)
+        changed, _ = update_attempt(
+            actor=self.user,
+            attempt_id=attempt.pk,
+            changes={"status": AttemptStatus.FAILED.value},
+        )
+        self.assertEqual(changed.credits_earned, 0)
+
     def test_manual_update_is_not_an_idor(self) -> None:
         attempt, _ = create_manual_attempt(
             actor=self.user,
@@ -545,6 +586,8 @@ class HistoryApiTests(TransactionTestCase):
             status=AttemptStatus.PASSED.value,
             credits_earned=4,
         )
+        original[-1].status = AttemptStatus.ENROLLED.value
+        original[-1].save(update_fields=["status", "updated_at"])
         second = self.client.get(
             "/api/v1/history/attempts",
             {

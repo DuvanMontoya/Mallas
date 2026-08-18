@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib import import_module
+
 from django.db import migrations
 
 FORWARD_SQL = """
@@ -81,6 +83,8 @@ def remove_split_triggers(apps: object, schema_editor: object) -> None:
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
             cursor.execute(REVERSE_SQL)
+            previous = import_module("modules.offerings.migrations.0003_cross_scope_invariants")
+            cursor.execute(previous.TRIGGER_SQL)
 
 
 class Migration(migrations.Migration):

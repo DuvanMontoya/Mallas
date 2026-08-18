@@ -51,3 +51,13 @@ drill continúan pendientes y por ello P24/P25 permanecen `in_progress`.
 | Latencia alta y timeout en estrés contra servidores de desarrollo | Medium para experiencia / High para release | Repetir carga contra build production-like con PostgreSQL, métricas y presupuesto p95; no extrapolar el resultado dev |
 | Importación muestra enums/JSON técnico y el error de batch puede ser poco accionable | Medium | Localizar etiquetas, resumir por fila/campo, conservar JSON en disclosure y mostrar correlation id/reintento |
 | Confirmación o anulación mediante estado obsoleto | Mitigado | `If-Match` en confirmación, locks batch→candidate y `ANNULLED` rechazado por create/update genéricos; pruebas focalizadas y verify PASS |
+
+## Riesgos revisados — 2026-08-17 17:30
+
+| Riesgo | Estado | Mitigación / evidencia |
+|---|---|---|
+| PDF malicioso agota CPU/memoria | Mitigado en aplicación | Proceso hijo, timeout, memoria acotada y fallo cerrado; queda verificar límites del contenedor en Compose |
+| PII arbitraria en `raw_payload` | Mitigado | Allowlist, longitudes acotadas, purga inmediata al aplicar y expiración operable de previews |
+| Historia cambia durante paginación | Mitigado | Cursor firmado con snapshot y keyset estable; frontend sigue `next_cursor` |
+| Períodos de otra institución aparecen en planificación | Mitigado | Endpoint autorizado por matrícula y scope institución/campus; filtros incompatibles fallan cerrados |
+| Trigger PostgreSQL compartido accede a columnas inexistentes | Mitigado | Migración `offerings.0004` separa funciones por tabla; prueba PostgreSQL de importación pasa |

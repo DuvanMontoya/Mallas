@@ -36,6 +36,9 @@ export default async function HistoryPage() {
     attemptsPage.items.push(...nextPage.data.items);
     nextCursor = nextPage.data.next_cursor;
   }
+  if (attemptsPage.items.length !== attemptsPage.total) {
+    return <SessionRequired nextPath="/history" title="La historia cambió durante la consulta" description="El registro académico se actualizó mientras se cargaba. Reintenta para trabajar con una versión completa y coherente." showSignIn={false} />;
+  }
   attemptsPage.limit = attemptsPage.items.length;
   attemptsPage.next_offset = null;
   attemptsPage.next_cursor = null;

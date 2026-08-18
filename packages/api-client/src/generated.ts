@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Password Change */
+        post: operations["modules_identity_api_password_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -1138,6 +1155,8 @@ export interface components {
             roles: string[];
             /** Student Profile Id */
             student_profile_id: string | null;
+            /** Must Change Password */
+            must_change_password: boolean;
         };
         /** LoginPayload */
         LoginPayload: {
@@ -1150,6 +1169,13 @@ export interface components {
         MessageView: {
             /** Detail */
             detail: string;
+        };
+        /** PasswordChangePayload */
+        PasswordChangePayload: {
+            /** Current Password */
+            current_password: string;
+            /** New Password */
+            new_password: string;
         };
         /** PasswordResetRequestPayload */
         PasswordResetRequestPayload: {
@@ -2898,6 +2924,13 @@ export interface components {
             code: string;
             /** Status */
             status: string;
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Effective To */
+            effective_to: string | null;
         };
         /** AdminTermView */
         AdminTermView: {
@@ -2917,6 +2950,16 @@ export interface components {
             code: string;
             /** Status */
             status: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
         };
         /** StudentAdminCatalogView */
         StudentAdminCatalogView: {
@@ -2935,6 +2978,16 @@ export interface components {
         AdminEnrollmentCollectionView: {
             /** Items */
             items: components["schemas"]["AdminEnrollmentView"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Next Offset */
+            next_offset: number | null;
+            /** Previous Offset */
+            previous_offset: number | null;
         };
         /** AdminEnrollmentView */
         AdminEnrollmentView: {
@@ -4204,6 +4257,120 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_identity_api_password_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangePayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageView"];
                 };
             };
             /** @description Bad Request */
@@ -8188,6 +8355,8 @@ export interface operations {
         parameters: {
             query?: {
                 search?: string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;

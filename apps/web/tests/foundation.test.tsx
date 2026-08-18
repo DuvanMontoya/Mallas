@@ -29,7 +29,7 @@ describe("product shell", () => {
 
   it("keeps editorial-only accounts out of private student navigation", () => {
     renderWithProviders(
-      <AppShell session={{ state: "authenticated", correlationId: null, user: { id: 7, email: "admin@example.test", email_verified: true, roles: ["ADMIN"], student_profile_id: null } }}>
+      <AppShell session={{ state: "authenticated", correlationId: null, user: { id: 7, email: "admin@example.test", email_verified: true, roles: ["ADMIN"], student_profile_id: null, must_change_password: false } }}>
         <div>Gobernanza</div>
       </AppShell>,
     );
@@ -41,7 +41,7 @@ describe("product shell", () => {
 
   it("supports legacy student accounts without an explicit STUDENT role", () => {
     renderWithProviders(
-      <AppShell session={{ state: "authenticated", correlationId: null, user: { id: 8, email: "student@example.test", email_verified: true, roles: [], student_profile_id: "profile-8" } }}>
+      <AppShell session={{ state: "authenticated", correlationId: null, user: { id: 8, email: "student@example.test", email_verified: true, roles: [], student_profile_id: "profile-8", must_change_password: false } }}>
         <div>Malla</div>
       </AppShell>,
     );

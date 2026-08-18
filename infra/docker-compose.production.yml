@@ -23,7 +23,7 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
       PRIVILEGED_MFA_REQUIRED: ${PRIVILEGED_MFA_REQUIRED:?PRIVILEGED_MFA_REQUIRED is required}
       DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
+      ALLOWED_HOSTS: api,${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?CSRF_TRUSTED_ORIGINS is required}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
       SECURE_PROXY_SSL_HEADER: "true"
@@ -41,7 +41,7 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
       PRIVILEGED_MFA_REQUIRED: ${PRIVILEGED_MFA_REQUIRED:?PRIVILEGED_MFA_REQUIRED is required}
       DATABASE_URL: ${RUNTIME_DATABASE_URL:?RUNTIME_DATABASE_URL is required}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
+      ALLOWED_HOSTS: api,${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?CSRF_TRUSTED_ORIGINS is required}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS is required}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:?PUBLIC_APP_URL is required}
@@ -59,6 +59,8 @@ services:
     expose:
       - "8000"
     read_only: true
+    mem_limit: 2g
+    pids_limit: 256
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     security_opt:
@@ -83,6 +85,8 @@ services:
     expose:
       - "3000"
     read_only: true
+    mem_limit: 768m
+    pids_limit: 128
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     security_opt:

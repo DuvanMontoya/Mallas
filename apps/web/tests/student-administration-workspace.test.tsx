@@ -3,21 +3,21 @@ import axe from "axe-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudentAdministrationWorkspace } from "../components/student-administration-workspace";
-import type { AdminEnrollment, StudentAdminCatalog } from "../lib/api";
+import type { AdminEnrollment, AdminEnrollmentPage, StudentAdminCatalog } from "../lib/api";
 
-const { createAdminEnrollment } = vi.hoisted(() => ({ createAdminEnrollment: vi.fn() }));
+const { createAdminEnrollment, getAdminEnrollments } = vi.hoisted(() => ({ createAdminEnrollment: vi.fn(), getAdminEnrollments: vi.fn() }));
 
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api");
-  return { ...actual, createAdminEnrollment };
+  return { ...actual, createAdminEnrollment, getAdminEnrollments };
 });
 
 const catalog: StudentAdminCatalog = {
   institutions: [{ id: "inst-1", name: "Universidad Nacional" }],
   programs: [{ id: "program-1", institution_id: "inst-1", campus_id: "campus-1", campus_name: "Bogotá", code: "STAT", name: "Estadística" }],
   plans: [{ id: "plan-1", program_id: "program-1", code: "2514", title: "Plan de Estadística" }],
-  revisions: [{ id: "revision-1", plan_id: "plan-1", code: "2514-2023", status: "PUBLISHED" }],
-  terms: [{ id: "term-1", institution_id: "inst-1", campus_id: "campus-1", code: "2026-1S", status: "OPEN" }],
+  revisions: [{ id: "revision-1", plan_id: "plan-1", code: "2514-2023", status: "PUBLISHED", effective_from: "2023-01-01", effective_to: null }],
+  terms: [{ id: "term-1", institution_id: "inst-1", campus_id: "campus-1", code: "2026-1S", status: "OPEN", starts_at: "2026-01-01T00:00:00Z", ends_at: "2026-06-30T00:00:00Z" }],
 };
 
 const enrollment: AdminEnrollment = {
@@ -38,20 +38,30 @@ const enrollment: AdminEnrollment = {
 };
 
 describe("StudentAdministrationWorkspace", () => {
-  beforeEach(() => createAdminEnrollment.mockReset());
+  beforeEach(() => {
+    createAdminEnrollment.mockReset();
+    getAdminEnrollments.mockReset();
+  });
 
   it("filters existing enrollments and creates account plus enrollment with the scoped catalog", async () => {
     createAdminEnrollment.mockResolvedValue({
       data: { ...enrollment, id: "enrollment-2", email: "nueva@unal.edu.co", display_name: "Nueva Estudiante", student_number: "10002" },
       failure: null,
     });
-    const { container } = render(<StudentAdministrationWorkspace catalog={catalog} initialEnrollments={[enrollment]} />);
+    const initialPage: AdminEnrollmentPage = { items: [enrollment], total: 51, limit: 50, offset: 0, next_offset: 50, previous_offset: null };
+    getAdminEnrollments.mockImplementation(({ search, offset }: { search?: string; offset?: number }) => Promise.resolve({
+      data: search ? { ...initialPage, items: [], total: 0, next_offset: null } : { ...initialPage, items: [{ ...enrollment, id: "enrollment-2", email: "nueva@unal.edu.co", display_name: "Nueva Estudiante", student_number: "10002" }, enrollment], total: 52, offset: offset ?? 0 },
+      failure: null,
+    }));
+    const { container } = render(<StudentAdministrationWorkspace catalog={catalog} initialPage={initialPage} />);
     expect((await axe.run(container)).violations).toEqual([]);
 
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    await waitFor(() => expect(getAdminEnrollments).toHaveBeenCalledWith(expect.objectContaining({ offset: 50 })));
+
     fireEvent.change(screen.getByRole("searchbox", { name: "Buscar" }), { target: { value: "sin coincidencia" } });
-    expect(screen.getByText("No hay matrículas que coincidan con la búsqueda.")).toBeInTheDocument();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar" }), { target: { value: "" } });
-    expect(screen.getByText("Estudiante Actual")).toBeInTheDocument();
+    expect(await screen.findByText("No hay matrículas que coincidan con la búsqueda.")).toBeInTheDocument();
+    expect(getAdminEnrollments).toHaveBeenCalledWith(expect.objectContaining({ search: "sin coincidencia", offset: 0 }));
 
     fireEvent.change(screen.getByLabelText("Nombre completo"), { target: { value: "Nueva Estudiante" } });
     fireEvent.change(screen.getByLabelText("Correo de acceso"), { target: { value: "nueva@unal.edu.co" } });

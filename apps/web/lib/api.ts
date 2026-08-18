@@ -120,6 +120,27 @@ export async function signOut(): Promise<ApiFailure | null> {
   }
 }
 
+export async function changeInitialPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<ApiFailure | null> {
+  try {
+    const csrfToken = await getCsrfToken();
+    const result = await api.POST("/api/v1/auth/password/change", {
+      body: { current_password: currentPassword, new_password: newPassword },
+      headers: { "X-CSRFToken": csrfToken },
+    });
+    if (result.data) return null;
+    return {
+      problem: problemFromUnknown(result.error),
+      correlationId: correlationId(result.response),
+      unavailable: false,
+    };
+  } catch {
+    return { problem: null, correlationId: null, unavailable: true };
+  }
+}
+
 export async function getNotifications(options?: {
   unreadOnly?: boolean;
   limit?: number;
@@ -1046,6 +1067,7 @@ export async function linkGovernanceRequirementEvidence(
 
 export type StudentAdminCatalog = ApiComponents["schemas"]["StudentAdminCatalogView"];
 export type AdminEnrollment = ApiComponents["schemas"]["AdminEnrollmentView"];
+export type AdminEnrollmentPage = ApiComponents["schemas"]["AdminEnrollmentCollectionView"];
 export type AdminEnrollmentCreatePayload = ApiComponents["schemas"]["AdminEnrollmentCreatePayload"];
 
 export async function getStudentAdminCatalog(options?: {
@@ -1064,12 +1086,20 @@ export async function getStudentAdminCatalog(options?: {
 
 export async function getAdminEnrollments(options?: {
   search?: string;
+  limit?: number;
+  offset?: number;
   headers?: HeadersInit;
 }): Promise<{ data: ApiComponents["schemas"]["AdminEnrollmentCollectionView"] | null; failure: ApiFailure | null }> {
   try {
     const result = await api.GET("/api/v1/admin/students/enrollments", {
       headers: options?.headers,
-      params: { query: { search: options?.search } },
+      params: {
+        query: {
+          search: options?.search,
+          limit: options?.limit,
+          offset: options?.offset,
+        },
+      },
     });
     if (result.data) return { data: result.data, failure: null };
     return { data: null, failure: failureFromResult(result) };

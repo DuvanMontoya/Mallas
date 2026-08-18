@@ -78,6 +78,7 @@ test("curriculum and graph selections are keyboard operable and announce the new
   await expect(course).toBeFocused();
 
   await page.goto("/graph?selected=1000003", { waitUntil: "networkidle" });
+  await page.getByText("Alternativa textual accesible", { exact: true }).click();
   await page.getByTestId("graph-textual-course-2000001").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#dependency-focus-title")).toHaveText("2000001");
@@ -125,17 +126,17 @@ test("reduced motion and 200 percent zoom keep the planner usable", async ({ pag
   }));
   expect(zoomState.mainVisible).toBe(true);
   expect(zoomState.horizontalOverflow).toBeLessThanOrEqual(8);
-  await expect(page.getByRole("heading", { name: /planea sin alterar tu historia real/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /ruta equilibrada/i })).toBeVisible();
 });
 
 test("student journey keeps audit, curriculum, graph and planner connected", async ({ page }) => {
   await page.goto("/", { waitUntil: "networkidle" });
-  await page.getByRole("link", { name: "Abrir auditoría", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /tu avance real/i })).toBeVisible();
+  await page.locator('.student-home-facts a[href="/audit"]').click();
+  await expect(page.getByRole("heading", { name: /créditos por completar/i })).toBeVisible();
   await page.goto("/curriculum", { waitUntil: "networkidle" });
-  await expect(page.getByRole("heading", { name: /explora el plan/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /malla curricular/i })).toBeVisible();
   await page.goto("/graph?selected=1000003", { waitUntil: "networkidle" });
-  await expect(page.getByRole("heading", { name: /entiende qué desbloquea/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "1000003", level: 1 })).toBeVisible();
   await page.goto("/planner", { waitUntil: "networkidle" });
-  await expect(page.getByRole("heading", { name: /planea sin alterar tu historia real/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /ruta equilibrada/i })).toBeVisible();
 });

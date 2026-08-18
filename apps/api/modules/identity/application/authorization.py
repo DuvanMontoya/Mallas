@@ -70,7 +70,15 @@ def can_view_student(user: Any, student: StudentProfile) -> bool:
         return False
     if student.user_id == user.pk:
         return True
-    if has_role(user, UserRole.ADMIN, institution_id=student.institution_id):
+    if any(
+        has_role(
+            user,
+            UserRole.ADMIN,
+            institution_id=student.institution_id,
+            program_id=program_id,
+        )
+        for program_id in student.program_enrollments.values_list("program_id", flat=True)
+    ):
         return True
     if not has_role(user, UserRole.ADVISOR, institution_id=student.institution_id):
         return False
@@ -96,7 +104,15 @@ def can_edit_student_history(user: Any, student: StudentProfile) -> bool:
         return False
     if student.user_id == user.pk:
         return True
-    return has_role(user, UserRole.ADMIN, institution_id=student.institution_id)
+    return any(
+        has_role(
+            user,
+            UserRole.ADMIN,
+            institution_id=student.institution_id,
+            program_id=program_id,
+        )
+        for program_id in student.program_enrollments.values_list("program_id", flat=True)
+    )
 
 
 def can_edit_revision(user: Any, revision: CurriculumRevision) -> bool:

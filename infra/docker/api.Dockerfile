@@ -31,14 +31,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid 10001 --home-dir /app --shell /usr/sbin/nologin app \
-    && mkdir -p /app/var/private-imports /app/staticfiles \
-    && chown -R app:app /app
+    && mkdir -p /app/var/private-imports /staticfiles \
+    && chown -R app:app /app /staticfiles
 COPY --from=build --chown=app:app /app/.venv /app/.venv
 COPY --from=build --chown=app:app /app/config /app/config
 COPY --from=build --chown=app:app /app/domain /app/domain
 COPY --from=build --chown=app:app /app/modules /app/modules
 COPY --from=build --chown=app:app /app/manage.py /app/manage.py
-COPY --from=build --chown=app:app /app/staticfiles /app/staticfiles
+COPY --from=build --chown=app:app /staticfiles /staticfiles
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

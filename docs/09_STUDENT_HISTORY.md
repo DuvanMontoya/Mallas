@@ -67,3 +67,17 @@ confirmación y mutación manual.
 ## Datos sensibles
 
 Historia académica sólo visible a propietario y roles autorizados.
+
+## Consistencia de lectura y aislamiento de PDF
+
+La colección de intentos expone un cursor firmado y opaco. El primer cursor fija
+`snapshot_at`; las páginas siguientes conservan ese corte y avanzan por una clave
+estable coherente con el orden solicitado. El cliente sigue `next_cursor`, sin mezclar
+offsets, para recuperar una historia completa sin duplicados u omisiones causados por
+inserciones concurrentes.
+
+El parser PDF se ejecuta en un proceso hijo sin acceso a la transacción ORM. El padre
+aplica timeout y límite de memoria antes de liberar el trabajo; ante timeout, muerte o
+respuesta inválida termina el proceso y falla de forma cerrada. En Windows se usa un
+Job Object y en POSIX `RLIMIT_AS`. Los límites se configuran con
+`HISTORY_PDF_PARSE_TIMEOUT_SECONDS` y `HISTORY_PDF_PARSE_MEMORY_MIB`.

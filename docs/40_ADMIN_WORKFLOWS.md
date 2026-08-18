@@ -14,3 +14,14 @@ Snapshot por período, origen, timestamp y checksum. Reimportar es idempotente.
 
 ## Revisión de ambigüedad
 Estados: open, researching, resolved_verified, unresolved_unknown, disputed. Toda resolución deja trail.
+
+## Alta nativa de estudiante y matrícula
+
+`/admin/students` es la superficie operativa primaria; Django Admin no es el flujo de
+producto. Un `ADMIN` sólo ve instituciones de su alcance. El catálogo encadena
+institución → programa/campus → plan → revisión `PUBLISHED` → período de admisión.
+La creación es atómica: cuenta con contraseña hasheada, perfil estudiantil, matrícula,
+rol `STUDENT` acotado a institución/programa y `AuditEvent`. No se devuelve ni registra
+la contraseña temporal y un fallo de validación no deja cuentas huérfanas. Las rutas
+`/api/v1/admin/students/*` son privadas, `no-store`, requieren sesión y CSRF para
+escrituras.

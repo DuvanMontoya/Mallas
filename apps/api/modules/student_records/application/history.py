@@ -130,18 +130,41 @@ def _grade(value: Any) -> Decimal | None:
     return result
 
 
-def _credits(value: Any) -> int:
+_CREDIT_EARNING_STATUSES = {
+    AttemptStatus.PASSED.value,
+    AttemptStatus.VALIDATED.value,
+    AttemptStatus.HOMOLOGATED.value,
+    AttemptStatus.TRANSFERRED.value,
+}
+
+
+def _credits(value: Any, *, status: str, course_version: CourseVersion) -> int:
+    supplied: int | None = None
     if value in (None, ""):
-        return 0
-    try:
-        result = int(value)
-    except (TypeError, ValueError) as exc:
+        supplied = None
+    else:
+        try:
+            supplied = int(value)
+        except (TypeError, ValueError) as exc:
+            raise HistoryMutationError(
+                "credits_earned must be an integer.", code="credits_invalid"
+            ) from exc
+        if supplied < 0:
+            raise HistoryMutationError("credits_earned cannot be negative.", code="credits_invalid")
+    if status in _CREDIT_EARNING_STATUSES:
+        if course_version.credits is None:
+            raise HistoryMutationError(
+                "The course version has no verified credit value.", code="credits_unknown"
+            )
+        expected = course_version.credits
+    else:
+        expected = 0
+    if supplied is not None and supplied != expected:
         raise HistoryMutationError(
-            "credits_earned must be an integer.", code="credits_invalid"
-        ) from exc
-    if result < 0:
-        raise HistoryMutationError("credits_earned cannot be negative.", code="credits_invalid")
-    return result
+            "Earned credits must match the course version and attempt status.",
+            code="credits_inconsistent",
+        )
+    return expected
 
 
 def _audit(enrollment: ProgramEnrollment) -> str:
@@ -199,7 +222,9 @@ def create_manual_attempt(
         attempt_number=requested_number,
         status=normalized_status,
         grade=_grade(grade),
-        credits_earned=_credits(credits_earned),
+        credits_earned=_credits(
+            credits_earned, status=normalized_status, course_version=course_version
+        ),
         origin=AttemptOrigin.MANUAL.value,
         entered_by=actor,
         notes=notes.strip()[:2_000],
@@ -270,8 +295,6 @@ def update_attempt(
         attempt.status = next_status
     if "grade" in changes:
         attempt.grade = _grade(changes["grade"])
-    if "credits_earned" in changes:
-        attempt.credits_earned = _credits(changes["credits_earned"])
     if "notes" in changes:
         attempt.notes = str(changes["notes"])[:2_000]
     if "course_version_id" in changes:
@@ -284,6 +307,15 @@ def update_attempt(
             term_id=changes.get("term_id"),
             term_code=str(changes.get("term_code", "")),
         )
+    normative_credit_change = bool(
+        {"status", "credits_earned", "course_version_id"}.intersection(changes)
+    )
+    if normative_credit_change:
+        attempt.credits_earned = _credits(
+            changes.get("credits_earned"),
+            status=attempt.status,
+            course_version=attempt.course_version,
+        )
     attempt.full_clean()
     update_fields: list[str] = [
         field
@@ -292,6 +324,8 @@ def update_attempt(
         or (field == "course_version" and "course_version_id" in changes)
         or (field == "term" and ("term_id" in changes or "term_code" in changes))
     ]
+    if normative_credit_change and "credits_earned" not in update_fields:
+        update_fields.append("credits_earned")
     update_fields.append("updated_at")
     attempt.save(update_fields=update_fields)
     audit_run_id = _audit(attempt.enrollment)

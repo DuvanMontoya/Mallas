@@ -40,6 +40,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
     password_changed_at = models.DateTimeField(null=True, blank=True)
+    must_change_password = models.BooleanField(default=False)
+    initial_password_expires_at = models.DateTimeField(null=True, blank=True)
     objects = UserManager()
 
     USERNAME_FIELD = "email"

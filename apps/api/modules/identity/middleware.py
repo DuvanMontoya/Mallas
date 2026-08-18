@@ -75,6 +75,39 @@ class PasswordChangeSessionMiddleware:
         return self.get_response(request)
 
 
+class InitialPasswordChangeRequiredMiddleware:
+    """Restrict bootstrap credentials to the password-rotation surface."""
+
+    _ALLOWED = frozenset(
+        {
+            "/api/v1/auth/me",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/csrf",
+            "/api/v1/auth/password/change",
+        }
+    )
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        user = getattr(request, "user", None)
+        if (
+            request.path.startswith("/api/v1/")
+            and request.path not in self._ALLOWED
+            and getattr(user, "is_authenticated", False)
+            and getattr(user, "must_change_password", False)
+        ):
+            return problem_response(
+                request,
+                status=403,
+                code="INITIAL_PASSWORD_CHANGE_REQUIRED",
+                title="Password change required",
+                detail="Change the initial password before using academic services.",
+            )
+        return self.get_response(request)
+
+
 class PrivilegedMfaSessionMiddleware:
     """Expose only a server-side IdP assurance marker to authorization code.
 

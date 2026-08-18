@@ -5,7 +5,7 @@ from binascii import Error as Base64Error
 from typing import Any
 
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
@@ -71,6 +71,11 @@ class PasswordResetConfirmPayload(Schema):
     new_password: str
 
 
+class PasswordChangePayload(Schema):
+    current_password: str
+    new_password: str
+
+
 class TokenPayload(Schema):
     uid: str
     token: str
@@ -82,6 +87,7 @@ class UserView(Schema):
     email_verified: bool
     roles: list[str]
     student_profile_id: str | None
+    must_change_password: bool
 
 
 class AuthView(Schema):
@@ -108,6 +114,7 @@ def _user_view(user: User) -> dict[str, Any]:
         "email_verified": user.email_verified_at is not None,
         "roles": list(roles_for(user)),
         "student_profile_id": student_profile_id,
+        "must_change_password": user.must_change_password,
     }
 
 
@@ -195,10 +202,42 @@ def login_view(request: HttpRequest, payload: LoginPayload) -> dict[str, Any]:
             metadata={"identifier_digest": digest_identifier(email)},
         )
         raise HttpError(401, "Invalid credentials.")
+    if user.initial_password_expires_at and user.initial_password_expires_at <= timezone.now():
+        record_audit_event(request, action="AUTH_INITIAL_PASSWORD_EXPIRED", actor=user)
+        raise HttpError(401, "Invalid credentials.")
     login(request, user)
     _set_session_password_marker(request, user)
     record_audit_event(request, action="AUTH_LOGIN_SUCCEEDED", actor=user)
     return {"detail": "Authenticated.", "user": _user_view(user)}
+
+
+@router.post("/password/change", auth=django_auth, response=with_problem_responses(MessageView))
+def password_change(request: HttpRequest, payload: PasswordChangePayload) -> dict[str, str]:
+    user: User = request.auth
+    if not user.check_password(payload.current_password):
+        raise HttpError(400, "Current password is invalid.")
+    try:
+        from django.contrib.auth.password_validation import validate_password
+
+        validate_password(payload.new_password, user)
+    except ValidationError as error:
+        raise HttpError(400, str(error)) from error
+    user.set_password(payload.new_password)
+    user.password_changed_at = timezone.now()
+    user.must_change_password = False
+    user.initial_password_expires_at = None
+    user.save(
+        update_fields=[
+            "password",
+            "password_changed_at",
+            "must_change_password",
+            "initial_password_expires_at",
+        ]
+    )
+    update_session_auth_hash(request, user)
+    _set_session_password_marker(request, user)
+    record_audit_event(request, action="AUTH_INITIAL_PASSWORD_CHANGED", actor=user)
+    return {"detail": "Password updated."}
 
 
 @router.post("/logout", auth=django_auth, response=with_problem_responses(MessageView))

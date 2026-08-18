@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime
 from typing import Any, NoReturn
 from uuid import UUID
 
 from django.core import signing
-from django.db.models import Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from ninja import Header, Router, Schema
@@ -80,45 +80,25 @@ class AttemptPage(Schema):
 _HISTORY_CURSOR_SALT = "curriculum-navigator.history-attempts.v1"
 
 
-def _cursor_values(attempt: CourseAttempt, sort: str) -> list[str | int]:
-    common = {
-        "term": [
-            attempt.term.starts_at.isoformat(),
-            attempt.course_version.course.code,
-            attempt.attempt_number,
-            str(attempt.pk),
-        ],
-        "course": [
-            attempt.course_version.course.code,
-            attempt.term.starts_at.isoformat(),
-            attempt.attempt_number,
-            str(attempt.pk),
-        ],
-        "status": [
-            attempt.status,
-            attempt.term.starts_at.isoformat(),
-            attempt.course_version.course.code,
-            str(attempt.pk),
-        ],
-    }
-    return common[sort]
-
-
 def _encode_attempt_cursor(
-    attempt: CourseAttempt,
     *,
     enrollment_id: UUID,
     sort: str,
     status: str | None,
+    position: int,
     snapshot_at: datetime,
+    order_digest: str,
+    total: int,
 ) -> str:
     return signing.dumps(
         {
             "enrollment_id": str(enrollment_id),
             "sort": sort,
             "status": status,
+            "position": position,
             "snapshot_at": snapshot_at.isoformat(),
-            "values": _cursor_values(attempt, sort),
+            "order_digest": order_digest,
+            "total": total,
         },
         salt=_HISTORY_CURSOR_SALT,
         compress=True,
@@ -131,7 +111,7 @@ def _decode_attempt_cursor(
     enrollment_id: UUID,
     sort: str,
     status: str | None,
-) -> tuple[datetime, list[str | int]]:
+) -> tuple[datetime, str, int, int]:
     try:
         payload = signing.loads(cursor, salt=_HISTORY_CURSOR_SALT)
         if (
@@ -139,16 +119,20 @@ def _decode_attempt_cursor(
             or payload.get("enrollment_id") != str(enrollment_id)
             or payload.get("sort") != sort
             or payload.get("status") != status
-            or not isinstance(payload.get("values"), list)
+            or not isinstance(payload.get("position"), int)
+            or not isinstance(payload.get("order_digest"), str)
+            or not isinstance(payload.get("total"), int)
         ):
             raise ValueError
         snapshot_at = datetime.fromisoformat(str(payload["snapshot_at"]))
         if timezone.is_naive(snapshot_at):
             raise ValueError
-        values = payload["values"]
-        if len(values) != 4:
+        position = payload["position"]
+        total = payload["total"]
+        order_digest = payload["order_digest"]
+        if position < 0 or total < 0 or position > total or len(order_digest) != 64:
             raise ValueError
-        return snapshot_at, values
+        return snapshot_at, order_digest, position, total
     except KeyError, TypeError, ValueError, signing.BadSignature:
         raise_problem(
             status=400,
@@ -157,67 +141,6 @@ def _decode_attempt_cursor(
             detail="The history cursor is invalid or does not match this query.",
             fields={"cursor": "Restart pagination without a cursor."},
         )
-
-
-def _after_attempt_cursor(
-    attempts: QuerySet[CourseAttempt], sort: str, values: list[str | int]
-) -> QuerySet[CourseAttempt]:
-    if sort == "term":
-        term_start, course_code, attempt_number, attempt_id = values
-        return attempts.filter(
-            Q(term__starts_at__gt=datetime.fromisoformat(str(term_start)))
-            | Q(
-                term__starts_at=datetime.fromisoformat(str(term_start)),
-                course_version__course__code__gt=str(course_code),
-            )
-            | Q(
-                term__starts_at=datetime.fromisoformat(str(term_start)),
-                course_version__course__code=str(course_code),
-                attempt_number__gt=int(attempt_number),
-            )
-            | Q(
-                term__starts_at=datetime.fromisoformat(str(term_start)),
-                course_version__course__code=str(course_code),
-                attempt_number=int(attempt_number),
-                id__gt=UUID(str(attempt_id)),
-            )
-        )
-    if sort == "course":
-        course_code, term_start, attempt_number, attempt_id = values
-        return attempts.filter(
-            Q(course_version__course__code__gt=str(course_code))
-            | Q(
-                course_version__course__code=str(course_code),
-                term__starts_at__gt=datetime.fromisoformat(str(term_start)),
-            )
-            | Q(
-                course_version__course__code=str(course_code),
-                term__starts_at=datetime.fromisoformat(str(term_start)),
-                attempt_number__gt=int(attempt_number),
-            )
-            | Q(
-                course_version__course__code=str(course_code),
-                term__starts_at=datetime.fromisoformat(str(term_start)),
-                attempt_number=int(attempt_number),
-                id__gt=UUID(str(attempt_id)),
-            )
-        )
-    attempt_status, term_start, course_code, attempt_id = values
-    return attempts.filter(
-        Q(status__gt=str(attempt_status))
-        | Q(status=str(attempt_status), term__starts_at__gt=datetime.fromisoformat(str(term_start)))
-        | Q(
-            status=str(attempt_status),
-            term__starts_at=datetime.fromisoformat(str(term_start)),
-            course_version__course__code__gt=str(course_code),
-        )
-        | Q(
-            status=str(attempt_status),
-            term__starts_at=datetime.fromisoformat(str(term_start)),
-            course_version__course__code=str(course_code),
-            id__gt=UUID(str(attempt_id)),
-        )
-    )
 
 
 def _error(error: HistoryMutationError) -> NoReturn:
@@ -327,7 +250,7 @@ def list_history_attempts(
     if normalized_status is not None:
         attempts = attempts.filter(status=normalized_status)
     if cursor:
-        snapshot_at, cursor_values = _decode_attempt_cursor(
+        snapshot_at, expected_digest, start, expected_total = _decode_attempt_cursor(
             cursor,
             enrollment_id=enrollment.pk,
             sort=sort,
@@ -335,25 +258,44 @@ def list_history_attempts(
         )
     else:
         snapshot_at = timezone.now()
-        cursor_values = None
+        expected_digest = None
+        expected_total = None
+        start = offset
     snapshot_attempts = attempts.filter(created_at__lte=snapshot_at)
-    total = snapshot_attempts.count()
-    page_attempts = snapshot_attempts.order_by(*ordering)
-    if cursor_values is not None:
-        page_attempts = _after_attempt_cursor(page_attempts, sort, cursor_values)
-    start = offset if not cursor else 0
-    page_rows = list(page_attempts[start : start + limit + 1])
-    has_more = len(page_rows) > limit
-    rows = page_rows[:limit]
+    ordered_ids = list(snapshot_attempts.order_by(*ordering).values_list("id", flat=True))
+    total = len(ordered_ids)
+    order_digest = hashlib.sha256("".join(str(item) for item in ordered_ids).encode()).hexdigest()
+    if expected_digest is not None and (order_digest != expected_digest or total != expected_total):
+        raise_problem(
+            status=409,
+            code="HISTORY_CURSOR_STALE",
+            title="History changed during pagination",
+            detail="The academic history changed while pages were being loaded. Restart pagination.",
+            fields={"cursor": "Restart pagination without a cursor."},
+        )
+    page_ids = ordered_ids[start : start + limit]
+    attempts_by_id = {attempt.pk: attempt for attempt in snapshot_attempts.filter(id__in=page_ids)}
+    if len(attempts_by_id) != len(page_ids):
+        raise_problem(
+            status=409,
+            code="HISTORY_CURSOR_STALE",
+            title="History changed during pagination",
+            detail="The academic history changed while pages were being loaded. Restart pagination.",
+            fields={"cursor": "Restart pagination without a cursor."},
+        )
+    rows = [attempts_by_id[item] for item in page_ids]
+    next_position = start + len(rows)
     next_cursor = (
         _encode_attempt_cursor(
-            rows[-1],
             enrollment_id=enrollment.pk,
             sort=sort,
             status=normalized_status,
+            position=next_position,
             snapshot_at=snapshot_at,
+            order_digest=order_digest,
+            total=total,
         )
-        if has_more and rows
+        if next_position < total
         else None
     )
     next_offset = offset + limit if not cursor and offset + limit < total else None

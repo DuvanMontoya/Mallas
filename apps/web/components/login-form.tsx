@@ -27,7 +27,7 @@ export function LoginForm() {
     startTransition(async () => {
       const result = await signIn(email.trim(), password);
       if ("user" in result) {
-        router.replace(nextPath);
+        router.replace(result.user.must_change_password ? "/change-password" : nextPath);
         router.refresh();
         return;
       }

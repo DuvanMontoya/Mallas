@@ -166,6 +166,7 @@ class ImportStatus(StrEnum):
 class ImportArtifactStatus(StrEnum):
     STORED = "STORED"
     REJECTED = "REJECTED"
+    PURGED = "PURGED"
 
 
 class CandidateStatus(StrEnum):

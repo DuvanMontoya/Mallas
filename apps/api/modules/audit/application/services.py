@@ -156,7 +156,13 @@ def build_audit_input(
             course_code=attempt.course_version.course.code,
             status=attempt.status,
             attempt_id=str(attempt.pk),
-            credits_earned=attempt.credits_earned or None,
+            # Course attempts are evaluated against the immutable academic
+            # definition, never against an arbitrary client-supplied number.
+            credits_earned=(
+                attempt.course_version.credits
+                if attempt.status in {"PASSED", "VALIDATED", "HOMOLOGATED", "TRANSFERRED"}
+                else None
+            ),
             grade=str(attempt.grade) if attempt.grade is not None else None,
         )
         for attempt in attempts

@@ -80,3 +80,13 @@ python manage.py validate_curriculum --json
 python manage.py import_curriculum --json
 python manage.py diff_curriculum --base <baseline-anterior.json> <baseline-candidato.json>
 ```
+
+## Minimización y retención de candidatos de historia
+
+Antes de persistir un candidato, `raw_payload` se reduce a una allowlist de campos
+académicos normalizados y longitudes acotadas. Columnas arbitrarias, estructuras
+anidadas y posibles datos personales adicionales se descartan; sólo se registra el
+conteo descartado. Los payloads de un lote aplicado se purgan inmediatamente después
+de crear la evidencia necesaria y los previews no aplicados expiran según
+`HISTORY_RAW_PAYLOAD_RETENTION_DAYS`. El comando
+`purge_history_raw_payloads` ejecuta la purga periódica idempotente.

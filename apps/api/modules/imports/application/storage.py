@@ -150,6 +150,18 @@ def read_artifact(storage_key: str) -> bytes:
     return path.read_bytes()
 
 
+def delete_artifact(storage_key: str) -> None:
+    """Delete one validated private artifact without following links."""
+
+    if not storage_key or "\x00" in storage_key:
+        raise ArtifactValidationError("Invalid artifact storage path")
+    root = private_storage_root()
+    path = (root / storage_key).resolve()
+    if not path.is_relative_to(root) or path.is_symlink():
+        raise ArtifactValidationError("Invalid artifact storage path")
+    path.unlink(missing_ok=True)
+
+
 def artifact_metadata(*, filename: str, mime_type: str, size_bytes: int) -> dict[str, Any]:
     return {
         "original_filename": filename,

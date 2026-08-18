@@ -39,7 +39,7 @@ CRITICAL_TABLES = (
     "curriculum_planmembership",
     "rules_requirement",
     "student_records_programenrollment",
-    "audit_degreerun",
+    "audit_degreeauditrun",
     "governance_sourcesnapshot",
 )
 
@@ -188,6 +188,13 @@ def _require_success(result: subprocess.CompletedProcess[str], operation: str) -
         raise RestoreError(f"{operation} failed ({result.returncode}): {detail}")
 
 
+def _restore_extra_args(backup_path: Path, *, container: bool) -> list[str]:
+    """Build pg_restore arguments; stdin is selected by omitting a filename."""
+
+    arguments = ["--no-owner", "--no-acl", "--exit-on-error"]
+    return arguments if container else [*arguments, str(backup_path)]
+
+
 def _drop_drill_database(
     *,
     target: DatabaseTarget,
@@ -227,10 +234,11 @@ def restore_drill(
         raise RestoreError("backup file must exist and be non-empty")
     digest, size = _hash(backup_path)
     metadata_path = backup_path.with_suffix(backup_path.suffix + ".json")
-    if metadata_path.is_file():
-        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-        if metadata.get("sha256") != digest or metadata.get("size_bytes") != size:
-            raise RestoreError("backup metadata hash/size does not match the dump")
+    if not metadata_path.is_file():
+        raise RestoreError("backup metadata manifest is required")
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    if metadata.get("sha256") != digest or metadata.get("size_bytes") != size:
+        raise RestoreError("backup metadata hash/size does not match the dump")
     drill_database = f"restore_drill_{datetime.now(UTC):%Y%m%d%H%M%S}_{uuid4().hex[:8]}"
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", drill_database):
         raise RestoreError("generated drill database name is invalid")
@@ -256,7 +264,7 @@ def restore_drill(
                 drill_database,
                 container=container,
                 container_env_file=container_env_file,
-                extra=["--no-owner", "--no-acl", "--exit-on-error", "-" if container else str(backup_path)],
+                extra=_restore_extra_args(backup_path, container=bool(container)),
             )
             _require_success(
                 _run(
@@ -283,7 +291,7 @@ def restore_drill(
                 "(SELECT COUNT(*) FROM pg_catalog.pg_tables WHERE schemaname='public' AND tablename IN "
                 "('django_migrations','curriculum_curriculumrevision','curriculum_course',"
                 "'curriculum_courseversion','curriculum_requirementgroup','curriculum_planmembership',"
-                "'rules_requirement','student_records_programenrollment','audit_degreerun',"
+                "'rules_requirement','student_records_programenrollment','audit_degreeauditrun',"
                 "'governance_sourcesnapshot'))::text",
             ],
         )

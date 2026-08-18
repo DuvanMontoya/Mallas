@@ -4,16 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('curriculum', '0006_cross_scope_invariants'),
-        ('imports', '0008_candidaterecord_raw_payload_expires_at_and_more'),
-        ('offerings', '0003_cross_scope_invariants'),
+        ("curriculum", "0006_cross_scope_invariants"),
+        ("imports", "0008_candidaterecord_raw_payload_expires_at_and_more"),
+        ("offerings", "0003_cross_scope_invariants"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='candidaterecord',
-            index=models.Index(fields=['raw_payload_purged_at', 'raw_payload_expires_at'], name='candidate_raw_retention_idx'),
+            model_name="candidaterecord",
+            index=models.Index(
+                fields=["raw_payload_purged_at", "raw_payload_expires_at"],
+                name="candidate_raw_retention_idx",
+            ),
         ),
     ]

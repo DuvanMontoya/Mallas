@@ -87,6 +87,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "modules.identity.middleware.PrivilegedMfaSessionMiddleware",
     "modules.identity.middleware.PasswordChangeSessionMiddleware",
+    "modules.identity.middleware.InitialPasswordChangeRequiredMiddleware",
     "modules.identity.middleware.MutationRateLimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -201,13 +202,11 @@ ANALYTICS_PSEUDONYMIZATION_KEY = os.environ.get("ANALYTICS_PSEUDONYMIZATION_KEY"
 PRIVATE_IMPORT_STORAGE_ROOT = os.environ.get(
     "PRIVATE_IMPORT_STORAGE_ROOT", str(PROJECT_ROOT / "var" / "private-imports")
 )
-HISTORY_PDF_PARSE_TIMEOUT_SECONDS = float(
-    os.environ.get("HISTORY_PDF_PARSE_TIMEOUT_SECONDS", "15")
-)
+HISTORY_PDF_PARSE_TIMEOUT_SECONDS = float(os.environ.get("HISTORY_PDF_PARSE_TIMEOUT_SECONDS", "15"))
 HISTORY_PDF_PARSE_MEMORY_MIB = int(os.environ.get("HISTORY_PDF_PARSE_MEMORY_MIB", "384"))
-HISTORY_RAW_PAYLOAD_RETENTION_DAYS = int(
-    os.environ.get("HISTORY_RAW_PAYLOAD_RETENTION_DAYS", "30")
-)
+HISTORY_RAW_PAYLOAD_RETENTION_DAYS = int(os.environ.get("HISTORY_RAW_PAYLOAD_RETENTION_DAYS", "30"))
+if HISTORY_PDF_PARSE_TIMEOUT_SECONDS <= 0 or HISTORY_PDF_PARSE_MEMORY_MIB <= 0:
+    raise ImproperlyConfigured("PDF parser timeout and memory settings must be positive")
 EMAIL_VERIFICATION_REQUIRED = os.environ.get(
     "AUTH_EMAIL_VERIFICATION_REQUIRED", "false" if DEBUG else "true"
 ).lower() in {"1", "true", "yes"}
