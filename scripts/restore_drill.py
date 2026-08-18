@@ -43,6 +43,17 @@ CRITICAL_TABLES = (
     "governance_sourcesnapshot",
 )
 
+BUSINESS_TABLES = (
+    "curriculum_curriculumrevision",
+    "curriculum_course",
+    "curriculum_courseversion",
+    "curriculum_planmembership",
+    "rules_requirement",
+    "student_records_programenrollment",
+    "identity_auditevent",
+    "governance_sourcesnapshot",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class DatabaseTarget:
@@ -239,6 +250,15 @@ def restore_drill(
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if metadata.get("sha256") != digest or metadata.get("size_bytes") != size:
         raise RestoreError("backup metadata hash/size does not match the dump")
+    expected_counts = metadata.get("business_row_counts")
+    if not isinstance(expected_counts, dict) or set(expected_counts) != set(
+        BUSINESS_TABLES
+    ):
+        raise RestoreError("backup metadata is missing complete business row counts")
+    if any(
+        not isinstance(value, int) or value < 0 for value in expected_counts.values()
+    ):
+        raise RestoreError("backup metadata contains invalid business row counts")
     drill_database = f"restore_drill_{datetime.now(UTC):%Y%m%d%H%M%S}_{uuid4().hex[:8]}"
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", drill_database):
         raise RestoreError("generated drill database name is invalid")
@@ -255,7 +275,10 @@ def restore_drill(
             container_env_file=container_env_file,
             extra=["--command", f"CREATE DATABASE {quoted_database}"],
         )
-        _require_success(_run(create, target=target, container=bool(container)), "create drill database")
+        _require_success(
+            _run(create, target=target, container=bool(container)),
+            "create drill database",
+        )
         created = True
         with backup_path.open("rb") as stream:
             restore = _client_command(
@@ -275,6 +298,15 @@ def restore_drill(
                 ),
                 "restore dump",
             )
+        schema_validation_sql = (
+            "SELECT (SELECT COUNT(*) FROM django_migrations)::text || '|' || "
+            "(SELECT COUNT(*) FROM pg_catalog.pg_tables WHERE schemaname='public')::text || '|' || "
+            "(SELECT COUNT(*) FROM pg_catalog.pg_tables WHERE schemaname='public' AND tablename IN "
+            "('django_migrations','curriculum_curriculumrevision','curriculum_course',"
+            "'curriculum_courseversion','curriculum_requirementgroup','curriculum_planmembership',"
+            "'rules_requirement','student_records_programenrollment','audit_degreeauditrun',"
+            "'governance_sourcesnapshot'))::text"
+        )
         validate = _client_command(
             target,
             "psql",
@@ -286,13 +318,7 @@ def restore_drill(
                 "--tuples-only",
                 "--no-align",
                 "--command",
-                "SELECT (SELECT COUNT(*) FROM django_migrations)::text || '|' || "
-                "(SELECT COUNT(*) FROM pg_catalog.pg_tables WHERE schemaname='public')::text || '|' || "
-                "(SELECT COUNT(*) FROM pg_catalog.pg_tables WHERE schemaname='public' AND tablename IN "
-                "('django_migrations','curriculum_curriculumrevision','curriculum_course',"
-                "'curriculum_courseversion','curriculum_requirementgroup','curriculum_planmembership',"
-                "'rules_requirement','student_records_programenrollment','audit_degreeauditrun',"
-                "'governance_sourcesnapshot'))::text",
+                schema_validation_sql,
             ],
         )
         validation = _run(validate, target=target, container=bool(container))
@@ -310,6 +336,37 @@ def restore_drill(
                 "restored schema is not the curriculum product schema: "
                 f"critical_tables={critical_tables}/{len(CRITICAL_TABLES)}"
             )
+        count_sql = " UNION ALL ".join(
+            f"SELECT '{table}', COUNT(*)::bigint FROM {table}"
+            for table in BUSINESS_TABLES
+        )
+        count_command = _client_command(
+            target,
+            "psql",
+            drill_database,
+            container=container,
+            container_env_file=container_env_file,
+            extra=[
+                "--no-psqlrc",
+                "--tuples-only",
+                "--no-align",
+                "--field-separator",
+                "|",
+                "--command",
+                count_sql,
+            ],
+        )
+        counted = _run(count_command, target=target, container=bool(container))
+        _require_success(counted, "validate restored business data")
+        restored_counts: dict[str, int] = {}
+        for line in (counted.stdout or "").splitlines():
+            parts = line.strip().split("|")
+            if len(parts) == 2 and parts[0] in BUSINESS_TABLES and parts[1].isdigit():
+                restored_counts[parts[0]] = int(parts[1])
+        if restored_counts != expected_counts:
+            raise RestoreError(
+                "restored business row counts do not match the backup manifest"
+            )
         return {
             "backup": str(backup_path),
             "backup_sha256": digest,
@@ -317,6 +374,7 @@ def restore_drill(
             "migrations": migrations,
             "tables": tables,
             "critical_tables": critical_tables,
+            "business_row_counts": restored_counts,
             "status": "passed",
         }
     finally:
@@ -337,7 +395,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("backup", type=Path)
     parser.add_argument("--database-url", default=os.environ.get("DATABASE_URL", ""))
-    parser.add_argument("--container", help="Run PostgreSQL clients inside this Docker container")
+    parser.add_argument(
+        "--container", help="Run PostgreSQL clients inside this Docker container"
+    )
     parser.add_argument("--minimum-migrations", type=int, default=1)
     args = parser.parse_args()
     if not args.database_url:

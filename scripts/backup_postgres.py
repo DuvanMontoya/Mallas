@@ -29,6 +29,18 @@ class BackupError(RuntimeError):
     """Raised for a safe, actionable backup failure."""
 
 
+BUSINESS_TABLES = (
+    "curriculum_curriculumrevision",
+    "curriculum_course",
+    "curriculum_courseversion",
+    "curriculum_planmembership",
+    "rules_requirement",
+    "student_records_programenrollment",
+    "identity_auditevent",
+    "governance_sourcesnapshot",
+)
+
+
 @dataclass(frozen=True, slots=True)
 class DatabaseTarget:
     host: str
@@ -116,6 +128,85 @@ def _command(
     return args
 
 
+def _business_row_counts(
+    target: DatabaseTarget,
+    *,
+    container: str | None,
+    container_env_file: Path | None,
+    environment: dict[str, str],
+    timeout_seconds: int,
+) -> dict[str, int]:
+    statements = " UNION ALL ".join(
+        f"SELECT '{table}', COUNT(*)::bigint FROM {table}" for table in BUSINESS_TABLES
+    )
+    if container:
+        command = [
+            *_command_prefix(target, container, container_env_file),
+            "psql",
+        ]
+        host = "127.0.0.1"
+    else:
+        command = ["psql"]
+        host = target.host
+    command.extend(
+        [
+            "--host",
+            host,
+            "--port",
+            str(target.port),
+            "--username",
+            target.user,
+            "--dbname",
+            target.database,
+            "--no-psqlrc",
+            "--tuples-only",
+            "--no-align",
+            "--field-separator",
+            "|",
+            "--command",
+            statements,
+        ]
+    )
+    try:
+        result = subprocess.run(
+            command,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise BackupError(
+            f"business row-count query failed: {type(exc).__name__}"
+        ) from exc
+    if result.returncode:
+        raise BackupError(f"business row-count query failed ({result.returncode})")
+    counts: dict[str, int] = {}
+    for line in result.stdout.splitlines():
+        parts = line.strip().split("|")
+        if len(parts) == 2 and parts[0] in BUSINESS_TABLES and parts[1].isdigit():
+            counts[parts[0]] = int(parts[1])
+    if set(counts) != set(BUSINESS_TABLES):
+        raise BackupError("business row-count query returned an incomplete result")
+    return counts
+
+
+def _command_prefix(
+    target: DatabaseTarget, container: str, container_env_file: Path | None
+) -> list[str]:
+    docker = shutil.which("docker")
+    if docker is None:
+        raise BackupError("docker is required when --container is used")
+    command = [docker, "exec", "-i"]
+    if target.password and container_env_file is None:
+        raise BackupError("container credentials require a temporary env file")
+    if container_env_file is not None:
+        command.extend(["--env-file", str(container_env_file)])
+    command.append(container)
+    return command
+
+
 def _metadata_path(backup_path: Path) -> Path:
     return backup_path.with_suffix(backup_path.suffix + ".json")
 
@@ -167,6 +258,7 @@ def create_backup(
     if target.sslmode:
         environment["PGSSLMODE"] = target.sslmode
     container_env_file = _container_env_file(target) if container else None
+    business_row_counts: dict[str, int]
     try:
         command = _command(
             target,
@@ -185,12 +277,21 @@ def create_backup(
                     timeout=timeout_seconds,
                 )
             if completed.returncode:
-                detail = completed.stderr.decode("utf-8", errors="replace")[-500:].strip()
+                detail = completed.stderr.decode("utf-8", errors="replace")[
+                    -500:
+                ].strip()
                 raise BackupError(f"pg_dump failed ({completed.returncode}): {detail}")
             if partial.stat().st_size == 0:
                 raise BackupError("pg_dump produced an empty backup")
             os.chmod(partial, 0o600)
             os.replace(partial, backup_path)
+            business_row_counts = _business_row_counts(
+                target,
+                container=container,
+                container_env_file=container_env_file,
+                environment=environment,
+                timeout_seconds=timeout_seconds,
+            )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise BackupError(f"backup command failed: {type(exc).__name__}") from exc
     finally:
@@ -222,6 +323,7 @@ def create_backup(
         "pg_dump_version": version,
         "sha256": _sha256(backup_path),
         "size_bytes": backup_path.stat().st_size,
+        "business_row_counts": business_row_counts,
     }
     _write_json(metadata_path, metadata)
     return backup_path, metadata_path
@@ -249,7 +351,9 @@ def main() -> int:
     except BackupError as exc:
         print(f"FAIL backup: {exc}", file=sys.stderr)
         return 1
-    print(json.dumps({"backup": str(backup), "metadata": str(metadata)}, sort_keys=True))
+    print(
+        json.dumps({"backup": str(backup), "metadata": str(metadata)}, sort_keys=True)
+    )
     return 0
 
 

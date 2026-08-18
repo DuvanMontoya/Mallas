@@ -4,8 +4,8 @@ const MAX_REQUEST_BYTES = 12 * 1024 * 1024;
 const MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const API_SEGMENT_PATTERN = /^[A-Za-z0-9_-]+$/;
-const MAX_CONCURRENT_BUFFERED_REQUESTS = 4;
-let activeBufferedRequests = 0;
+const MAX_CONCURRENT_BUFFERED_OPERATIONS = 4;
+let activeBufferedOperations = 0;
 
 class PayloadLimitError extends Error {}
 
@@ -60,17 +60,37 @@ function payloadTooLarge(requestId: string): Response {
 
 function proxyBusy(requestId: string): Response {
   return Response.json(
-    { title: "Servicio ocupado", status: 429, code: "PROXY_CAPACITY_EXHAUSTED", detail: "Hay demasiadas cargas simultáneas. Intenta de nuevo en unos segundos.", fields: {}, correlation_id: requestId },
-    { status: 429, headers: { "cache-control": "no-store", "retry-after": "2", "x-request-id": requestId } },
+    {
+      title: "Servicio ocupado",
+      status: 429,
+      code: "PROXY_CAPACITY_EXHAUSTED",
+      detail: "Hay demasiadas solicitudes simultáneas. Intenta de nuevo en unos segundos.",
+      fields: {},
+      correlation_id: requestId,
+    },
+    {
+      status: 429,
+      headers: { "cache-control": "no-store", "retry-after": "2", "x-request-id": requestId },
+    },
   );
 }
 
 function safeResponseHeaders(upstream: Headers): Headers {
   const result = new Headers(upstream);
   for (const header of [
-    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
-    "te", "trailer", "transfer-encoding", "upgrade", "content-length", "content-encoding",
-  ]) result.delete(header);
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+    "content-length",
+    "content-encoding",
+  ]) {
+    result.delete(header);
+  }
   return result;
 }
 
@@ -102,67 +122,78 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     return payloadTooLarge(requestId);
   }
   const buffersRequest = !["GET", "HEAD"].includes(request.method);
-  if (buffersRequest && activeBufferedRequests >= MAX_CONCURRENT_BUFFERED_REQUESTS) {
+  if (activeBufferedOperations >= MAX_CONCURRENT_BUFFERED_OPERATIONS) {
     return proxyBusy(requestId);
   }
-  if (buffersRequest) activeBufferedRequests += 1;
+  activeBufferedOperations += 1;
   try {
-  let body: ArrayBuffer | null | undefined;
-  try {
-    body = buffersRequest ? await readBoundedBody(request.body, MAX_REQUEST_BYTES) : undefined;
-  } catch (error) {
-    if (error instanceof PayloadLimitError) return payloadTooLarge(requestId);
-    throw error;
-  }
-  try {
-    const response = await fetch(target, {
-      method: request.method,
-      headers,
-      body,
-      redirect: "manual",
-    });
-    // Materialize the bounded API response before returning it. Passing the
-    // upstream stream through kept Undici's parser paused while the downstream
-    // client applied backpressure and produced intermittent Node assertions
-    // under concurrent requests. Upload request bodies are already bounded by
-    // the API and response payloads are JSON, so buffering here is predictable.
-    const responseBody =
-      request.method === "HEAD" ? null : await readBoundedBody(response.body, MAX_RESPONSE_BYTES);
-    return new Response(responseBody, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: safeResponseHeaders(response.headers),
-    });
-  } catch (error) {
-    if (error instanceof PayloadLimitError) {
+    let body: ArrayBuffer | null | undefined;
+    try {
+      body = buffersRequest ? await readBoundedBody(request.body, MAX_REQUEST_BYTES) : undefined;
+    } catch (error) {
+      if (error instanceof PayloadLimitError) return payloadTooLarge(requestId);
+      throw error;
+    }
+    try {
+      const response = await fetch(target, {
+        method: request.method,
+        headers,
+        body,
+        redirect: "manual",
+      });
+      // Materialize a bounded response so the proxy cannot retain an
+      // unbounded upstream stream under downstream backpressure.
+      const responseBody =
+        request.method === "HEAD"
+          ? null
+          : await readBoundedBody(response.body, MAX_RESPONSE_BYTES);
+      const responseHeaders = safeResponseHeaders(response.headers);
+      responseHeaders.set("x-request-id", responseHeaders.get("x-request-id") ?? requestId);
+      return new Response(responseBody, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      });
+    } catch (error) {
+      if (error instanceof PayloadLimitError) {
+        return Response.json(
+          {
+            title: "Respuesta upstream inválida",
+            status: 502,
+            code: "UPSTREAM_PAYLOAD_TOO_LARGE",
+            detail: "El servicio académico devolvió una respuesta mayor al límite permitido.",
+            fields: {},
+            correlation_id: requestId,
+          },
+          {
+            status: 502,
+            headers: { "cache-control": "no-store", "x-request-id": requestId },
+          },
+        );
+      }
+      console.error("api.proxy.unavailable", { requestId, target: target.pathname, error });
       return Response.json(
-        { title: "Respuesta upstream inválida", status: 502, code: "UPSTREAM_PAYLOAD_TOO_LARGE", detail: "El servicio académico devolvió una respuesta mayor al límite permitido.", fields: {}, correlation_id: requestId },
-        { status: 502, headers: { "cache-control": "no-store", "x-request-id": requestId } },
+        {
+          type: "https://curriculum.local/problems/service-unavailable",
+          title: "Servicio temporalmente no disponible",
+          status: 503,
+          code: "SERVICE_UNAVAILABLE",
+          detail: "No fue posible contactar el servicio académico. Intenta de nuevo.",
+          fields: {},
+          correlation_id: requestId,
+        },
+        {
+          status: 503,
+          headers: {
+            "cache-control": "no-store",
+            "retry-after": "2",
+            "x-request-id": requestId,
+          },
+        },
       );
     }
-    console.error("api.proxy.unavailable", { requestId, target: target.pathname, error });
-    return Response.json(
-      {
-        type: "https://curriculum.local/problems/service-unavailable",
-        title: "Servicio temporalmente no disponible",
-        status: 503,
-        code: "SERVICE_UNAVAILABLE",
-        detail: "No fue posible contactar el servicio académico. Intenta de nuevo.",
-        fields: {},
-        correlation_id: requestId,
-      },
-      {
-        status: 503,
-        headers: {
-          "cache-control": "no-store",
-          "retry-after": "2",
-          "x-request-id": requestId,
-        },
-      },
-    );
-  }
   } finally {
-    if (buffersRequest) activeBufferedRequests -= 1;
+    activeBufferedOperations -= 1;
   }
 }
 
