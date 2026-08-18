@@ -1302,3 +1302,65 @@ Agregar alcance de matrícula/institución al read model de períodos y ejecutar
 la matriz production-like completa con PostgreSQL y build standalone. Después,
 aislar el parser PDF y cerrar la política de retención. No se creó commit, no se
 hizo push y no se desplegó.
+
+## Authoritative latest snapshot (EOF) — 2026-08-17 23:40 -05:00
+
+La aceptación local de administrador y estudiante se completó de extremo a
+extremo en Chrome real con una persona sintética persistida de sexto semestre.
+No hay mocks ni reglas académicas inventadas en los resultados mostrados.
+
+### Terminado
+
+- La malla es la superficie primaria: abre con estado compacto y ruta
+  obligatoria, conserva el desplazamiento sólo dentro del track y no desborda el
+  documento a 390 px (`clientWidth=375`, `scrollWidth=375`).
+- Administración dispone de alta nativa, búsqueda/paginación remota y resolución
+  auditable de matrículas `NEEDS_REVIEW` con `If-Match`, fundamento, período de
+  ingreso, estado y vigencia de la revisión. La activación se revalida y bloquea
+  transaccionalmente.
+- Historia e importación obtienen un contexto privado independiente de la
+  auditoría. Una matrícula `NEEDS_REVIEW` puede conservar/corregir hechos mientras
+  avance y elegibilidad permanecen explícitamente pausados.
+- La confirmación de importación vuelve a validar vigencia temporal bajo locks
+  adquiridos en orden global `CourseVersion -> AcademicTerm`; se cerraron TOCTOU
+  y deadlocks cruzados con edición manual.
+- El parser admite códigos UNAL puramente numéricos. La aceptación real aplicó
+  23 candidatos y conserva 23 intentos/evidencias: 20 aprobados, 3 en curso,
+  71 créditos reportados y 70/141 aplicados.
+- Analítica maneja `NEEDS_REVIEW` sin inventar métricas, compacta bloqueos y deja
+  trazabilidad completa bajo demanda. Grafo y estados visibles están traducidos.
+- Procedencia pública incorpora búsqueda sobre los fragmentos archivados en vez
+  de una lista larga sin navegación.
+- El BFF limita cuerpos/respuestas, exige longitud en escrituras, valida formato,
+  separa presupuestos auth/estándar/upload, aplica equidad por cliente, timeouts y
+  envelopes Problem Details completos.
+- Backup y restore drill reales pasaron con snapshot PostgreSQL compartido entre
+  `pg_dump` y conteos del manifiesto. Artefacto local:
+  `var/backups/curriculum-e2e-20260818T035027Z.dump`.
+
+### Evidencia
+
+- Chrome real: administrador y estudiante autenticados; inicio, malla, historia,
+  importación, planificador, auditoría, oferta, analítica, grafo, procedencia y
+  administración recorridos; cero `warn/error` de producto en consola final.
+- Malla móvil 390x844: sin overflow documental; sólo el track obligatorio tiene
+  scroll horizontal interno.
+- Backend focal administración/historia/analítica: 36/36 PASS; frontend focal:
+  5/5 PASS; TypeScript y ESLint PASS.
+- `python scripts/verify.py` canónico: PASS; backend 170 passed + 1 skip
+  esperado de trigger PostgreSQL; frontend 16 archivos / 46 pruebas; Ruff,
+  formato, mypy, migraciones, OpenAPI/cliente, seguridad y gates documentales PASS.
+- Reviewers read-only de arquitectura, código, currículo, seguridad y UX:
+  `0 Critical`, `0 High`.
+
+### No terminado / siguiente acción exacta
+
+- P24/P25 permanecen `in_progress`: falta reconstruir y probar la imagen final
+  de producción/Compose después de este diff y ejecutar carga instrumentada
+  sobre ese artefacto. El restore drill ya no es un bloqueo.
+- Antes de escalar a múltiples réplicas, trasladar o documentar el admission
+  control global del BFF; hoy es deliberadamente por proceso y Caddy es el único
+  ingress.
+- Evolucionar el fundamento de resolución curricular desde metadata textual a
+  evidencia institucional estructurada cuando exista el proceso documental.
+- No se creó commit, no se hizo push y no se desplegó.

@@ -315,8 +315,8 @@
         "P23"
       ],
       "prompt": "prompts/24_DEPLOYMENT_DR.md",
-      "verification": "Static deployment assets, secret scan, docs/state checks, action pinning and focused py_compile pass; Docker build, image scan, Compose smoke and PostgreSQL backup/restore are blocked by Docker Engine ACL in this environment.",
-      "notes": "Production Dockerfiles, immutable Compose, split runtime/migration DB URLs, explicit MFA propagation, backup/restore scripts and runbooks implemented. Runtime proof remains external; no gate is marked green without execution."
+      "verification": "Static deployment assets, secret scan, docs/state checks and action pinning pass. Real PostgreSQL backup/restore drill passed with shared REPEATABLE READ snapshot, mandatory manifest/count validation and SHA-256 eda98873688b5db4fe135b4cb24e0a72aad993348171af6ae190f99cb6972f33. Final image rebuild, scan and Compose smoke after this diff remain pending.",
+      "notes": "Production Dockerfiles, immutable Compose, split runtime/migration DB URLs, explicit MFA propagation, snapshot-consistent backup/restore scripts and runbooks are implemented. Restore is proven; final production image/Compose runtime proof remains, so the phase stays in_progress."
     },
     {
       "id": "P25",
@@ -328,8 +328,8 @@
         "P24"
       ],
       "prompt": "prompts/25_FULL_SYSTEM_AUDIT.md",
-      "verification": "Traceability matrix and real Chrome admin/student audit recorded; canonical scripts/verify.py PASS with 149 backend passed + 1 expected PostgreSQL-trigger skip and 39 frontend tests; Django/migrations/Ruff/mypy/ESLint/TypeScript/OpenAPI/security gates pass. Docker/Compose, restore and production-like load remain pending.",
-      "notes": "Chrome real-route/write testing fixed planner hydration, role-aware navigation/home, filtered map selection, history/import workflows, stale import confirmation and private caching. Security/UX reviewers report zero Critical/High; production runtime/load and operational restore gates remain explicit, so the phase stays in_progress."
+      "verification": "Traceability matrix and real Chrome admin/student audit recorded; canonical scripts/verify.py PASS with 170 backend passed + 1 expected PostgreSQL-trigger skip and 46 frontend tests. Django/migrations/Ruff/mypy/ESLint/TypeScript/OpenAPI/security gates pass; real PostgreSQL backup/restore passes. Final Compose image smoke and production-like load remain pending.",
+      "notes": "Chrome real-route/write testing covered admin creation, sixth-semester student history/import, curriculum, planning, audit, offerings, analytics, graph and sources; console is clean and mobile map has no document overflow. Architecture/code/curriculum/security/UX reviewers report zero Critical/High. Production image/load remain explicit, so the phase stays in_progress."
     },
     {
       "id": "P26",
@@ -372,8 +372,8 @@
         "P91"
       ],
       "prompt": "prompts/92_UI_POLISH_AND_COGNITIVE_AUDIT.md",
-      "verification": "Real Chrome admin/new-student route and write audit plus browser-console inspection; python scripts/verify.py PASS with 149 backend tests passed + 1 expected skip and Vitest 15 files/43 tests. ESLint, TypeScript, Ruff, mypy, migrations, OpenAPI/client freshness, security gates and curriculum invariants pass. Focused planner regression suite passes 5/5 after the final copy correction; production-like Playwright/axe/load rerun remains pending.",
-      "notes": "A real local acceptance persona for plan 2514 was created with six terms, 23 persisted attempts and a persisted planning scenario; no mocks or hardcoded frontend state drive the result. Chrome verified 20 passed, 3 in progress, 70/141 applied credits, 21 eligible courses, the correct 1000013 planned course, zero visible alerts, zero document overflow and zero fresh product warnings/errors on the curriculum, planner and graph routes. Security, UX and code reviewers report zero Critical/High. Credentials are intentionally not stored in repository documentation. Production-like cross-device/load proof, parser isolation, import-payload retention and enrollment-scoped academic-term retrieval remain explicit work."
+      "verification": "Real Chrome admin/new-student route and write audit plus browser-console inspection; python scripts/verify.py PASS with 170 backend tests passed + 1 expected skip and Vitest 16 files/46 tests. ESLint, TypeScript, Ruff, mypy, migrations, OpenAPI/client freshness, security gates and curriculum invariants pass. Chrome mobile 390x844 reports clientWidth=scrollWidth=375; production-like Compose/load rerun remains pending.",
+      "notes": "A real local acceptance persona for plan 2514 has six terms, 23 persisted attempts/evidence rows and a persisted planning scenario; no mocks or hardcoded frontend state drive the result. Chrome verified 20 passed, 3 in progress, 70/141 applied credits, 21 eligible courses and the correct 1000013 plan. Admin NEEDS_REVIEW resolution, history during review, import concurrency, analytics density, sources search and mobile overflow are closed. All mandated reviewers report zero Critical/High. Credentials remain out of Git and are delivered only to the user."
     },
     {
       "id": "P93",

@@ -47,4 +47,18 @@ describe("analytics dashboard", () => {
     const results = await axe.run(container);
     expect(results.violations).toEqual([]);
   });
+
+  it("explains the administrative next step without inventing metrics for a reviewed enrollment", () => {
+    render(<AnalyticsDashboard analytics={{
+      ...fixture,
+      data_state: "ENROLLMENT_NEEDS_REVIEW",
+      snapshot: null,
+      metrics: { credits: null, requirements: null, critical_courses: [], trend: [], scenarios: [] },
+      warnings: ["Revisión pendiente"],
+    }} failure={null} />);
+
+    expect(screen.getByRole("heading", { name: "Primero confirma tu revisión curricular" })).toBeInTheDocument();
+    expect(screen.queryByText(/0% completado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver malla pública" })).toHaveAttribute("href", "/curriculum");
+  });
 });

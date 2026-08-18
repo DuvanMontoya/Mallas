@@ -1,5 +1,8 @@
+"use client";
+
 import { Archive, ExternalLink, Fingerprint } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import type { CurriculumMap } from "@/lib/api";
 
@@ -7,6 +10,7 @@ import { Alert } from "./ui/alert";
 import { StatusBadge } from "./ui/status-badge";
 
 export function SourceProvenanceOverview({ map, showEditorialAccess = false }: { map: CurriculumMap; showEditorialAccess?: boolean }) {
+  const [query, setQuery] = useState("");
   const evidence = new Map<string, CurriculumMap["courses"][number]["source_evidence"][number]>();
   for (const course of map.courses) {
     for (const item of course.source_evidence) evidence.set(item.reference, item);
@@ -14,7 +18,10 @@ export function SourceProvenanceOverview({ map, showEditorialAccess = false }: {
       for (const item of requirement.evidence) evidence.set(item.reference, item);
     }
   }
-  const rows = [...evidence.values()].sort((left, right) => (left.page ?? 0) - (right.page ?? 0) || left.locator.localeCompare(right.locator)).slice(0, 80);
+  const allRows = [...evidence.values()].sort((left, right) => (left.page ?? 0) - (right.page ?? 0) || left.locator.localeCompare(right.locator));
+  const normalizedQuery = query.trim().toLocaleLowerCase("es-CO");
+  const matchingRows = normalizedQuery ? allRows.filter((item) => [item.locator, item.source_title, item.excerpt, item.annotation].some((value) => value?.toLocaleLowerCase("es-CO").includes(normalizedQuery))) : allRows;
+  const rows = matchingRows.slice(0, 80);
   return (
     <div className="sources-public-page">
       <section className="panel sources-public-hero">
@@ -32,7 +39,9 @@ export function SourceProvenanceOverview({ map, showEditorialAccess = false }: {
       </section>
       {map.revision.source_note ? <Alert tone="info">{map.revision.source_note}</Alert> : null}
       <section className="panel sources-evidence-ledger" aria-labelledby="sources-evidence-title">
-        <div className="section-heading"><div><p className="eyebrow">Archivo verificable</p><h2 id="sources-evidence-title">Fragmentos de evidencia</h2></div><span className="tag tag-outline">Mostrando {rows.length} de {evidence.size}</span></div>
+        <div className="section-heading"><div><p className="eyebrow">Archivo verificable</p><h2 id="sources-evidence-title">Fragmentos de evidencia</h2></div><span className="tag tag-outline">Mostrando {rows.length} de {matchingRows.length}</span></div>
+        <label className="command-search sources-evidence-search"><span>Buscar evidencia</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Curso, regla, fuente o fragmento" /></label>
+        {matchingRows.length > 80 ? <p className="empty-copy">Afina la búsqueda para consultar los {matchingRows.length - 80} fragmentos restantes.</p> : null}
         <ol>{rows.map((item) => <li key={item.reference}><span className="sources-locator">{item.locator}</span><div><strong>{item.source_title}</strong><p>{item.excerpt || item.annotation || "El snapshot conserva el locator sin transcripción pública."}</p><small>SHA-256 {item.snapshot_sha256.slice(0, 20)}…{item.page ? ` · página ${item.page}` : ""}</small></div>{item.source_url ? <a href={item.source_url} target="_blank" rel="noreferrer" aria-label={`Abrir fuente de ${item.locator}`}><ExternalLink size={15} aria-hidden="true" /></a> : null}</li>)}</ol>
       </section>
       <div className="sources-public-actions"><Link className="button button-primary" href="/curriculum">Volver a la malla</Link>{showEditorialAccess ? <Link className="button button-secondary" href="/login?next=%2Fsources">Acceso editorial</Link> : null}</div>

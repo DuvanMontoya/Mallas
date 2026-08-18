@@ -590,3 +590,27 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
   explícitos el scope multi-institución de términos, el gate production-like,
   aislamiento PDF, retención de payload y consolidación CSS. No se guardaron
   credenciales en Git y no hubo commit, push ni despliegue.
+
+## Continuación del Goal — 2026-08-17 23:40 -05:00 — aceptación integral y cierre anti-MVP
+
+- Se recorrió la sesión real de Chrome como administrador y como estudiante de
+  aceptación de sexto semestre, con inspección visual, DOM accesible y consola.
+- Se cerraron overflow móvil de malla, densidad de analítica/procedencia,
+  resolución administrativa `NEEDS_REVIEW`, contexto de historia independiente,
+  traducción de estados y ayudas de formularios.
+- El flujo real persistido conserva lote aplicado con 23 candidatos, 23 intentos
+  y 23 evidencias; 20 asignaturas aprobadas, 3 en curso, 70/141 créditos aplicados
+  y escenario con curso 1000013 en 2026-2S.
+- Se cerraron concurrencia temporal de import/manual mediante locks globales
+  estables, replay sin atribución falsa de auditoría y payload analítico completo
+  para matrículas en revisión.
+- El BFF quedó acotado por tamaño, timeout, clase de solicitud, capacidad global
+  por proceso y cuota por cliente; Problem Details y request IDs son uniformes.
+- Backup y restore drill reales pasaron con SHA-256
+  `eda98873688b5db4fe135b4cb24e0a72aad993348171af6ae190f99cb6972f33` y
+  conteos de negocio en el mismo snapshot exportado.
+- Revisores read-only de arquitectura, código, currículo, seguridad y UX:
+  0 Critical / 0 High. No hubo commit, push ni despliegue.
+- `python scripts/verify.py` final PASS: 170 backend passed + 1 skip esperado,
+  16 archivos / 46 pruebas frontend, lint, tipos, formato, migraciones,
+  OpenAPI/cliente, secretos, SAST, anti-MVP e invariantes curriculares PASS.

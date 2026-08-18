@@ -16,13 +16,14 @@ async function requestHeaders() {
   }
 }
 
-type EntryState = "anonymous" | "unavailable" | "enrollment-missing";
+type EntryState = "anonymous" | "unavailable" | "enrollment-missing" | "enrollment-review";
 
 function EmptyDashboardHome({ state }: { state: EntryState }) {
   const unavailable = state === "unavailable";
   const enrollmentMissing = state === "enrollment-missing";
+  const enrollmentReview = state === "enrollment-review";
   return (
-    <section className="panel compact-entry" aria-labelledby="start-title"><div><p className="eyebrow">{unavailable ? "Servicio temporalmente no disponible" : enrollmentMissing ? "Acceso académico pendiente" : "Plan 2514 · Estadística"}</p><h1 id="start-title">{unavailable ? "No pudimos cargar tu estado académico" : enrollmentMissing ? "Tu cuenta aún no tiene una matrícula vinculada" : "Explora la malla curricular"}</h1><p>{unavailable ? "Tus datos no se modificaron. Puedes reintentar o consultar la malla pública." : enrollmentMissing ? "La vinculación debe resolverla la administración académica; importar un archivo todavía no está habilitado para esta cuenta." : "Consulta obligatorias, opciones y prerrequisitos sin iniciar sesión."}</p></div><div className="compact-entry-actions"><Link className="button button-primary" href={unavailable ? "/" : "/curriculum"}>{unavailable ? "Reintentar" : "Abrir malla"}</Link>{state === "anonymous" ? <Link className="button button-secondary" href="/login">Iniciar sesión</Link> : unavailable ? <Link className="button button-secondary" href="/curriculum">Ver malla pública</Link> : null}</div></section>
+    <section className="panel compact-entry" aria-labelledby="start-title"><div><p className="eyebrow">{unavailable ? "Servicio temporalmente no disponible" : enrollmentReview ? "Vinculación curricular en revisión" : enrollmentMissing ? "Acceso académico pendiente" : "Plan 2514 · Estadística"}</p><h1 id="start-title">{unavailable ? "No pudimos cargar tu estado académico" : enrollmentReview ? "Aún no podemos determinar tu avance" : enrollmentMissing ? "Tu cuenta aún no tiene una matrícula vinculada" : "Explora la malla curricular"}</h1><p>{unavailable ? "Tus datos no se modificaron. Puedes reintentar o consultar la malla pública." : enrollmentReview ? "La administración debe confirmar qué revisión corresponde a tu ingreso. Puedes consultar la malla pública, pero no mostraremos elegibilidad ni faltantes como definitivos." : enrollmentMissing ? "La vinculación debe resolverla la administración académica; importar un archivo todavía no está habilitado para esta cuenta." : "Consulta obligatorias, opciones y prerrequisitos sin iniciar sesión."}</p></div><div className="compact-entry-actions"><Link className="button button-primary" href={unavailable ? "/" : "/curriculum"}>{unavailable ? "Reintentar" : "Abrir malla"}</Link>{state === "anonymous" ? <Link className="button button-secondary" href="/login">Iniciar sesión</Link> : unavailable ? <Link className="button button-secondary" href="/curriculum">Ver malla pública</Link> : null}</div></section>
   );
 }
 
@@ -92,7 +93,10 @@ export default async function HomePage() {
 
   if (overview.data) return <StudentDecisionHome overview={overview.data} />;
   const enrollmentMissing = session.state === "authenticated" && overview.failure?.problem?.code?.toLocaleLowerCase("es-CO") === "enrollment_not_found";
-  const entryState: EntryState = overview.failure?.unavailable || session.state === "unavailable" || (session.state === "authenticated" && !enrollmentMissing)
+  const enrollmentReview = session.state === "authenticated" && overview.failure?.problem?.code?.toLocaleLowerCase("es-CO") === "enrollment_needs_review";
+  const entryState: EntryState = enrollmentReview
+    ? "enrollment-review"
+    : overview.failure?.unavailable || session.state === "unavailable" || (session.state === "authenticated" && !enrollmentMissing)
     ? "unavailable"
     : enrollmentMissing
       ? "enrollment-missing"

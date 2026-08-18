@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import {
+  confirmAdminEnrollmentRevision,
   createAdminEnrollment,
   getAdminEnrollments,
+  type AdminEnrollment,
   type AdminEnrollmentCreatePayload,
   type AdminEnrollmentPage,
   type StudentAdminCatalog,
@@ -15,6 +17,62 @@ import { StatusBadge } from "./ui/status-badge";
 
 function firstId<T extends { id: string }>(items: T[]) {
   return items[0]?.id ?? "";
+}
+
+const revisionStatus = (status: string) => ({ PUBLISHED: "Publicada", SUPERSEDED: "Reemplazada", RETIRED: "Retirada" })[status] ?? "No disponible";
+const revisionValidity = (revision: StudentAdminCatalog["revisions"][number] | undefined) => revision ? `${revision.effective_from} → ${revision.effective_to ?? (revision.status === "PUBLISHED" ? "vigente" : "fin por verificar")}` : "";
+
+function EnrollmentResolution({ enrollment, catalog, onResolved }: { enrollment: AdminEnrollment; catalog: StudentAdminCatalog; onResolved: (value: AdminEnrollment) => void }) {
+  const revisions = catalog.revisions.filter((revision) => revision.plan_id === enrollment.plan_id);
+  const [revisionId, setRevisionId] = useState(
+    revisions.some((revision) => revision.id === enrollment.revision_basis_id)
+      ? enrollment.revision_basis_id
+      : (revisions[0]?.id ?? ""),
+  );
+  const [rationale, setRationale] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const admissionTerm = catalog.terms.find((term) => term.id === enrollment.admission_term_id);
+  return (
+    <details className="student-admin-resolution">
+      <summary>Resolver revisión curricular</summary>
+      <div>
+        <p className="student-admin-resolution-context"><strong>Ingreso {enrollment.admission_term_code}</strong>{admissionTerm ? ` · ${admissionTerm.starts_at.slice(0, 10)}` : ""}<span>Confirma la norma aplicable a esa fecha. La decisión queda auditada.</span></p>
+        <label className="field-group">
+          <span>Revisión confirmada</span>
+          <select value={revisionId} onChange={(event) => setRevisionId(event.target.value)}>
+            {revisions.map((revision) => <option key={revision.id} value={revision.id}>{revision.code} · {revisionStatus(revision.status)} · {revisionValidity(revision)}</option>)}
+          </select>
+        </label>
+        <label className="field-group">
+          <span>Fundamento institucional</span>
+          <textarea value={rationale} onChange={(event) => setRationale(event.target.value)} minLength={12} required />
+          <small>Mínimo 12 caracteres; registra el criterio o soporte de la decisión.</small>
+        </label>
+        {error ? <Alert tone="error">{error}</Alert> : null}
+        <button
+          className="button button-primary"
+          type="button"
+          disabled={pending || !revisionId || rationale.trim().length < 12}
+          onClick={() => startTransition(async () => {
+            setError(null);
+            const result = await confirmAdminEnrollmentRevision(
+              enrollment.id,
+              { revision_basis_id: revisionId, rationale: rationale.trim() },
+              enrollment.version,
+            );
+            if (!result.data) {
+              setError(result.failure?.problem?.detail ?? "No fue posible confirmar la revisión.");
+              return;
+            }
+            onResolved(result.data);
+          })}
+        >
+          {pending ? "Confirmando…" : "Confirmar y activar"}
+        </button>
+      </div>
+    </details>
+  );
 }
 
 export function StudentAdministrationWorkspace({
@@ -52,6 +110,8 @@ export function StudentAdministrationWorkspace({
   const admissionDate = selectedTerm?.starts_at.slice(0, 10);
   const revisionApplies = Boolean(
     selectedRevision && admissionDate &&
+    selectedRevision.status !== "RETIRED" &&
+    (selectedRevision.status === "PUBLISHED" || selectedRevision.effective_to) &&
     selectedRevision.effective_from <= admissionDate &&
     (!selectedRevision.effective_to || admissionDate < selectedRevision.effective_to),
   );
@@ -154,8 +214,6 @@ export function StudentAdministrationWorkspace({
     });
   }
 
-  const revisionStatus = (status: string) => ({ PUBLISHED: "Publicada", SUPERSEDED: "Reemplazada", RETIRED: "Retirada" })[status] ?? "No disponible";
-  const revisionValidity = (revision: typeof selectedRevision) => revision ? `${revision.effective_from} → ${revision.effective_to ?? "vigente"}` : "";
   const termStatus = (status: string) => ({ OPEN: "Abierto", PLANNED: "Planeado", CLOSED: "Cerrado", COMPLETED: "Finalizado" })[status] ?? "Estado no reconocido";
   const enrollmentStatus = (status: string) => ({ ACTIVE: "Activa", COMPLETED: "Finalizada", WITHDRAWN: "Retirada", SUSPENDED: "Suspendida", NEEDS_REVIEW: "Requiere revisión" })[status] ?? "Estado no reconocido";
 
@@ -170,7 +228,7 @@ export function StudentAdministrationWorkspace({
       <div className="student-admin-layout">
         <section className="panel student-admin-list" aria-labelledby="managed-students-title">
           <div className="section-heading"><div><p className="eyebrow">Matrículas activas y registradas</p><h2 id="managed-students-title">{total} estudiantes</h2></div></div>
-          {searching ? <p className="empty-copy" role="status">Buscando matrículas…</p> : enrollments.length ? <div className="student-admin-rows">{enrollments.map((enrollment) => <article key={enrollment.id}><div><strong>{enrollment.display_name || enrollment.email}</strong><span>{enrollment.student_number || "Sin número"} · {enrollment.email}</span></div><div><span>{enrollment.program_name}</span><small>Plan {enrollment.plan_code} · ingreso {enrollment.admission_term_code}</small></div><StatusBadge tone={enrollment.status === "ACTIVE" ? "eligible" : "unknown"} label={enrollmentStatus(enrollment.status)} /></article>)}</div> : <p className="empty-copy">No hay matrículas que coincidan con la búsqueda.</p>}
+          {searching ? <p className="empty-copy" role="status">Buscando matrículas…</p> : enrollments.length ? <div className="student-admin-rows">{enrollments.map((enrollment) => <article key={enrollment.id}><div><strong>{enrollment.display_name || enrollment.email}</strong><span>{enrollment.student_number || "Sin número"} · {enrollment.email}</span></div><div><span>{enrollment.program_name}</span><small>Plan {enrollment.plan_code} · ingreso {enrollment.admission_term_code}</small></div><StatusBadge tone={enrollment.status === "ACTIVE" ? "eligible" : "unknown"} label={enrollmentStatus(enrollment.status)} />{enrollment.status === "NEEDS_REVIEW" ? <EnrollmentResolution enrollment={enrollment} catalog={catalog} onResolved={(updated) => { setEnrollments((current) => current.map((item) => item.id === updated.id ? updated : item)); setMessage(`Revisión confirmada para ${updated.display_name}.`); }} /> : null}</article>)}</div> : <p className="empty-copy">No hay matrículas que coincidan con la búsqueda.</p>}
           <nav className="pagination-controls" aria-label="Páginas de matrículas"><button type="button" className="button button-secondary" disabled={searching || page.previous_offset === null} onClick={() => void loadEnrollments(page.previous_offset ?? 0)}>Anterior</button><span>Página {Math.floor(page.offset / page.limit) + 1} de {Math.max(1, Math.ceil(total / page.limit))}</span><button type="button" className="button button-secondary" disabled={searching || page.next_offset === null} onClick={() => void loadEnrollments(page.next_offset ?? 0)}>Siguiente</button></nav>
         </section>
 

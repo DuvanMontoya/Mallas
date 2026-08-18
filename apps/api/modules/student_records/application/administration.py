@@ -165,11 +165,96 @@ def administered_enrollment_view(enrollment: ProgramEnrollment) -> dict[str, Any
         "program_name": enrollment.program.name,
         "plan_id": enrollment.plan_id,
         "plan_code": enrollment.plan.code,
+        "revision_basis_id": enrollment.revision_basis_id,
         "admission_term_id": enrollment.admission_term_id,
         "admission_term_code": enrollment.admission_term.code,
         "status": enrollment.status,
         "cohort_code": enrollment.cohort_code,
+        "version": enrollment.updated_at.isoformat(),
     }
+
+
+@transaction.atomic  # type: ignore[untyped-decorator]
+def resolve_administered_enrollment_revision(
+    *,
+    actor: Any,
+    enrollment_id: UUID | str,
+    revision_basis_id: UUID | str,
+    rationale: str,
+    expected_version: str | None,
+    request: Any | None = None,
+) -> ProgramEnrollment:
+    if expected_version is None:
+        raise StudentAdministrationError(
+            "If-Match is required to confirm the reviewed enrollment.",
+            code="student_admin_precondition_required",
+        )
+    try:
+        enrollment = (
+            ProgramEnrollment.objects.select_for_update()
+            .select_related(
+                "student__user", "student__institution", "program", "plan", "admission_term"
+            )
+            .get(pk=enrollment_id)
+        )
+    except ProgramEnrollment.DoesNotExist as exc:
+        raise StudentAdministrationError(
+            "Enrollment was not found.", code="student_admin_reference_not_found"
+        ) from exc
+    if not _can_administer(
+        actor, enrollment.student.institution_id, program_id=enrollment.program_id
+    ):
+        raise StudentAdministrationError(
+            "You cannot administer this enrollment.", code="student_admin_forbidden"
+        )
+    if expected_version.strip('"') != enrollment.updated_at.isoformat():
+        raise StudentAdministrationError(
+            "The enrollment changed since it was reviewed.", code="student_admin_stale_resource"
+        )
+    if enrollment.status != EnrollmentStatus.NEEDS_REVIEW.value:
+        raise StudentAdministrationError(
+            "Only an enrollment requiring review can use this resolution.",
+            code="student_admin_status_invalid",
+        )
+    note = rationale.strip()
+    if len(note) < 12:
+        raise StudentAdministrationError(
+            "Document the institutional basis for this decision.",
+            code="student_admin_rationale_required",
+        )
+    try:
+        revision = CurriculumRevision.objects.select_for_update().get(
+            pk=revision_basis_id,
+            plan_id=enrollment.plan_id,
+            status__in=(
+                RevisionStatus.PUBLISHED.value,
+                RevisionStatus.SUPERSEDED.value,
+                RevisionStatus.RETIRED.value,
+            ),
+        )
+    except CurriculumRevision.DoesNotExist as exc:
+        raise StudentAdministrationError(
+            "The selected revision is not an admissible revision of this plan.",
+            code="student_admin_reference_not_found",
+        ) from exc
+    previous_revision_id = enrollment.revision_basis_id
+    enrollment.revision_basis = revision
+    enrollment.status = EnrollmentStatus.ACTIVE.value
+    enrollment.save(update_fields=["revision_basis", "status", "updated_at"])
+    record_audit_event(
+        request,
+        action="STUDENT_ENROLLMENT_REVISION_CONFIRMED",
+        actor=actor,
+        object_type="ProgramEnrollment",
+        object_id=enrollment.pk,
+        institution_id=enrollment.student.institution_id,
+        metadata={
+            "previous_revision_id": str(previous_revision_id),
+            "confirmed_revision_id": str(revision.pk),
+            "rationale": note,
+        },
+    )
+    return enrollment
 
 
 def list_administered_enrollments(
@@ -318,8 +403,14 @@ def create_administered_enrollment(
             code="student_account_exists",
         ) from exc
     admission_date = term.starts_at.date()
-    revision_applies = revision.effective_from <= admission_date and (
-        revision.effective_to is None or admission_date < revision.effective_to
+    revision_has_unambiguous_range = (
+        revision.status == RevisionStatus.PUBLISHED.value or revision.effective_to is not None
+    )
+    revision_applies = (
+        revision.status != RevisionStatus.RETIRED.value
+        and revision_has_unambiguous_range
+        and revision.effective_from <= admission_date
+        and (revision.effective_to is None or admission_date < revision.effective_to)
     )
     enrollment_status = (
         EnrollmentStatus.ACTIVE.value if revision_applies else EnrollmentStatus.NEEDS_REVIEW.value

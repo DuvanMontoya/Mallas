@@ -221,7 +221,13 @@ def academic_overview(
     try:
         overview = build_academic_overview(request.auth, enrollment_id=enrollment_id)
     except AcademicOverviewError as error:
-        status = 403 if error.code == "overview_forbidden" else 404
+        status = (
+            403
+            if error.code == "overview_forbidden"
+            else 409
+            if error.code == "enrollment_needs_review"
+            else 404
+        )
         raise_problem(
             status=status,
             code=error.code.upper(),

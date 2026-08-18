@@ -216,6 +216,8 @@ def password_change(request: HttpRequest, payload: PasswordChangePayload) -> dic
     user: User = request.auth
     if not user.check_password(payload.current_password):
         raise HttpError(400, "Current password is invalid.")
+    if payload.new_password == payload.current_password:
+        raise HttpError(400, "The new password must differ from the current password.")
     try:
         from django.contrib.auth.password_validation import validate_password
 
@@ -313,7 +315,16 @@ def password_reset_confirm(
         raise HttpError(400, str(error)) from error
     user.set_password(payload.new_password)
     user.password_changed_at = timezone.now()
-    user.save(update_fields=["password", "password_changed_at"])
+    user.must_change_password = False
+    user.initial_password_expires_at = None
+    user.save(
+        update_fields=[
+            "password",
+            "password_changed_at",
+            "must_change_password",
+            "initial_password_expires_at",
+        ]
+    )
     record_audit_event(request, action="AUTH_PASSWORD_RESET_COMPLETED", actor=user)
     logout(request)
     return {"detail": "Password updated."}

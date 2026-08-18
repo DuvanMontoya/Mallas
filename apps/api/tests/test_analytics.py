@@ -46,6 +46,20 @@ class AnalyticsApiTests(TestCase):
         self.assertNotIn(self.data["user"].email, response.content.decode())
         self.assertNotIn(self.data["student"].student_number, response.content.decode())
 
+    def test_needs_review_returns_a_complete_safe_analytics_payload(self) -> None:
+        self.data["enrollment"].status = "NEEDS_REVIEW"
+        self.data["enrollment"].save(update_fields=["status", "updated_at"])
+        self.client.force_login(self.data["user"])
+
+        response = self.client.get("/api/v1/analytics/student")
+
+        self.assertEqual(response.status_code, 200, response.content)
+        payload = response.json()
+        self.assertEqual(payload["data_state"], "ENROLLMENT_NEEDS_REVIEW")
+        self.assertIsNone(payload["metrics"]["credits"])
+        self.assertTrue(payload["definitions"])
+        self.assertTrue(payload["warnings"])
+
     def test_student_cannot_read_institutional_analytics_without_role(self) -> None:
         self.client.force_login(self.data["user"])
 

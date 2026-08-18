@@ -353,12 +353,10 @@ export function PlannerBoard({
   if (!scenario) {
     return (
       <div className="planner-page">
-        <section className="panel planner-hero">
-          <div><p className="eyebrow accent">Planificador · escenarios privados</p><h1>Planea sin alterar tu historia real.</h1><p>Un escenario proyecta decisiones futuras, conserva tus hechos académicos separados y deja cada advertencia visible.</p></div>
-        </section>
         <section className="panel planner-empty-panel">
-          <h2>Comienza un escenario</h2>
-          <p>No hay escenarios disponibles para tu matrícula. Crea uno para organizar períodos, cursos y preferencias.</p>
+          <p className="eyebrow accent">Planificador privado</p>
+          <h1>Crea tu primera ruta</h1>
+          <p>Organiza los próximos períodos sin cambiar tu historia académica.</p>
           <form className="planner-create-form" onSubmit={handleCreate}>
             <label className="field-group"><span>Nombre del escenario</span><input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Ruta de grado" /></label>
             <button className="button button-primary" type="submit" disabled={pending || !newName.trim()}><Plus size={16} aria-hidden="true" /> Crear escenario</button>

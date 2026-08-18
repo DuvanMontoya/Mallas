@@ -543,6 +543,20 @@ export async function getHistoryAttempts(options: {
   }
 }
 
+export type HistoryContext = ApiComponents["schemas"]["HistoryContextView"];
+
+export async function getHistoryContext(options?: {
+  headers?: HeadersInit;
+}): Promise<{ data: HistoryContext | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/history/context", { headers: options?.headers });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
 export async function createHistoryAttempt(
   body: HistoryAttemptCreatePayload,
   options?: ScenarioMutationOptions,
@@ -1069,6 +1083,7 @@ export type StudentAdminCatalog = ApiComponents["schemas"]["StudentAdminCatalogV
 export type AdminEnrollment = ApiComponents["schemas"]["AdminEnrollmentView"];
 export type AdminEnrollmentPage = ApiComponents["schemas"]["AdminEnrollmentCollectionView"];
 export type AdminEnrollmentCreatePayload = ApiComponents["schemas"]["AdminEnrollmentCreatePayload"];
+export type AdminEnrollmentRevisionPayload = ApiComponents["schemas"]["AdminEnrollmentRevisionPayload"];
 
 export async function getStudentAdminCatalog(options?: {
   headers?: HeadersInit;
@@ -1115,6 +1130,24 @@ export async function createAdminEnrollment(
     const result = await api.POST("/api/v1/admin/students/enrollments", {
       body,
       headers: await mutationHeaders(),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function confirmAdminEnrollmentRevision(
+  enrollmentId: string,
+  body: AdminEnrollmentRevisionPayload,
+  version: string,
+): Promise<{ data: AdminEnrollment | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PATCH("/api/v1/admin/students/enrollments/{enrollment_id}/revision", {
+      params: { path: { enrollment_id: enrollmentId } },
+      body,
+      headers: await mutationHeaders({ ifMatch: `"${version}"` }),
     });
     if (result.data) return { data: result.data, failure: null };
     return { data: null, failure: failureFromResult(result) };

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import timedelta
 
 from django.core import mail
 from django.core.exceptions import ValidationError
@@ -76,6 +77,9 @@ class IdentityApiTests(TestCase):
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")  # type: ignore[untyped-decorator]
     def test_password_reset_is_non_enumerating_and_invalidates_token(self) -> None:
+        self.user.must_change_password = True
+        self.user.initial_password_expires_at = timezone.now() - timedelta(minutes=1)
+        self.user.save(update_fields=["must_change_password", "initial_password_expires_at"])
         headers = self.csrf_headers()
         unknown = self.client.post(
             "/api/v1/auth/password-reset/request",
@@ -107,6 +111,8 @@ class IdentityApiTests(TestCase):
         self.assertEqual(confirmed.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("a-new-safe-password-2026"))
+        self.assertFalse(self.user.must_change_password)
+        self.assertIsNone(self.user.initial_password_expires_at)
         replay = self.client.post(
             "/api/v1/auth/password-reset/confirm",
             {"uid": uid, "token": token, "new_password": "another-password-2026"},
@@ -114,6 +120,34 @@ class IdentityApiTests(TestCase):
             **headers,
         )
         self.assertEqual(replay.status_code, 400)
+
+    def test_expired_initial_password_invalidates_an_already_open_session(self) -> None:
+        self.user.must_change_password = True
+        self.user.initial_password_expires_at = timezone.now() + timedelta(minutes=5)
+        self.user.save(update_fields=["must_change_password", "initial_password_expires_at"])
+        logged_in = self.client.post(
+            "/api/v1/auth/login",
+            {"email": self.user.email, "password": "correct horse battery staple"},
+            content_type="application/json",
+            **self.csrf_headers(),
+        )
+        self.assertEqual(logged_in.status_code, 200)
+        change_headers = self.csrf_headers()
+        self.user.initial_password_expires_at = timezone.now() - timedelta(seconds=1)
+        self.user.save(update_fields=["initial_password_expires_at"])
+
+        changed = self.client.post(
+            "/api/v1/auth/password/change",
+            {
+                "current_password": "correct horse battery staple",
+                "new_password": "a-different-safe-password-2026",
+            },
+            content_type="application/json",
+            **change_headers,
+        )
+        self.assertEqual(changed.status_code, 401)
+        self.assertEqual(changed.json()["code"], "INITIAL_PASSWORD_EXPIRED")
+        self.assertEqual(self.client.get("/api/v1/auth/me").status_code, 401)
 
     def test_identity_tokens_are_not_valid_for_the_other_purpose(self) -> None:
         from django.utils.encoding import force_bytes

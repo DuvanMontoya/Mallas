@@ -13,6 +13,7 @@ from ninja.security import django_auth
 
 from domain.enums import AttemptStatus
 from modules.common.api import raise_problem, require_if_match, with_problem_responses
+from modules.student_records.application.enrollment import preferred_enrollment_for_user
 from modules.student_records.application.history import (
     HistoryMutationError,
     annul_attempt,
@@ -75,6 +76,12 @@ class AttemptPage(Schema):
     next_offset: int | None
     previous_offset: int | None
     next_cursor: str | None = None
+
+
+class HistoryContextView(Schema):
+    enrollment_id: UUID
+    student_name: str
+    status: str
 
 
 _HISTORY_CURSOR_SALT = "curriculum-navigator.history-attempts.v1"
@@ -179,6 +186,29 @@ def _attempt_view(attempt: CourseAttempt, audit_run_id: UUID | None = None) -> d
         "notes": attempt.notes,
         "audit_run_id": audit_run_id,
         "version": attempt.updated_at.isoformat(),
+    }
+
+
+@router.get("/context", auth=django_auth, response=with_problem_responses(HistoryContextView))
+def history_context(request: HttpRequest) -> dict[str, Any]:
+    enrollment = preferred_enrollment_for_user(request.auth.pk)
+    if enrollment is None:
+        raise_problem(
+            status=404,
+            code="ENROLLMENT_NOT_FOUND",
+            title="Enrollment not found",
+            detail="No student enrollment is available for this account.",
+        )
+    # This surface only resolves the signed-in student's own preferred
+    # enrollment. Administrative access to another person stays explicit.
+    try:
+        enrollment = get_enrollment_for_view(request.auth, enrollment.pk)
+    except HistoryMutationError as error:
+        _error(error)
+    return {
+        "enrollment_id": enrollment.pk,
+        "student_name": enrollment.student.display_name,
+        "status": enrollment.status,
     }
 
 
@@ -333,7 +363,7 @@ def create_attempt(
     except HistoryMutationError as error:
         _error(error)
     attempt = get_attempt_for_view(request.auth, attempt.pk)
-    view = _attempt_view(attempt, UUID(audit_run_id))
+    view = _attempt_view(attempt, UUID(audit_run_id) if audit_run_id else None)
     response["ETag"] = f'"{view["version"]}"'
     return view
 
@@ -364,7 +394,7 @@ def patch_attempt(
     except HistoryMutationError as error:
         _error(error)
     attempt = get_attempt_for_view(request.auth, attempt.pk)
-    view = _attempt_view(attempt, UUID(audit_run_id))
+    view = _attempt_view(attempt, UUID(audit_run_id) if audit_run_id else None)
     response["ETag"] = f'"{view["version"]}"'
     return view
 
@@ -392,6 +422,6 @@ def delete_attempt(
     except HistoryMutationError as error:
         _error(error)
     attempt = get_attempt_for_view(request.auth, attempt.pk)
-    view = _attempt_view(attempt, UUID(audit_run_id))
+    view = _attempt_view(attempt, UUID(audit_run_id) if audit_run_id else None)
     response["ETag"] = f'"{view["version"]}"'
     return view

@@ -18,6 +18,7 @@ from domain.audit import (
     RevisionSnapshot,
     audit_degree,
 )
+from domain.audit.engine import AuditInputError
 from domain.rules import EvaluationStatus, Unknown, parse_rule
 from domain.rules.errors import RuleSchemaError
 from modules.audit.models import CreditAllocation, DegreeAuditResult, DegreeAuditRun
@@ -145,6 +146,10 @@ def build_audit_input(
     external_requirements: dict[str, EvaluationStatus | bool | None] | None = None,
     audit_date: datetime.date | None = None,
 ) -> AuditInput:
+    if enrollment.status == "NEEDS_REVIEW":
+        raise AuditInputError(
+            "La revisión curricular de la matrícula debe confirmarse antes de calcular conclusiones académicas."
+        )
     revision = build_revision_snapshot(enrollment.revision_basis)
     attempts = list(
         enrollment.course_attempts.select_related("course_version__course").order_by(

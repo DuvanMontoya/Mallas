@@ -291,6 +291,11 @@ def build_academic_overview(
             raise AcademicOverviewError(
                 "No student enrollment is available.", code="enrollment_not_found"
             )
+    if enrollment.status == "NEEDS_REVIEW":
+        raise AcademicOverviewError(
+            "La revisión curricular de esta matrícula necesita validación administrativa; no se calcularán conclusiones académicas hasta resolverla.",
+            code="enrollment_needs_review",
+        )
 
     payload, run, payload_source = _latest_audit_payload(enrollment)
     overall = dict(_mapping(payload.get("overall")))

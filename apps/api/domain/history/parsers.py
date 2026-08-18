@@ -17,7 +17,7 @@ HISTORY_SCHEMA_VERSION = "student-history/1.0.0"
 HISTORY_PARSER_VERSION = "student-history-parser/1.0.0"
 MAX_RECORDS = 2_000
 MAX_EXCERPT_LENGTH = 1_000
-_COURSE_CODE_PATTERN = re.compile(r"^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9._-]{1,39}$", re.IGNORECASE)
+_COURSE_CODE_PATTERN = re.compile(r"^[A-ZÁÉÍÓÚÑ0-9][A-ZÁÉÍÓÚÑ0-9._-]{1,39}$", re.IGNORECASE)
 _TERM_CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9._/-]{1,39}$", re.IGNORECASE)
 _RAW_FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     "course_code": ("course_code", "code"),

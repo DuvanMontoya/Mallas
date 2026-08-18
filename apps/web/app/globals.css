@@ -420,7 +420,7 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .decision-context-dependency { background: color-mix(in srgb, var(--status-in-progress) 10%, var(--surface-0)); }
 .decision-context-unlock { background: color-mix(in srgb, var(--status-eligible) 10%, var(--surface-0)); }
 
-.choice-pool-grid { display: grid; gap: .65rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choice-pool-grid { display: grid; align-items: start; gap: .65rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .choice-pool { overflow: hidden; box-shadow: none; }
 .choice-pool > summary, .curriculum-explorer > summary { display: flex; min-height: 4.2rem; align-items: center; justify-content: space-between; gap: 1rem; cursor: pointer; list-style: none; padding: .8rem 1rem; }
 .choice-pool > summary::-webkit-details-marker, .curriculum-explorer > summary::-webkit-details-marker { display: none; }
@@ -1304,6 +1304,8 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .decision-stat small { display: none; }
 .decision-stat[aria-pressed="true"] { outline: 2px solid var(--accent-600); outline-offset: 2px; background: var(--surface-accent); }
 .mandatory-journey { order: 0; }
+.curriculum-map-page { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; width: 100%; }
+.mandatory-journey { min-width: 0; max-width: 100%; width: 100%; }
 .mandatory-track { scroll-snap-type: x mandatory; scrollbar-width: thin; }
 .mandatory-stage { scroll-snap-align: start; }
 .enrollment-decision { order: 1; padding: 1rem; }
@@ -1362,6 +1364,12 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .student-admin-rows article { display: grid; grid-template-columns: minmax(13rem, 1fr) minmax(12rem, .8fr) auto; align-items: center; gap: .8rem; border-top: 1px solid var(--border-default); padding: .8rem .25rem; }
 .student-admin-rows article:first-child { border-top: 0; }
 .student-admin-rows article > div { display: grid; min-width: 0; gap: .18rem; }
+.student-admin-resolution { grid-column: 1 / -1; width: 100%; }
+.student-admin-resolution > summary { cursor: pointer; color: var(--accent-700); font-size: .72rem; font-weight: 800; }
+.student-admin-resolution > div { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(16rem, 1.2fr) auto; align-items: end; gap: .65rem; padding-top: .65rem; }
+.student-admin-resolution-context { grid-column: 1 / -1; align-self: stretch; display: grid; align-content: center; gap: .2rem; margin: 0; color: var(--text-muted); font-size: .7rem; line-height: 1.4; }
+.student-admin-resolution-context strong { color: var(--text-strong); }
+.sources-evidence-search { margin: .75rem 0; max-width: 32rem; }
 .student-admin-rows span, .student-admin-rows small { overflow-wrap: anywhere; color: var(--text-muted); font-size: .7rem; }
 .student-admin-form { display: grid; gap: 1rem; }
 .student-admin-form fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; border: 0; border-top: 1px solid var(--border-default); margin: 0; padding: 1rem 0 0; }
@@ -1369,4 +1377,4 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .student-admin-form .field-group small { color: var(--text-muted); font-size: .62rem; line-height: 1.35; }
 .student-admin-form .button { justify-self: start; }
 @media (max-width: 1040px) { .student-admin-layout { grid-template-columns: 1fr; } }
-@media (max-width: 700px) { .route-command { align-items: stretch; flex-direction: column; } .command-search { width: 100%; } .student-admin-form fieldset { grid-template-columns: 1fr; } .student-admin-rows article { grid-template-columns: 1fr auto; } .student-admin-rows article > div:nth-child(2) { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .route-command { align-items: stretch; flex-direction: column; } .command-search { width: 100%; } .student-admin-form fieldset { grid-template-columns: 1fr; } .student-admin-rows article { grid-template-columns: minmax(0, 1fr) auto; } .student-admin-rows article > div:nth-child(2) { grid-column: 1 / -1; } .student-admin-resolution > div { grid-template-columns: minmax(0, 1fr); align-items: stretch; } .student-admin-resolution .button { justify-self: start; } }

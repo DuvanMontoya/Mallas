@@ -44,6 +44,14 @@ function statusLabel(status: string) {
   }[status] ?? status;
 }
 
+function originLabel(origin: string) {
+  return {
+    IMPORT: "Importación",
+    MANUAL: "Registro manual",
+  SIA: "Sistema institucional",
+  }[origin] ?? "Origen registrado";
+}
+
 function statusTone(status: string): StatusTone {
   if (["PASSED", "VALIDATED", "HOMOLOGATED", "TRANSFERRED"].includes(status)) return "passed";
   if (status === "ENROLLED") return "in-progress";
@@ -62,12 +70,14 @@ export function HistoryWorkspace({
   attemptsPage,
   courseOptions = [],
   termOptions = [],
+  reviewPending = false,
 }: {
   enrollmentId: string;
   studentName: string;
   attemptsPage: HistoryAttemptPage;
   courseOptions?: Array<{ code: string; name: string }>;
   termOptions?: string[];
+  reviewPending?: boolean;
 }) {
   const router = useRouter();
   const [attempts, setAttempts] = useState(attemptsPage.items);
@@ -153,7 +163,7 @@ export function HistoryWorkspace({
     setAttempts((current) => selected
       ? current.map((attempt) => attempt.id === savedAttempt.id ? savedAttempt : attempt)
       : [...current, savedAttempt]);
-    setMessage(selected ? "El intento se actualizó y la auditoría fue recalculada." : "El intento se agregó y la auditoría fue recalculada.");
+    setMessage(reviewPending ? "El intento quedó guardado. Los cálculos se reanudarán cuando administración confirme la revisión curricular." : selected ? "El intento se actualizó y la auditoría fue recalculada." : "El intento se agregó y la auditoría fue recalculada.");
     resetForm();
     router.refresh();
   }
@@ -189,6 +199,7 @@ export function HistoryWorkspace({
           <span>{studentName} · información privada</span>
         </div>
       </section>
+      {reviewPending ? <Alert tone="warning">Puedes conservar y corregir tu historia. Los cálculos de avance y elegibilidad están pausados hasta que administración confirme la revisión curricular aplicable.</Alert> : null}
 
       {error ? <Alert tone="error">{error}</Alert> : null}
       {message ? <Alert tone="success">{message}</Alert> : null}
@@ -206,7 +217,7 @@ export function HistoryWorkspace({
                 <thead><tr><th scope="col">Asignatura</th><th scope="col">Período</th><th scope="col">Estado</th><th scope="col">Nota</th><th scope="col">Créditos</th><th scope="col"><span className="sr-only">Acciones</span></th></tr></thead>
                 <tbody>{attempts.map((attempt) => (
                   <tr key={attempt.id} className={attempt.status === "ANNULLED" ? "history-row-annulled" : undefined}>
-                    <th scope="row"><strong>{attempt.course_code}</strong><span>{attempt.course_name}</span><small>Intento {attempt.attempt_number} · {attempt.origin}</small></th>
+                    <th scope="row"><strong>{attempt.course_code}</strong><span>{attempt.course_name}</span><small>Intento {attempt.attempt_number} · {originLabel(attempt.origin)}</small></th>
                     <td>{attempt.term_code}</td>
                     <td><StatusBadge tone={statusTone(attempt.status)} label={statusLabel(attempt.status)} /></td>
                     <td>{attempt.grade ?? "—"}</td>

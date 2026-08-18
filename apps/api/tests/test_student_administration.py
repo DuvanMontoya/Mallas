@@ -278,6 +278,28 @@ class StudentAdministrationApiTests(TransactionTestCase):
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(response.json()["status"], "NEEDS_REVIEW")
 
+        resolved = self.client.patch(
+            f"/api/v1/admin/students/enrollments/{response.json()['id']}/revision",
+            json.dumps(
+                {
+                    "revision_basis_id": str(self.data["revision"].pk),
+                    "rationale": "Confirmación institucional de la revisión histórica aplicable.",
+                }
+            ),
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{response.json()["version"]}"',
+            **self.csrf_headers(),
+        )
+        self.assertEqual(resolved.status_code, 200, resolved.content)
+        self.assertEqual(resolved.json()["status"], "ACTIVE")
+        self.assertEqual(resolved.json()["revision_basis_id"], str(self.data["revision"].pk))
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                action="STUDENT_ENROLLMENT_REVISION_CONFIRMED",
+                object_id=str(response.json()["id"]),
+            ).exists()
+        )
+
     def test_enrollment_list_reports_total_pages_and_searches_beyond_first_page(self) -> None:
         for index in range(55):
             user = User.objects.create(email=f"paged-{index:03d}@example.test")

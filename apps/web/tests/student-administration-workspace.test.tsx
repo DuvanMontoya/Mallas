@@ -5,11 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StudentAdministrationWorkspace } from "../components/student-administration-workspace";
 import type { AdminEnrollment, AdminEnrollmentPage, StudentAdminCatalog } from "../lib/api";
 
-const { createAdminEnrollment, getAdminEnrollments } = vi.hoisted(() => ({ createAdminEnrollment: vi.fn(), getAdminEnrollments: vi.fn() }));
+const { confirmAdminEnrollmentRevision, createAdminEnrollment, getAdminEnrollments } = vi.hoisted(() => ({
+  confirmAdminEnrollmentRevision: vi.fn(),
+  createAdminEnrollment: vi.fn(),
+  getAdminEnrollments: vi.fn(),
+}));
 
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual<typeof import("../lib/api")>("../lib/api");
-  return { ...actual, createAdminEnrollment, getAdminEnrollments };
+  return { ...actual, confirmAdminEnrollmentRevision, createAdminEnrollment, getAdminEnrollments };
 });
 
 const catalog: StudentAdminCatalog = {
@@ -31,15 +35,18 @@ const enrollment: AdminEnrollment = {
   program_name: "Estadística",
   plan_id: "plan-1",
   plan_code: "2514",
+  revision_basis_id: "revision-1",
   admission_term_id: "term-1",
   admission_term_code: "2026-1S",
   status: "ACTIVE",
   cohort_code: "2026-1S",
+  version: "2026-08-17T12:00:00+00:00",
 };
 
 describe("StudentAdministrationWorkspace", () => {
   beforeEach(() => {
     createAdminEnrollment.mockReset();
+    confirmAdminEnrollmentRevision.mockReset();
     getAdminEnrollments.mockReset();
   });
 
@@ -79,5 +86,27 @@ describe("StudentAdministrationWorkspace", () => {
     })));
     expect(await screen.findByText("Cuenta y matrícula creadas para Nueva Estudiante.")).toBeInTheDocument();
     expect(screen.getByText("Nueva Estudiante")).toBeInTheDocument();
+  });
+
+  it("lets an administrator confirm a reviewed historical enrollment", async () => {
+    const needsReview = { ...enrollment, status: "NEEDS_REVIEW" };
+    confirmAdminEnrollmentRevision.mockResolvedValue({
+      data: { ...needsReview, status: "ACTIVE", version: "2026-08-17T12:01:00+00:00" },
+      failure: null,
+    });
+    const initialPage: AdminEnrollmentPage = { items: [needsReview], total: 1, limit: 50, offset: 0, next_offset: null, previous_offset: null };
+    render(<StudentAdministrationWorkspace catalog={catalog} initialPage={initialPage} />);
+
+    fireEvent.click(screen.getByText("Resolver revisión curricular"));
+    fireEvent.change(screen.getByLabelText(/Fundamento institucional/), { target: { value: "Revisión institucional documentada." } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar y activar" }));
+
+    await waitFor(() => expect(confirmAdminEnrollmentRevision).toHaveBeenCalledWith(
+      "enrollment-1",
+      { revision_basis_id: "revision-1", rationale: "Revisión institucional documentada." },
+      "2026-08-17T12:00:00+00:00",
+    ));
+    expect(await screen.findByText("Revisión confirmada para Estudiante Actual.")).toBeInTheDocument();
+    expect(screen.getByText("Activa")).toBeInTheDocument();
   });
 });

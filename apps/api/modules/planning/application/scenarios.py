@@ -231,6 +231,20 @@ def _requirements_by_course(revision_id: UUID) -> dict[str, list[RequirementFact
 
 
 def _validation(scenario: PlanScenario) -> dict[str, Any]:
+    if scenario.enrollment.status == "NEEDS_REVIEW":
+        return {
+            "state": "UNKNOWN",
+            "courses": [],
+            "warnings": [
+                {
+                    "code": "ENROLLMENT_NEEDS_REVIEW",
+                    "detail": "La revisión curricular de la matrícula debe confirmarse antes de validar esta ruta.",
+                    "severity": "WARNING",
+                    "course_code": None,
+                    "term_code": None,
+                }
+            ],
+        }
     planned = list(
         scenario.planned_courses.select_related("course_version__course", "term", "section")
         .prefetch_related("section__meetings")

@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from domain.enums import AttemptOrigin, AttemptStatus
@@ -72,22 +73,52 @@ def _course_version(
     *,
     course_version_id: UUID | str | None = None,
     course_code: str = "",
+    term: AcademicTerm | None = None,
 ) -> CourseVersion:
     query = CourseVersion.objects.filter(course__institution_id=enrollment.student.institution_id)
     if course_version_id is not None:
         query = query.filter(pk=course_version_id)
     elif course_code:
         query = query.filter(course__code__iexact=course_code.strip())
+        if term is not None:
+            term_date = term.starts_at.date()
+            query = query.filter(valid_from__lte=term_date).filter(
+                Q(valid_to__isnull=True) | Q(valid_to__gt=term_date)
+            )
     else:
         raise HistoryMutationError(
             "course_version_id or course_code is required.", code="course_required"
         )
-    course_version = query.select_related("course").order_by("-valid_from", "-created_at").first()
+    candidates = list(query.select_related("course").order_by("-valid_from", "-created_at")[:2])
+    course_version = candidates[0] if candidates else None
     if course_version is None:
         raise HistoryMutationError(
             "Course does not belong to the student's institution.", code="course_forbidden"
         )
+    if len(candidates) > 1 and course_code and term is not None:
+        raise HistoryMutationError(
+            "More than one course version is valid for the selected term.",
+            code="course_version_ambiguous",
+        )
     return course_version
+
+
+def _validate_course_version_term(
+    course_version: CourseVersion, term: AcademicTerm
+) -> tuple[CourseVersion, AcademicTerm]:
+    locked_course_version = (
+        CourseVersion.objects.select_for_update().select_related("course").get(pk=course_version.pk)
+    )
+    locked_term = AcademicTerm.objects.select_for_update().get(pk=term.pk)
+    term_date = locked_term.starts_at.date()
+    if locked_course_version.valid_from > term_date or (
+        locked_course_version.valid_to is not None and term_date >= locked_course_version.valid_to
+    ):
+        raise HistoryMutationError(
+            "The course version was not valid in the selected academic term.",
+            code="course_version_term_mismatch",
+        )
+    return locked_course_version, locked_term
 
 
 def _term(
@@ -167,7 +198,9 @@ def _credits(value: Any, *, status: str, course_version: CourseVersion) -> int:
     return expected
 
 
-def _audit(enrollment: ProgramEnrollment) -> str:
+def _audit(enrollment: ProgramEnrollment) -> str | None:
+    if enrollment.status == "NEEDS_REVIEW":
+        return None
     _, run, _ = run_degree_audit(enrollment.pk)
     return str(run.pk)
 
@@ -191,12 +224,16 @@ def create_manual_attempt(
     attempt_number: int | None = None,
     notes: str = "",
     request: Any | None = None,
-) -> tuple[CourseAttempt, str]:
+) -> tuple[CourseAttempt, str | None]:
     enrollment = _editable_enrollment(actor, enrollment_id)
-    course_version = _course_version(
-        enrollment, course_version_id=course_version_id, course_code=course_code
-    )
     term = _term(enrollment, term_id=term_id, term_code=term_code)
+    course_version = _course_version(
+        enrollment,
+        course_version_id=course_version_id,
+        course_code=course_code,
+        term=term,
+    )
+    course_version, term = _validate_course_version_term(course_version, term)
     normalized_status = _status(status)
     if normalized_status == AttemptStatus.ANNULLED.value:
         raise HistoryMutationError(
@@ -252,7 +289,7 @@ def update_attempt(
     changes: dict[str, Any],
     expected_version: str | None = None,
     request: Any | None = None,
-) -> tuple[CourseAttempt, str]:
+) -> tuple[CourseAttempt, str | None]:
     # Lock only the base row; ``import_batch`` is nullable and PostgreSQL rejects
     # a FOR UPDATE that implicitly includes the nullable side of a join.
     try:
@@ -307,6 +344,9 @@ def update_attempt(
             term_id=changes.get("term_id"),
             term_code=str(changes.get("term_code", "")),
         )
+    attempt.course_version, attempt.term = _validate_course_version_term(
+        attempt.course_version, attempt.term
+    )
     normative_credit_change = bool(
         {"status", "credits_earned", "course_version_id"}.intersection(changes)
     )
@@ -348,7 +388,7 @@ def annul_attempt(
     attempt_id: UUID | str,
     expected_version: str | None = None,
     request: Any | None = None,
-) -> tuple[CourseAttempt, str]:
+) -> tuple[CourseAttempt, str | None]:
     try:
         locked = CourseAttempt.objects.select_for_update().get(pk=attempt_id)
     except CourseAttempt.DoesNotExist as exc:

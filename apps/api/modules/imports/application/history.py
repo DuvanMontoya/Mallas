@@ -505,7 +505,10 @@ def resolve_history_candidate(
     try:
         locked = CandidateRecord.objects.select_for_update().get(pk=candidate_id, batch=batch)
         candidate = CandidateRecord.objects.select_related(
-            "batch__enrollment__student", "reconciliation", "suggested_course_version"
+            "batch__enrollment__student",
+            "reconciliation",
+            "suggested_course_version",
+            "suggested_term",
         ).get(pk=locked.pk)
     except CandidateRecord.DoesNotExist as exc:
         raise HistoryImportError("Candidate was not found.", code="candidate_not_found") from exc
@@ -555,6 +558,22 @@ def resolve_history_candidate(
         if selected_course is None:
             raise HistoryImportError(
                 "Accept requires an internal course mapping.", code="course_mapping_required"
+            )
+    if decision == ReconciliationDecision.ACCEPT.value:
+        term = candidate.suggested_term
+        if term is None:
+            raise HistoryImportError(
+                "Accept requires a verified academic term.", code="term_mapping_required"
+            )
+        reference_date = term.starts_at.date()
+        if (
+            selected_course is None
+            or selected_course.valid_from > reference_date
+            or (selected_course.valid_to is not None and selected_course.valid_to <= reference_date)
+        ):
+            raise HistoryImportError(
+                "Selected course version was not valid in the candidate term.",
+                code="course_version_term_mismatch",
             )
     if decision == ReconciliationDecision.EXTERNAL.value and (
         not external_code.strip() or selected_course is None
@@ -698,13 +717,15 @@ def confirm_history_import(
         # Confirmation is an idempotent command. A client that lost the first
         # response must be able to replay the same request even though applying
         # the batch advanced updated_at. No mutation is performed in this path.
-        latest = batch.enrollment.audit_runs.order_by("-generated_at").first()
         return ImportApplyResult(
             batch=batch,
             created_attempts=0,
             created_recognitions=0,
             skipped_candidates=0,
-            audit_run_id=str(latest.pk) if latest else None,
+            # A replay proves that this batch was already applied, but the
+            # latest enrollment audit may have been created by another later
+            # command. Do not falsely attribute that run to this import.
+            audit_run_id=None,
             idempotent=True,
         )
     if expected_version is not None and expected_version.strip('"') != batch.updated_at.isoformat():
@@ -750,6 +771,35 @@ def confirm_history_import(
             f"Candidates still require a reconciliation decision: rows {pending}.",
             code="preview_unresolved",
         )
+    # Lock every normative row needed by accepted candidates before applying
+    # any one row. The CourseVersion -> AcademicTerm order is shared with
+    # manual history mutations, preventing temporal TOCTOU and lock inversion.
+    accepted_pairs = [
+        (candidate.reconciliation.selected_course_version_id, candidate.suggested_term_id)
+        for candidate in candidates
+        if candidate.reconciliation.decision == ReconciliationDecision.ACCEPT.value
+    ]
+    accepted_course_version_ids = sorted(
+        {course_version_id for course_version_id, _ in accepted_pairs if course_version_id},
+        key=str,
+    )
+    accepted_term_ids = sorted(
+        {term_id for _, term_id in accepted_pairs if term_id},
+        key=str,
+    )
+    locked_course_versions = {
+        item.pk: item
+        for item in CourseVersion.objects.select_for_update()
+        .select_related("course")
+        .filter(pk__in=accepted_course_version_ids)
+        .order_by("pk")
+    }
+    locked_terms = {
+        item.pk: item
+        for item in AcademicTerm.objects.select_for_update()
+        .filter(pk__in=accepted_term_ids)
+        .order_by("pk")
+    }
     artifact = batch.artifact
     created_attempts = 0
     created_recognitions = 0
@@ -771,6 +821,23 @@ def confirm_history_import(
                 f"Row {candidate.row_number} has no resolved course.",
                 code="course_mapping_required",
             )
+        if reconciliation.decision == ReconciliationDecision.ACCEPT.value:
+            locked_term = locked_terms.get(term.pk)
+            course_version = locked_course_versions.get(course_version.pk)
+            if locked_term is None or course_version is None:
+                raise HistoryImportError(
+                    f"Row {candidate.row_number} lost its resolved academic mapping.",
+                    code="course_mapping_required",
+                )
+            reference_date = locked_term.starts_at.date()
+            if course_version.valid_from > reference_date or (
+                course_version.valid_to is not None and course_version.valid_to <= reference_date
+            ):
+                raise HistoryImportError(
+                    f"Row {candidate.row_number} selected a course version outside its academic term.",
+                    code="course_version_term_mismatch",
+                )
+            term = locked_term
         normalized = candidate.normalized_payload
         if reconciliation.decision == ReconciliationDecision.EXTERNAL.value:
             credits = _credits(
@@ -830,7 +897,10 @@ def confirm_history_import(
             metadata=evidence_metadata,
         )
 
-    audit_result, audit_run, _ = run_degree_audit(batch.enrollment_id)
+    audit_result = None
+    audit_run = None
+    if batch.enrollment.status != "NEEDS_REVIEW":
+        audit_result, audit_run, _ = run_degree_audit(batch.enrollment_id)
     batch.status = ImportStatus.APPLIED.value
     batch.confirmed_by = actor
     batch.confirmed_at = timezone.now()
@@ -858,8 +928,8 @@ def confirm_history_import(
             "created_attempts": created_attempts,
             "created_recognitions": created_recognitions,
             "skipped_candidates": skipped_candidates,
-            "audit_run_id": str(audit_run.pk),
-            "audit_result_hash": audit_result.result_hash,
+            "audit_run_id": str(audit_run.pk) if audit_run else None,
+            "audit_result_hash": audit_result.result_hash if audit_result else None,
         },
     )
     return ImportApplyResult(
@@ -867,5 +937,5 @@ def confirm_history_import(
         created_attempts=created_attempts,
         created_recognitions=created_recognitions,
         skipped_candidates=skipped_candidates,
-        audit_run_id=str(audit_run.pk),
+        audit_run_id=str(audit_run.pk) if audit_run else None,
     )

@@ -332,25 +332,37 @@ def build_curriculum_map(
     personal_options: dict[str, Mapping[str, Any]] = {}
     personal_reasons: dict[str, Mapping[str, Any]] = {}
     if enrollment is not None:
+        resolved_enrollment_id = enrollment.pk
         try:
-            overview = build_academic_overview(actor, enrollment_id=enrollment.pk)
+            overview = build_academic_overview(actor, enrollment_id=resolved_enrollment_id)
         except AcademicOverviewError as exc:
-            raise CurriculumMapError(str(exc), code=exc.code) from exc
-        personal = {
-            "available": True,
-            "enrollment_id": enrollment.pk,
-            "state": overview["state"],
-            "note": "Los estados de las tarjetas provienen de la auditoría del backend.",
-        }
-        personal_options = {
-            str(item.get("code")): item
-            for item in _list(overview.get("course_options"))
-            if isinstance(item, Mapping)
-        }
-        for item in personal_options.values():
-            for reason in _list(item.get("reasons")):
-                if isinstance(reason, Mapping):
-                    personal_reasons[str(reason.get("code", ""))] = reason
+            if exc.code != "enrollment_needs_review":
+                raise CurriculumMapError(str(exc), code=exc.code) from exc
+            enrollment = None
+            overview = None
+        if overview is None:
+            personal = {
+                "available": False,
+                "enrollment_id": None,
+                "state": "NEEDS_REVIEW",
+                "note": "La revisión curricular de tu matrícula debe validarse antes de mostrar elegibilidad.",
+            }
+        else:
+            personal = {
+                "available": True,
+                "enrollment_id": resolved_enrollment_id,
+                "state": overview["state"],
+                "note": "Los estados de las tarjetas provienen de la auditoría del backend.",
+            }
+            personal_options = {
+                str(item.get("code")): item
+                for item in _list(overview.get("course_options"))
+                if isinstance(item, Mapping)
+            }
+            for item in personal_options.values():
+                for reason in _list(item.get("reasons")):
+                    if isinstance(reason, Mapping):
+                        personal_reasons[str(reason.get("code", ""))] = reason
     else:
         personal = {
             "available": False,

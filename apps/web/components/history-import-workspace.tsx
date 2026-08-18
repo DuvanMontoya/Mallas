@@ -21,7 +21,7 @@ import { StatusBadge } from "./ui/status-badge";
 
 type CourseOption = { id: string; code: string; name: string };
 
-const importLabels: Record<string, string> = { PREVIEW: "En revisión", READY: "Listo para aplicar", APPLIED: "Importación aplicada", PENDING: "Pendiente", ACCEPT: "Aceptar", EXTERNAL: "Reconocimiento externo", SKIP: "No aplicar", MATCHED: "Coincidencia encontrada", CONFLICT: "Requiere decisión", ERROR: "Con error" };
+const importLabels: Record<string, string> = { PREVIEW: "En revisión", READY: "Listo para aplicar", APPLIED: "Importación aplicada", PENDING: "Pendiente", ACCEPT: "Aceptar", EXTERNAL: "Reconocimiento externo", SKIP: "No aplicar", MATCHED: "Coincidencia encontrada", CONFLICT: "Requiere decisión", ERROR: "Con error", PASSED: "Aprobada", ENROLLED: "En curso", FAILED: "No aprobada", WITHDRAWN: "Retirada", RECOGNIZED: "Reconocida", ANNULLED: "Anulada" };
 const fieldLabels: Record<string, string> = { course_code: "Código", course_name: "Asignatura", term_code: "Período", grade: "Nota", credits: "Créditos", status: "Estado" };
 
 function importLabel(value: string) { return importLabels[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("es-CO"); }
@@ -38,7 +38,7 @@ function issueText(value: unknown) {
 function objectSummary(value: Record<string, unknown>) {
   return Object.entries(value)
     .filter(([key, item]) => key in fieldLabels && item !== null && item !== "")
-    .map(([key, item]) => `${fieldLabels[key] ?? key}: ${String(item)}`)
+    .map(([key, item]) => `${fieldLabels[key] ?? key}: ${key === "status" ? importLabel(String(item)) : String(item)}`)
     .join(" · ");
 }
 
@@ -53,10 +53,12 @@ export function HistoryImportWorkspace({
   enrollmentId,
   initialPreview,
   courseOptions,
+  reviewPending = false,
 }: {
   enrollmentId: string;
   initialPreview: HistoryImportPreview | null;
   courseOptions: CourseOption[];
+  reviewPending?: boolean;
 }) {
   const router = useRouter();
   const [preview, setPreview] = useState(initialPreview);
@@ -154,7 +156,7 @@ export function HistoryImportWorkspace({
       setError(problemMessage(result.failure?.problem ?? null, "No fue posible confirmar la importación."));
       return;
     }
-    setMessage(`Importación aplicada: ${result.data.created_attempts} intentos y ${result.data.created_recognitions} reconocimientos. La auditoría fue recalculada.`);
+    setMessage(reviewPending ? `Importación aplicada: ${result.data.created_attempts} intentos y ${result.data.created_recognitions} reconocimientos. Los cálculos siguen pausados hasta confirmar la revisión curricular.` : `Importación aplicada: ${result.data.created_attempts} intentos y ${result.data.created_recognitions} reconocimientos. La auditoría fue recalculada.`);
     setPreview({ ...preview, status: result.data.status, unresolved_count: 0 });
     router.refresh();
   }
@@ -170,6 +172,8 @@ export function HistoryImportWorkspace({
         </div>
         <div className="history-import-safety"><ShieldCheck size={20} aria-hidden="true" /><strong>10 MiB máximo</strong><span>Sin ejecución, almacenamiento privado, fingerprint e idempotencia por matrícula.</span></div>
       </section>
+
+      {reviewPending ? <Alert tone="warning">La historia puede importarse y revisarse, pero no se calculará avance ni elegibilidad hasta que administración confirme la revisión curricular aplicable.</Alert> : null}
 
       {error ? <Alert tone="error">{error}</Alert> : null}
       {message ? <Alert tone="success">{message}</Alert> : null}

@@ -348,6 +348,30 @@ def _sequence(value: object) -> list[Any]:
 
 def build_student_analytics(actor: Any, enrollment_id: UUID | str | None = None) -> dict[str, Any]:
     enrollment = _resolve_enrollment(actor, enrollment_id)
+    if enrollment.status == "NEEDS_REVIEW":
+        return {
+            "schema_version": ANALYTICS_SCHEMA_VERSION,
+            "scope": "STUDENT",
+            "data_state": "ENROLLMENT_NEEDS_REVIEW",
+            "as_of": None,
+            "enrollment_id": enrollment.pk,
+            "program_code": enrollment.program.code,
+            "program_name": enrollment.program.name,
+            "plan_code": enrollment.plan.code,
+            "revision_code": enrollment.revision_basis.revision_code,
+            "snapshot": None,
+            "metrics": {
+                "credits": None,
+                "requirements": None,
+                "critical_courses": [],
+                "trend": [],
+                "scenarios": [],
+            },
+            "definitions": analytics_definitions(),
+            "warnings": [
+                "La revisión curricular de esta matrícula debe ser confirmada por administración antes de calcular analítica personal."
+            ],
+        }
     runs = _published_runs_for_enrollment(enrollment)
     latest = next(((run, _audit_payload(run)) for run in runs), (None, None))
     if latest[0] is None or latest[1] is None:

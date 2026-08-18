@@ -5,7 +5,7 @@ from typing import Any, NoReturn
 from uuid import UUID
 
 from django.http import HttpRequest
-from ninja import Router, Schema, Status
+from ninja import Header, Router, Schema, Status
 from ninja.security import django_auth
 
 from modules.common.api import raise_problem, with_problem_responses
@@ -14,6 +14,7 @@ from modules.student_records.application.administration import (
     administered_enrollment_view,
     create_administered_enrollment,
     list_administered_enrollments,
+    resolve_administered_enrollment_revision,
     student_admin_catalog,
 )
 
@@ -79,10 +80,12 @@ class AdminEnrollmentView(Schema):
     program_name: str
     plan_id: UUID
     plan_code: str
+    revision_basis_id: UUID
     admission_term_id: UUID
     admission_term_code: str
     status: str
     cohort_code: str
+    version: str
 
 
 class AdminEnrollmentCollectionView(Schema):
@@ -107,14 +110,21 @@ class AdminEnrollmentCreatePayload(Schema):
     cohort_code: str = ""
 
 
+class AdminEnrollmentRevisionPayload(Schema):
+    revision_basis_id: UUID
+    rationale: str
+
+
 def _error(error: StudentAdministrationError) -> NoReturn:
     status = (
         403
         if error.code == "student_admin_forbidden"
         else 404
         if error.code == "student_admin_reference_not_found"
+        else 428
+        if error.code == "student_admin_precondition_required"
         else 409
-        if error.code == "student_account_exists"
+        if error.code in {"student_account_exists", "student_admin_stale_resource"}
         else 422
     )
     raise_problem(
@@ -166,3 +176,28 @@ def admin_enrollment_create(
     except StudentAdministrationError as error:
         _error(error)
     return Status(201, administered_enrollment_view(enrollment))
+
+
+@router.patch(
+    "/enrollments/{enrollment_id}/revision",
+    auth=django_auth,
+    response=with_problem_responses(AdminEnrollmentView),
+)
+def admin_enrollment_revision_confirm(
+    request: HttpRequest,
+    enrollment_id: UUID,
+    payload: AdminEnrollmentRevisionPayload,
+    if_match: str | None = Header(None, alias="If-Match"),  # type: ignore[type-arg]
+) -> dict[str, Any]:
+    try:
+        enrollment = resolve_administered_enrollment_revision(
+            actor=request.auth,
+            enrollment_id=enrollment_id,
+            revision_basis_id=payload.revision_basis_id,
+            rationale=payload.rationale,
+            expected_version=if_match,
+            request=request,
+        )
+    except StudentAdministrationError as error:
+        _error(error)
+    return administered_enrollment_view(enrollment)

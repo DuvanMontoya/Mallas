@@ -15,6 +15,7 @@ const statusLabels: Record<string, string> = {
   IN_PROGRESS: "En curso",
   ELIGIBLE: "Puedes cursarlo",
   BLOCKED: "Bloqueado",
+  SATISFIED: "Cumplido",
   UNSATISFIED: "Pendiente",
   UNKNOWN: "Por verificar",
   NOT_ASSESSED: "Sin estado personal",

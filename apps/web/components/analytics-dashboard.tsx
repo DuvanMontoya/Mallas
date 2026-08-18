@@ -35,6 +35,19 @@ function statusLabel(value: unknown): string {
   return ({ SATISFIED: "Cumplido", UNSATISFIED: "Pendiente", UNKNOWN: "Por verificar", INCOMPLETE: "Incompleto", READY: "Disponible", PASSED: "Aprobado", BLOCKED: "Bloqueado" } as Record<string, string>)[raw] ?? raw.replaceAll("_", " ").toLocaleLowerCase("es-CO");
 }
 
+function requirementLabel(value: unknown): string {
+  const raw = text(value, "");
+  if (raw.includes("ENROLLMENT_PREREQUISITE")) return "Prerrequisitos de matrícula pendientes";
+  if (raw.includes("DEPENDENCY_TYPE_UNKNOWN")) return "Tipo de dependencia por verificar";
+  if (raw.includes("CREDIT")) return "Créditos requeridos pendientes";
+  if (raw.includes("COURSE")) return "Asignatura requerida pendiente";
+  return "Requisito curricular pendiente";
+}
+
+function TraceCode({ value }: { value: string }) {
+  return <details><summary>Ver trazabilidad técnica</summary><code>{value}</code></details>;
+}
+
 function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <article className="analytics-metric panel">
@@ -73,6 +86,21 @@ export function AnalyticsDashboard({ analytics, failure }: { analytics: StudentA
             <span>{failure?.problem?.detail ?? "Inicia sesión para consultar tus métricas privadas."}</span>
             <Link className="button button-primary" href="/login">Iniciar sesión</Link>
           </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (analytics.data_state === "ENROLLMENT_NEEDS_REVIEW") {
+    return (
+      <div className="analytics-page">
+        <header className="route-command">
+          <div><p className="eyebrow">Analítica personal</p><h1>Primero confirma tu revisión curricular</h1></div>
+          <Link className="button button-primary" href="/curriculum">Ver malla pública</Link>
+        </header>
+        <section className="analytics-warning panel" role="status">
+          <p>Administración debe confirmar qué revisión del plan corresponde a tu período de ingreso. Hasta entonces no calculamos porcentajes ni recomendaciones que podrían ser incorrectos.</p>
+          <small>{text(analytics.program_name)} · Plan {text(analytics.plan_code)}</small>
         </section>
       </div>
     );
@@ -145,13 +173,16 @@ export function AnalyticsDashboard({ analytics, failure }: { analytics: StudentA
             <div className="analytics-section" aria-labelledby="analytics-bottlenecks-title">
               <div className="analytics-section-heading"><div><p className="eyebrow">Bloqueos</p><h2 id="analytics-bottlenecks-title">Cursos críticos</h2></div></div>
               {criticalCourses.length === 0 ? <EmptyState>La auditoría no reporta cursos con requisitos bloqueados o ambiguos.</EmptyState> : (
-                <ul className="analytics-list">{criticalCourses.map((item) => <li key={text(item.course_code)}><div><strong>{text(item.course_code)}</strong><span>{values(item.requirement_codes).join(", ") || "Requisito pendiente"}</span></div><span className={`analytics-status analytics-status-${text(item.state, "unknown").toLowerCase()}`}>{statusLabel(item.state)}</span></li>)}</ul>
+                <>
+                  <ul className="analytics-list">{criticalCourses.slice(0, 6).map((item) => { const codes = values(item.requirement_codes); return <li key={text(item.course_code)}><div><strong>{text(item.course_code)}</strong><span>{requirementLabel(codes[0])}</span>{codes.length ? <TraceCode value={codes.join(", ")} /> : null}</div><span className={`analytics-status analytics-status-${text(item.state, "unknown").toLowerCase()}`}>{statusLabel(item.state)}</span></li>; })}</ul>
+                  {criticalCourses.length > 6 ? <details className="analytics-disclosure"><summary>Ver los {criticalCourses.length - 6} cursos restantes</summary><ul className="analytics-list">{criticalCourses.slice(6).map((item) => { const codes = values(item.requirement_codes); return <li key={text(item.course_code)}><div><strong>{text(item.course_code)}</strong><span>{requirementLabel(codes[0])}</span>{codes.length ? <TraceCode value={codes.join(", ")} /> : null}</div><span className={`analytics-status analytics-status-${text(item.state, "unknown").toLowerCase()}`}>{statusLabel(item.state)}</span></li>; })}</ul></details> : null}
+                </>
               )}
             </div>
             <div className="analytics-section" aria-labelledby="analytics-requirements-title">
               <div className="analytics-section-heading"><div><p className="eyebrow">Trazabilidad</p><h2 id="analytics-requirements-title">Requisitos que faltan</h2></div></div>
               {rows(requirements.remaining).length === 0 ? <EmptyState>No hay requisitos pendientes en este snapshot.</EmptyState> : (
-                <ul className="analytics-list">{rows(requirements.remaining).slice(0, 12).map((item) => <li key={text(item.code)}><div><strong>{text(item.code)}</strong><span>{text(item.owner_course_code, text(item.purpose))}</span></div><span className="analytics-status">{statusLabel(item.status)}</span></li>)}</ul>
+                <ul className="analytics-list">{rows(requirements.remaining).slice(0, 12).map((item) => { const code = text(item.code); const owner = text(item.owner_course_code, ""); return <li key={code}><div><strong>{requirementLabel(code)}</strong><span>{owner ? `Asignatura ${owner}` : "Regla del plan"}</span><TraceCode value={code} /></div><span className="analytics-status">{statusLabel(item.status)}</span></li>; })}</ul>
               )}
             </div>
           </section>

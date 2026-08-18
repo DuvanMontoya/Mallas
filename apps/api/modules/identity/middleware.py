@@ -5,6 +5,7 @@ from collections.abc import Callable
 from django.conf import settings
 from django.contrib.auth import logout
 from django.http import HttpRequest, HttpResponse
+from django.utils import timezone
 
 from modules.common.api import ensure_correlation_id, problem_response
 from modules.identity.application.rate_limit import consume_rate_limit
@@ -92,6 +93,22 @@ class InitialPasswordChangeRequiredMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         user = getattr(request, "user", None)
+        initial_password_expires_at = getattr(user, "initial_password_expires_at", None)
+        initial_password_expired = bool(
+            getattr(user, "is_authenticated", False)
+            and getattr(user, "must_change_password", False)
+            and initial_password_expires_at
+            and initial_password_expires_at <= timezone.now()
+        )
+        if request.path.startswith("/api/v1/") and initial_password_expired:
+            logout(request)
+            return problem_response(
+                request,
+                status=401,
+                code="INITIAL_PASSWORD_EXPIRED",
+                title="Initial password expired",
+                detail="Request a password reset or ask an administrator to issue new access.",
+            )
         if (
             request.path.startswith("/api/v1/")
             and request.path not in self._ALLOWED

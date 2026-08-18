@@ -19,6 +19,7 @@ from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 from domain.enums import AttemptStatus, CandidateStatus, ImportStatus, ReconciliationDecision
 from domain.history import HISTORY_SCHEMA_VERSION, parse_history_bytes
 from modules.audit.models import DegreeAuditRun
+from modules.curriculum.models import CourseVersion
 from modules.identity.models import AuditEvent, User
 from modules.imports.application.history import (
     HistoryImportError,
@@ -58,6 +59,18 @@ def history_payload(*, course_code: str, term_code: str, status: str = "PASSED")
             ],
         }
     ).encode("utf-8")
+
+
+class NumericCurriculumCodeParserTests(TestCase):
+    def test_unal_numeric_course_code_is_valid_history_input(self) -> None:
+        report = parse_history_bytes(
+            history_payload(course_code="2015168", term_code="2024-1S"),
+            source_name="historia.json",
+            mime_type="application/json",
+        )
+
+        self.assertEqual(report.errors, ())
+        self.assertEqual(report.candidates[0].normalized_payload["course_code"], "2015168")
 
 
 def text_pdf_bytes(row: str) -> bytes:
@@ -250,6 +263,17 @@ class HistoryImportServiceTests(TransactionTestCase):
                 idempotency_key="history-retry-1",
             )
         self.assertEqual(reused.exception.code, "idempotency_key_reused")
+
+    def test_confirmation_revalidates_course_version_validity_after_preview(self) -> None:
+        preview = self.create_preview()
+        self.data["course_version"].valid_from = self.data["term"].ends_at.date()
+        self.data["course_version"].save(update_fields=["valid_from", "updated_at"])
+
+        with self.assertRaises(HistoryImportError) as mismatch:
+            confirm_history_import(actor=self.user, batch_id=preview.batch.pk)
+
+        self.assertEqual(mismatch.exception.code, "course_version_term_mismatch")
+        self.assertFalse(CourseAttempt.objects.filter(import_batch=preview.batch).exists())
 
     def test_existing_conflict_requires_explicit_resolution_and_never_overwrites(self) -> None:
         create_manual_attempt(
@@ -522,6 +546,23 @@ class ManualHistoryServiceTests(TransactionTestCase):
         )
         self.assertEqual(changed.credits_earned, 0)
 
+    def test_manual_attempt_rejects_course_version_outside_selected_term(self) -> None:
+        future_version = CourseVersion.objects.create(
+            course=self.data["course"],
+            name="Future course definition",
+            credits=5,
+            valid_from=self.data["term"].ends_at.date(),
+        )
+        with self.assertRaises(HistoryMutationError) as mismatch:
+            create_manual_attempt(
+                actor=self.user,
+                enrollment_id=self.data["enrollment"].pk,
+                course_version_id=future_version.pk,
+                term_id=self.data["term"].pk,
+                status=AttemptStatus.PASSED.value,
+            )
+        self.assertEqual(mismatch.exception.code, "course_version_term_mismatch")
+
     def test_manual_update_is_not_an_idor(self) -> None:
         attempt, _ = create_manual_attempt(
             actor=self.user,
@@ -554,6 +595,16 @@ class HistoryApiTests(TransactionTestCase):
         response = self.client.get("/api/v1/auth/csrf")
         self.assertEqual(response.status_code, 200)
         return {"HTTP_X_CSRFTOKEN": response.json()["csrf_token"]}
+
+    def test_history_context_remains_available_while_revision_needs_review(self) -> None:
+        self.data["enrollment"].status = "NEEDS_REVIEW"
+        self.data["enrollment"].save(update_fields=["status", "updated_at"])
+
+        response = self.client.get("/api/v1/history/context")
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["enrollment_id"], str(self.data["enrollment"].pk))
+        self.assertEqual(response.json()["status"], "NEEDS_REVIEW")
 
     def test_history_cursor_is_stable_when_a_new_attempt_is_inserted_between_pages(self) -> None:
         original = [

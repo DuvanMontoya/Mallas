@@ -175,6 +175,11 @@ def build_optimization_input(
             code="optimization_request_invalid",
         )
     enrollment = scenario.enrollment
+    if enrollment.status == "NEEDS_REVIEW":
+        raise OptimizationRunError(
+            "La revisión curricular de la matrícula debe confirmarse antes de optimizar una ruta.",
+            code="enrollment_needs_review",
+        )
     terms = list(
         AcademicTerm.objects.filter(institution_id=enrollment.student.institution_id).order_by(
             "starts_at", "code"
