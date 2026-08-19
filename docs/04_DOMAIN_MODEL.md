@@ -2,6 +2,19 @@
 
 ## Identidad académica
 
+### User y PersonProfile
+
+`User` posee autenticación y autorización. `PersonProfile` es la identidad
+personal privada 1:1: nombres y apellidos estructurados, nombre preferido,
+fecha de nacimiento con propósito/retención y estado de calidad. La edad es
+derivada, nunca persistida. Los nombres legacy no se dividen por heurística.
+`verification_method` distingue `SELF_DECLARED`, `INSTITUTION_VERIFIED`,
+`PREEXISTING_UNCLASSIFIED` y `LEGACY_UNKNOWN`. Una migración sólo clasifica
+procedencia histórica cuando existe un evento auditable; no inventa
+verificación institucional. Constraints de base exigen una identidad
+confirmada completa y coherencia entre fecha de nacimiento y propósito incluso
+ante escrituras bulk/raw.
+
 ### Institution
 `id, slug, legal_name, display_name, country_code, status`
 
@@ -30,6 +43,20 @@ Versión temporal:
 - `supersedes_revision_id`
 
 Una revisión publicada nunca se actualiza in-place.
+
+### CurriculumAssignmentPolicy y CurriculumAssignmentDecision
+
+`CurriculumAssignmentPolicy` representa la norma evidenciada que vincula un
+contexto de admisión, reingreso, traslado, doble titulación o transición con un
+plan y una revisión. Separa fecha de publicación normativa, entrada en vigor y
+rango/cohorte de admisión; `CurriculumRevision.effective_from` no sustituye esa
+política.
+
+El resolver puro produce `RESOLVED`, `NEEDS_REVIEW` o `UNKNOWN`. Sólo una
+política publicada o histórica, `VERIFIED`, evidenciada, con hashes completos y
+coincidencia única produce `RESOLVED`. `CurriculumAssignmentDecision` conserva
+append-only inputs y su procedencia, candidatos, razones, política, objetivo,
+método, versión del resolver y hash reproducible por matrícula.
 
 ## Catálogo
 
@@ -88,7 +115,10 @@ Relaciones: `AMENDS`, `REPEALS`, `ADDS`, `CLARIFIES`, `SUPERSEDES`.
 ## Estudiante
 
 ### StudentProfile
-No asumir que el usuario autenticado siempre es un estudiante.
+`user_id, institution_id, student_number, legacy_display_name, metadata`.
+No asumir que el usuario autenticado siempre es un estudiante. El nombre
+vigente se obtiene de `PersonProfile`; `legacy_display_name` es sólo fallback
+para migraciones aún no confirmadas.
 
 ### ProgramEnrollment
 `student_id, program_id, plan_id, revision_basis, admission_term, status`.

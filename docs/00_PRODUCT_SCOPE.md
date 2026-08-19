@@ -2,7 +2,10 @@
 
 ## 1. Definición
 
-La plataforma es un **Curriculum Intelligence & Degree Planning System** centrado inicialmente en estudiantes de Estadística UNAL Bogotá.
+La plataforma es un **Curriculum Intelligence & Degree Planning System**
+multiprograma, multisede y multiinstitución para estudiantes de pregrado.
+Estadística UNAL Bogotá es el primer currículo real completo y la referencia de
+validación inicial, no un límite de producto ni una excepción del motor.
 
 No se limita a representar asignaturas: calcula el cumplimiento de requisitos, explica dependencias, incorpora oferta real por período, permite escenarios y optimiza rutas.
 

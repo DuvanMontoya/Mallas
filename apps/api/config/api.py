@@ -34,6 +34,7 @@ from modules.optimization.api import router as optimization_router
 from modules.planning.api import router as planning_router
 from modules.student_records.admin_api import router as student_admin_router
 from modules.student_records.api import router as student_records_router
+from modules.student_records.onboarding_api import router as onboarding_router
 
 logger = logging.getLogger(__name__)
 
@@ -201,6 +202,7 @@ api.add_router("", governance_router)
 api.add_router("/history", history_router)
 api.add_router("/history", student_records_router)
 api.add_router("/admin/students", student_admin_router)
+api.add_router("/onboarding", onboarding_router)
 api.add_router("", offerings_router)
 api.add_router("", optimization_router)
 api.add_router("", planning_router)

@@ -1,17 +1,24 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
 from domain.enums import (
     CountPolicy,
+    CurriculumAssignmentContext,
+    CurriculumAssignmentPolicyStatus,
+    EpistemicStatus,
     MembershipRole,
     RequirementGroupKind,
     RevisionStatus,
     enum_choices,
 )
-from domain.errors import PublishedRevisionImmutableError
+from domain.errors import (
+    PublishedAssignmentPolicyImmutableError,
+    PublishedRevisionImmutableError,
+)
 from modules.common.models import UUIDTimestampedModel
 
 IMMUTABLE_REVISION_STATUSES = frozenset(
@@ -161,6 +168,286 @@ class CurriculumRevision(UUIDTimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.plan.code} — {self.revision_code}"
+
+
+IMMUTABLE_ASSIGNMENT_POLICY_STATUSES = frozenset(
+    {
+        CurriculumAssignmentPolicyStatus.PUBLISHED.value,
+        CurriculumAssignmentPolicyStatus.SUPERSEDED.value,
+        CurriculumAssignmentPolicyStatus.RETIRED.value,
+    }
+)
+
+
+class CurriculumAssignmentPolicy(UUIDTimestampedModel):
+    policy_code = models.CharField(max_length=120)
+    version = models.PositiveIntegerField(default=1)
+    program = models.ForeignKey(
+        "institutions.Program",
+        on_delete=models.PROTECT,
+        related_name="curriculum_assignment_policies",
+    )
+    plan = models.ForeignKey(
+        CurriculumPlan, on_delete=models.PROTECT, related_name="assignment_policies"
+    )
+    revision_basis = models.ForeignKey(
+        CurriculumRevision,
+        on_delete=models.PROTECT,
+        related_name="assignment_policies",
+    )
+    context = models.CharField(max_length=24, choices=enum_choices(CurriculumAssignmentContext))
+    admission_from = models.DateField(null=True, blank=True)
+    admission_to = models.DateField(null=True, blank=True)
+    cohort_code = models.CharField(max_length=80, blank=True)
+    previous_plan = models.ForeignKey(
+        CurriculumPlan,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="transition_assignment_policies",
+    )
+    normative_published_on = models.DateField(null=True, blank=True)
+    effective_from = models.DateField(null=True, blank=True)
+    effective_to = models.DateField(null=True, blank=True)
+    allow_retired_revision = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=24,
+        choices=enum_choices(CurriculumAssignmentPolicyStatus),
+        default=CurriculumAssignmentPolicyStatus.DRAFT.value,
+    )
+    epistemic_status = models.CharField(
+        max_length=32,
+        choices=enum_choices(EpistemicStatus),
+        default=EpistemicStatus.UNKNOWN.value,
+    )
+    source_set_hash = models.CharField(max_length=64, blank=True)
+    content_hash = models.CharField(max_length=64, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    supersedes = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="successors",
+    )
+    evidence = models.ManyToManyField(
+        "governance.Evidence",
+        through="CurriculumAssignmentPolicyEvidence",
+        related_name="curriculum_assignment_policies",
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+    prepared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="prepared_curriculum_assignment_policies",
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="approved_curriculum_assignment_policies",
+    )
+
+    class Meta:
+        ordering = ["program__name", "policy_code", "-version"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["policy_code", "version"], name="assignment_policy_code_version_unique"
+            ),
+            models.CheckConstraint(
+                condition=Q(admission_to__isnull=True)
+                | Q(admission_from__isnull=True)
+                | Q(admission_to__gt=F("admission_from")),
+                name="assignment_policy_admission_range_valid",
+            ),
+            models.CheckConstraint(
+                condition=Q(effective_to__isnull=True)
+                | Q(effective_from__isnull=True)
+                | Q(effective_to__gt=F("effective_from")),
+                name="assignment_policy_effective_range_valid",
+            ),
+            models.CheckConstraint(
+                condition=Q(version__gte=1), name="assignment_policy_version_positive"
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["program", "context", "status"], name="assign_policy_scope_status_idx"
+            ),
+            models.Index(
+                fields=["admission_from", "admission_to"], name="assign_policy_admission_idx"
+            ),
+        ]
+
+    def clean(self) -> None:
+        errors: dict[str, str] = {}
+        if self.plan_id and self.plan.program_id != self.program_id:
+            errors["plan"] = "Assignment policy plan must belong to the selected program."
+        if self.revision_basis_id and self.revision_basis.plan_id != self.plan_id:
+            errors["revision_basis"] = "Assignment policy revision must belong to its target plan."
+        if self.previous_plan_id and self.previous_plan.program_id != self.program_id:
+            errors["previous_plan"] = "Previous plan must belong to the selected program."
+        if self.supersedes_id and self.supersedes_id == self.pk:
+            errors["supersedes"] = "An assignment policy cannot supersede itself."
+        if self.supersedes_id and self.supersedes.policy_code != self.policy_code:
+            errors["supersedes"] = "A policy can only supersede the same policy code."
+        if self.supersedes_id and (
+            self.supersedes.program_id != self.program_id
+            or self.supersedes.context != self.context
+        ):
+            errors["supersedes"] = "A policy successor must preserve program and context."
+        if self.supersedes_id and self.version <= self.supersedes.version:
+            errors["version"] = "A policy successor must have a greater version."
+        seen = {self.pk} if self.pk else set()
+        ancestor = self.supersedes if self.supersedes_id else None
+        while ancestor is not None:
+            if ancestor.pk in seen:
+                errors["supersedes"] = "Assignment policy succession cannot contain a cycle."
+                break
+            seen.add(ancestor.pk)
+            ancestor = ancestor.supersedes if ancestor.supersedes_id else None
+        if errors:
+            raise ValidationError(errors)
+
+    def _immutable_content_changed(self, previous: CurriculumAssignmentPolicy) -> bool:
+        fields = (
+            "policy_code",
+            "version",
+            "program_id",
+            "plan_id",
+            "revision_basis_id",
+            "context",
+            "admission_from",
+            "admission_to",
+            "cohort_code",
+            "previous_plan_id",
+            "normative_published_on",
+            "effective_from",
+            "effective_to",
+            "allow_retired_revision",
+            "epistemic_status",
+            "source_set_hash",
+            "content_hash",
+            "published_at",
+            "supersedes_id",
+            "metadata",
+            "prepared_by_id",
+            "approved_by_id",
+        )
+        return any(getattr(previous, field) != getattr(self, field) for field in fields)
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        publication_authorized = bool(
+            getattr(self, "_publication_service_authorized", False)
+        )
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).first()
+            if (
+                previous
+                and previous.status not in IMMUTABLE_ASSIGNMENT_POLICY_STATUSES
+                and self.status == CurriculumAssignmentPolicyStatus.PUBLISHED.value
+                and not publication_authorized
+            ):
+                raise PublishedAssignmentPolicyImmutableError(
+                    "Assignment policies can only be published through the governance service."
+                )
+            if previous and previous.status in IMMUTABLE_ASSIGNMENT_POLICY_STATUSES:
+                if self._immutable_content_changed(previous):
+                    raise PublishedAssignmentPolicyImmutableError(
+                        "Published assignment policy content cannot be edited."
+                    )
+                allowed = {
+                    CurriculumAssignmentPolicyStatus.PUBLISHED.value: {
+                        CurriculumAssignmentPolicyStatus.PUBLISHED.value,
+                        CurriculumAssignmentPolicyStatus.SUPERSEDED.value,
+                        CurriculumAssignmentPolicyStatus.RETIRED.value,
+                    },
+                    CurriculumAssignmentPolicyStatus.SUPERSEDED.value: {
+                        CurriculumAssignmentPolicyStatus.SUPERSEDED.value,
+                    },
+                    CurriculumAssignmentPolicyStatus.RETIRED.value: {
+                        CurriculumAssignmentPolicyStatus.RETIRED.value,
+                    },
+                }
+                if self.status not in allowed[previous.status]:
+                    raise PublishedAssignmentPolicyImmutableError(
+                        "Assignment policy lifecycle cannot move backwards."
+                    )
+        elif (
+            self.status == CurriculumAssignmentPolicyStatus.PUBLISHED.value
+            and not publication_authorized
+        ):
+            raise PublishedAssignmentPolicyImmutableError(
+                "Assignment policies cannot be created directly as published."
+            )
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        if self.status in IMMUTABLE_ASSIGNMENT_POLICY_STATUSES:
+            raise PublishedAssignmentPolicyImmutableError(
+                "Published assignment policies cannot be deleted."
+            )
+        return super().delete(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.policy_code} v{self.version} — {self.program.code}"
+
+
+class CurriculumAssignmentPolicyEvidence(UUIDTimestampedModel):
+    policy = models.ForeignKey(
+        CurriculumAssignmentPolicy,
+        on_delete=models.PROTECT,
+        related_name="evidence_links",
+    )
+    evidence = models.ForeignKey(
+        "governance.Evidence",
+        on_delete=models.PROTECT,
+        related_name="assignment_policy_links",
+    )
+    purpose = models.CharField(max_length=120, blank=True)
+    sealed_snapshot_sha256 = models.CharField(max_length=64, blank=True)
+    sealed_snapshot_id = models.UUIDField(null=True, blank=True)
+    sealed_storage_key_hash = models.CharField(max_length=64, blank=True)
+    sealed_excerpt_hash = models.CharField(max_length=128, blank=True)
+    sealed_locator_hash = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ["policy", "evidence"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["policy", "evidence"], name="assignment_policy_evidence_unique"
+            )
+        ]
+
+    def _assert_editable(self) -> None:
+        if self.policy.status in IMMUTABLE_ASSIGNMENT_POLICY_STATUSES:
+            raise PublishedAssignmentPolicyImmutableError(
+                "Evidence of a published assignment policy cannot be changed."
+            )
+        if self.pk:
+            previous_policy_id = (
+                type(self).objects.filter(pk=self.pk).values_list("policy_id", flat=True).first()
+            )
+            if previous_policy_id:
+                previous_status = CurriculumAssignmentPolicy.objects.filter(
+                    pk=previous_policy_id
+                ).values_list("status", flat=True).first()
+                if previous_status in IMMUTABLE_ASSIGNMENT_POLICY_STATUSES:
+                    raise PublishedAssignmentPolicyImmutableError(
+                        "Evidence cannot be moved away from a published assignment policy."
+                    )
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        self._assert_editable()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        self._assert_editable()
+        return super().delete(*args, **kwargs)
 
 
 class Course(UUIDTimestampedModel):

@@ -9,6 +9,10 @@ from ninja import Header, Router, Schema
 from ninja.security import django_auth
 
 from modules.common.api import raise_problem, require_if_match, with_problem_responses
+from modules.curriculum.application.assignment import (
+    CurriculumAssignmentPolicyError,
+    publish_assignment_policy,
+)
 
 from .application.services import (
     GovernanceError,
@@ -27,6 +31,51 @@ from .application.services import (
 )
 
 router = Router(tags=["Curriculum governance"])
+
+
+class AssignmentPolicyPublicationView(Schema):
+    id: UUID
+    status: str
+    policy_code: str
+    version: int
+    content_hash: str
+    source_set_hash: str
+    prepared_by_id: int
+    approved_by_id: int
+
+
+@router.post(
+    "/governance/assignment-policies/{policy_id}/publish",
+    auth=django_auth,
+    response=with_problem_responses(AssignmentPolicyPublicationView),
+)
+def assignment_policy_publish(
+    request: HttpRequest, response: HttpResponse, policy_id: UUID
+) -> dict[str, Any]:
+    try:
+        policy = publish_assignment_policy(policy_id, actor=request.auth, request=request)
+    except CurriculumAssignmentPolicyError as error:
+        status = 403 if error.code in {
+            "assignment_policy_forbidden",
+            "assignment_policy_step_up_required",
+        } else 409
+        raise_problem(
+            status=status,
+            code=error.code.upper(),
+            title="Assignment policy publication failed",
+            detail=str(error),
+        )
+    response["Cache-Control"] = "private, no-store"
+    return {
+        "id": policy.pk,
+        "status": policy.status,
+        "policy_code": policy.policy_code,
+        "version": policy.version,
+        "content_hash": policy.content_hash,
+        "source_set_hash": policy.source_set_hash,
+        "prepared_by_id": policy.prepared_by_id,
+        "approved_by_id": policy.approved_by_id,
+    }
 
 
 class SourceDocumentView(Schema):

@@ -53,6 +53,51 @@ Amenazas:
 - nunca enviar historia completa a un LLM externo por defecto;
 - si se usa LLM para parsing, aplicar consentimiento/política y redacción cuando sea viable.
 
+### Identidad, exportación, rectificación y supresión
+
+`PersonProfile` contiene PII de identidad separada de autenticación e historia
+académica. La fecha de nacimiento sólo se recoge para administración académica;
+la edad se deriva al consultar y nunca se persiste. La fecha no se replica en
+auditoría, telemetría, analítica, malla pública ni `/auth/me`.
+
+La persona autenticada puede consultar, rectificar con `If-Match` y exportar su
+identidad en JSON versionado desde `/auth/profile`. Un administrador sólo puede
+hacerlo dentro de su institución/programa autorizado. Los eventos de
+rectificación guardan actor, objeto, campos modificados y fundamento o método,
+pero no valores anteriores/nuevos. El Django admin es de solo lectura.
+La colección administrativa excluye fechas y campos estructurados; el detalle
+se solicita por persona, se marca `no-store` y genera auditoría de acceso. Los
+fundamentos administrativos son códigos cerrados, no texto libre, y las
+mutaciones self-service participan del rate limit general.
+En producción, leer fecha de nacimiento por el detalle administrativo exige
+la prueba de MFA privilegiado aportada por el IdP y además usa un bucket de
+lectura sensible por administrador. Cerrar el detalle descarga la PII del DOM.
+Crear una cuenta con identidad institucional y rectificarla exigen de nuevo la
+misma prueba MFA en el backend; no dependen de haber abierto antes el detalle.
+Una identidad `INSTITUTION_VERIFIED` o `PREEXISTING_UNCLASSIFIED` no puede ser
+reemplazada por self-service: la persona debe iniciar una rectificación
+institucional; sólo identidades declaradas por sí mismas o legacy aún no
+verificadas pueden actualizarse directamente.
+
+No existe un borrado HTTP instantáneo de una cuenta académica: podría destruir
+evidencia que la institución deba conservar. Una solicitud de supresión debe
+clasificar cada dato según la política legal/institucional aplicable:
+
+1. datos de autenticación y contacto se desactivan o eliminan cuando no exista
+   obligación vigente;
+2. identidad civil se elimina o desidentifica al vencer la relación y el plazo
+   aplicable; `birth_date_retention_until` registra una fecha concreta cuando
+   se conoce el cierre de la relación;
+3. historia académica, decisiones curriculares y auditoría se conservan sólo
+   por el plazo obligatorio, con acceso mínimo y sin reusar la PII para otros
+   fines;
+4. la resolución se registra sin copiar la PII al evento.
+
+Antes de producción institucional, el responsable de tratamiento debe fijar
+los plazos por jurisdicción y probar el procedimiento de desactivación,
+exportación, desidentificación y vencimiento. En ausencia de esa regla, el
+campo de retención queda nulo y el sistema no inventa una fecha ni purga datos.
+
 ## Roles
 
 Ver `docs/18_AUTHORIZATION_MATRIX.md`.

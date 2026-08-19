@@ -164,7 +164,9 @@ class MutationRateLimitMiddleware:
         if request.method not in MutationRateLimitMiddleware._MUTATING_METHODS:
             return None
         path = request.path
-        if not path.startswith("/api/v1/") or path.startswith("/api/v1/auth/"):
+        if not path.startswith("/api/v1/"):
+            return None
+        if path.startswith("/api/v1/auth/") and path != "/api/v1/auth/profile":
             return None
         if path in {"/api/v1/health/ready", "/api/v1/health/metrics"}:
             return None

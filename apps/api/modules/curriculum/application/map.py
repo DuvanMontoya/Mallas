@@ -322,7 +322,12 @@ def build_curriculum_map(
 
     revision = _revision(plan_code=plan_code, revision_id=revision_id)
     enrollment = _student_enrollment(actor, enrollment_id=enrollment_id)
-    if enrollment is not None and enrollment.revision_basis.plan_id != revision.plan_id:
+    if (
+        enrollment is not None
+        and enrollment.status != "NEEDS_REVIEW"
+        and enrollment.revision_basis_id is not None
+        and enrollment.revision_basis.plan_id != revision.plan_id
+    ):
         raise CurriculumMapError(
             "La matrícula y la revisión pertenecen a planes distintos.",
             code="enrollment_plan_mismatch",

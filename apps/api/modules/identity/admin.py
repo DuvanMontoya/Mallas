@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import AuditEvent, RateLimitBucket, RoleAssignment, User
+from .models import AuditEvent, PersonProfile, RateLimitBucket, RoleAssignment, User
 
 
 @admin.register(User)
@@ -18,6 +18,23 @@ class IdentityUserAdmin(UserAdmin):
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "password1", "password2")}),)
+
+
+@admin.register(PersonProfile)
+class PersonProfileAdmin(admin.ModelAdmin):
+    list_display = ["user", "first_name", "first_surname", "data_status", "confirmed_at"]
+    list_filter = ["data_status"]
+    search_fields = ["user__email", "first_name", "middle_names", "first_surname", "second_surname"]
+    readonly_fields = [field.name for field in PersonProfile._meta.fields]
+
+    def has_add_permission(self, request: object) -> bool:
+        return False
+
+    def has_change_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: object, obj: object | None = None) -> bool:
+        return False
 
 
 @admin.register(RoleAssignment)

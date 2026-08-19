@@ -43,3 +43,21 @@ defensa en profundidad modelo + señal + trigger PostgreSQL y quedó registrada
 en `docs/adr/0029-database-enforced-curriculum-scope.md`. No requiere elección
 del usuario; la ejecución real de sus migraciones sigue siendo un gate
 operativo externo.
+
+## D-009 Universo de la primera campaña multiprograma
+
+Antes de P107, el propietario debe fijar un universo institucional cerrado y
+auditable para la primera `CoverageCampaign` (institución, sedes y fecha de
+corte). La plataforma no anunciará “todos los pregrados” sin un inventario
+oficial completo. Un piloto puede lanzarse con cobertura parcial, siempre
+rotulada como tal, sin publicar currículos sin evidencia.
+
+## D-010 Evidencia de aplicabilidad para asignación automática 2514
+
+El Acuerdo 496 archivado demuestra el contenido del plan y en su artículo 6
+indica que rige desde la publicación. La fecha `2023-05-09` disponible es la de
+expedición; no existe snapshot de la fecha de publicación ni regla archivada de
+cohorte, transición, reingreso o conservación de plan anterior. No es una
+decisión que pueda tomar el software: gobierno curricular debe aportar y revisar
+esa evidencia. Hasta entonces P102 puede implementar estados y resolución
+fail-closed, pero la política 2514 será `UNKNOWN` y no asignará automáticamente.

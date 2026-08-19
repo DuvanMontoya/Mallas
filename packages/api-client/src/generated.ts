@@ -140,6 +140,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profile View */
+        get: operations["modules_identity_api_profile_view"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Profile Update */
+        patch: operations["modules_identity_api_profile_update"];
+        trace?: never;
+    };
+    "/api/v1/auth/profile/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profile Export */
+        get: operations["modules_identity_api_profile_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/password-reset/request": {
         parameters: {
             query?: never;
@@ -321,6 +356,23 @@ export interface paths {
         get: operations["modules_curriculum_api_dependency_graph"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/governance/assignment-policies/{policy_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assignment Policy Publish */
+        post: operations["modules_governance_api_assignment_policy_publish"];
         delete?: never;
         options?: never;
         head?: never;
@@ -669,6 +721,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/students/assignment-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Assignment Preview */
+        post: operations["modules_student_records_admin_api_admin_assignment_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/students/enrollments/{source_enrollment_id}/transition-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Transition Preview */
+        post: operations["modules_student_records_admin_api_admin_transition_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/students/enrollments": {
         parameters: {
             query?: never;
@@ -681,6 +767,41 @@ export interface paths {
         put?: never;
         /** Admin Enrollment Create */
         post: operations["modules_student_records_admin_api_admin_enrollment_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/students/enrollments/{enrollment_id}/identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Enrollment Identity */
+        get: operations["modules_student_records_admin_api_admin_enrollment_identity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin Enrollment Identity Update */
+        patch: operations["modules_student_records_admin_api_admin_enrollment_identity_update"];
+        trace?: never;
+    };
+    "/api/v1/admin/students/enrollments/{source_enrollment_id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Transition Create */
+        post: operations["modules_student_records_admin_api_admin_transition_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -702,6 +823,41 @@ export interface paths {
         head?: never;
         /** Admin Enrollment Revision Confirm */
         patch: operations["modules_student_records_admin_api_admin_enrollment_revision_confirm"];
+        trace?: never;
+    };
+    "/api/v1/admin/students/enrollments/{enrollment_id}/assignment-override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Enrollment Assignment Override */
+        post: operations["modules_student_records_admin_api_admin_enrollment_assignment_override"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Onboarding */
+        get: operations["modules_student_records_onboarding_api_get_onboarding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Onboarding */
+        patch: operations["modules_student_records_onboarding_api_patch_onboarding"];
         trace?: never;
     };
     "/api/v1/academic-terms": {
@@ -1191,6 +1347,8 @@ export interface components {
             student_profile_id: string | null;
             /** Must Change Password */
             must_change_password: boolean;
+            /** Onboarding Required */
+            onboarding_required: boolean;
         };
         /** LoginPayload */
         LoginPayload: {
@@ -1210,6 +1368,94 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** PersonProfileView */
+        PersonProfileView: {
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Middle Names */
+            middle_names: string;
+            /** First Surname */
+            first_surname: string;
+            /** Second Surname */
+            second_surname: string;
+            /** Preferred Name */
+            preferred_name: string;
+            /** Birth Date */
+            birth_date: string | null;
+            /** Age */
+            age: number | null;
+            /** Data Status */
+            data_status: string;
+            /** Verification Method */
+            verification_method: string;
+            /** Version */
+            version: string;
+        };
+        /** PersonProfileUpdatePayload */
+        PersonProfileUpdatePayload: {
+            /** First Name */
+            first_name: string;
+            /**
+             * Middle Names
+             * @default
+             */
+            middle_names: string;
+            /** First Surname */
+            first_surname: string;
+            /**
+             * Second Surname
+             * @default
+             */
+            second_surname: string;
+            /**
+             * Preferred Name
+             * @default
+             */
+            preferred_name: string;
+            /**
+             * Birth Date
+             * Format: date
+             */
+            birth_date: string;
+        };
+        /** PersonProfileExportAccount */
+        PersonProfileExportAccount: {
+            /** Email */
+            email: string;
+        };
+        /** PersonProfileExportIdentity */
+        PersonProfileExportIdentity: {
+            /** First Name */
+            first_name: string;
+            /** Middle Names */
+            middle_names: string;
+            /** First Surname */
+            first_surname: string;
+            /** Second Surname */
+            second_surname: string;
+            /** Preferred Name */
+            preferred_name: string;
+            /** Birth Date */
+            birth_date: string | null;
+            /** Data Status */
+            data_status: string;
+            /** Verification Method */
+            verification_method: string;
+        };
+        /** PersonProfileExportView */
+        PersonProfileExportView: {
+            /** Schema Version */
+            schema_version: string;
+            /**
+             * Exported At
+             * Format: date-time
+             */
+            exported_at: string;
+            account: components["schemas"]["PersonProfileExportAccount"];
+            identity: components["schemas"]["PersonProfileExportIdentity"];
         };
         /** PasswordResetRequestPayload */
         PasswordResetRequestPayload: {
@@ -1633,9 +1879,9 @@ export interface components {
             /** Program Name */
             program_name: string;
             /** Plan Code */
-            plan_code: string;
+            plan_code: string | null;
             /** Revision Code */
-            revision_code: string;
+            revision_code: string | null;
             /** Snapshot */
             snapshot: {
                 [key: string]: unknown;
@@ -2071,6 +2317,28 @@ export interface components {
             condition_node_id: string | null;
             /** Direct */
             direct: boolean;
+        };
+        /** AssignmentPolicyPublicationView */
+        AssignmentPolicyPublicationView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Policy Code */
+            policy_code: string;
+            /** Version */
+            version: number;
+            /** Content Hash */
+            content_hash: string;
+            /** Source Set Hash */
+            source_set_hash: string;
+            /** Prepared By Id */
+            prepared_by_id: number;
+            /** Approved By Id */
+            approved_by_id: number;
         };
         /** ProposalSummaryView */
         ProposalSummaryView: {
@@ -3006,6 +3274,8 @@ export interface components {
              * Format: date-time
              */
             ends_at: string;
+            /** Admission Source Status */
+            admission_source_status: string;
         };
         /** StudentAdminCatalogView */
         StudentAdminCatalogView: {
@@ -3020,10 +3290,159 @@ export interface components {
             /** Terms */
             terms: components["schemas"]["AdminTermView"][];
         };
+        /** AdminAssignmentCandidateView */
+        AdminAssignmentCandidateView: {
+            /** Policy Id */
+            policy_id: string;
+            /** Policy Code */
+            policy_code: string;
+            /** Version */
+            version: number;
+            /** Plan Id */
+            plan_id: string;
+            /** Revision Id */
+            revision_id: string;
+            /** Status */
+            status: string;
+            /** Epistemic Status */
+            epistemic_status: string;
+            /** Content Hash */
+            content_hash: string;
+            /** Source Set Hash */
+            source_set_hash: string;
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Revision Status */
+            revision_status: string;
+            /** Revision Content Hash */
+            revision_content_hash: string;
+            /** Revision Source Set Hash */
+            revision_source_set_hash: string;
+            /** Evidence Sealed */
+            evidence_sealed: boolean;
+            /** Effective From */
+            effective_from: string | null;
+            /** Effective To */
+            effective_to: string | null;
+            /** Supersedes Id */
+            supersedes_id: string | null;
+            /** Allow Retired Revision */
+            allow_retired_revision: boolean;
+        };
+        /** AdminAssignmentInputView */
+        AdminAssignmentInputView: {
+            /** Program Id */
+            program_id: string;
+            /**
+             * Admission Date
+             * Format: date
+             */
+            admission_date: string;
+            /** Context */
+            context: string;
+            /** Cohort Code */
+            cohort_code: string;
+            /** Previous Plan Id */
+            previous_plan_id: string | null;
+            /** Admission Source Snapshot Id */
+            admission_source_snapshot_id: string | null;
+            /** Admission Source Sha256 */
+            admission_source_sha256: string | null;
+            /** Admission Verification Method */
+            admission_verification_method: string | null;
+            /** Admission Record Reference Hash */
+            admission_record_reference_hash: string | null;
+        };
+        /** AdminAssignmentPreviewView */
+        AdminAssignmentPreviewView: {
+            /** Resolver Version */
+            resolver_version: string;
+            input: components["schemas"]["AdminAssignmentInputView"];
+            /** Status */
+            status: string;
+            /** Reason Codes */
+            reason_codes: string[];
+            /** Candidates */
+            candidates: components["schemas"]["AdminAssignmentCandidateView"][];
+            /** Selected Policy Id */
+            selected_policy_id: string | null;
+            /** Selected Plan Id */
+            selected_plan_id: string | null;
+            /** Selected Revision Id */
+            selected_revision_id: string | null;
+            /** Decision Hash */
+            decision_hash: string;
+            /** Admission Term Id */
+            admission_term_id: string;
+            /** Admission Term Code */
+            admission_term_code: string;
+            /** Admission Term Source Status */
+            admission_term_source_status: string;
+            /** Selected Plan Code */
+            selected_plan_code: string | null;
+            /** Selected Revision Code */
+            selected_revision_code: string | null;
+            /** Source Enrollment Id */
+            source_enrollment_id?: string | null;
+        };
+        /** AdminAssignmentPreviewPayload */
+        AdminAssignmentPreviewPayload: {
+            /**
+             * Program Id
+             * Format: uuid
+             */
+            program_id: string;
+            /**
+             * Admission Term Id
+             * Format: uuid
+             */
+            admission_term_id: string;
+            /**
+             * Context
+             * @default ADMISSION
+             */
+            context: string;
+            /**
+             * Cohort Code
+             * @default
+             */
+            cohort_code: string;
+            /** Previous Plan Id */
+            previous_plan_id?: string | null;
+            /**
+             * Admission Verification Method
+             * @default SOURCE_SNAPSHOT
+             */
+            admission_verification_method: string;
+            /** Admission Record Reference */
+            admission_record_reference?: string | null;
+        };
+        /** AdminTransitionPayload */
+        AdminTransitionPayload: {
+            /**
+             * Admission Term Id
+             * Format: uuid
+             */
+            admission_term_id: string;
+            /** Context */
+            context: string;
+            /**
+             * Cohort Code
+             * @default
+             */
+            cohort_code: string;
+            /**
+             * Admission Verification Method
+             * @default SOURCE_SNAPSHOT
+             */
+            admission_verification_method: string;
+            /** Admission Record Reference */
+            admission_record_reference?: string | null;
+        };
         /** AdminEnrollmentCollectionView */
         AdminEnrollmentCollectionView: {
             /** Items */
-            items: components["schemas"]["AdminEnrollmentView"][];
+            items: components["schemas"]["AdminEnrollmentSummaryView"][];
             /** Total */
             total: number;
             /** Limit */
@@ -3034,6 +3453,120 @@ export interface components {
             next_offset: number | null;
             /** Previous Offset */
             previous_offset: number | null;
+        };
+        /** AdminEnrollmentSummaryView */
+        AdminEnrollmentSummaryView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Student Profile Id
+             * Format: uuid
+             */
+            student_profile_id: string;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            /** Identity Data Status */
+            identity_data_status: string;
+            /** Student Number */
+            student_number: string;
+            /**
+             * Institution Id
+             * Format: uuid
+             */
+            institution_id: string;
+            /**
+             * Program Id
+             * Format: uuid
+             */
+            program_id: string;
+            /** Program Name */
+            program_name: string;
+            /** Plan Id */
+            plan_id: string | null;
+            /** Plan Code */
+            plan_code: string | null;
+            /** Revision Basis Id */
+            revision_basis_id: string | null;
+            /**
+             * Admission Term Id
+             * Format: uuid
+             */
+            admission_term_id: string;
+            /** Admission Term Code */
+            admission_term_code: string;
+            /** Status */
+            status: string;
+            /** Cohort Code */
+            cohort_code: string;
+            /** Review Reasons */
+            review_reasons: string[];
+            /** Version */
+            version: string;
+        };
+        /** AdminEnrollmentCreatePayload */
+        AdminEnrollmentCreatePayload: {
+            /** Email */
+            email: string;
+            /** Temporary Password */
+            temporary_password: string;
+            /** Display Name */
+            display_name?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Middle Names */
+            middle_names?: string | null;
+            /** First Surname */
+            first_surname?: string | null;
+            /** Second Surname */
+            second_surname?: string | null;
+            /** Preferred Name */
+            preferred_name?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
+            /** Student Number */
+            student_number: string;
+            /**
+             * Institution Id
+             * Format: uuid
+             */
+            institution_id: string;
+            /**
+             * Program Id
+             * Format: uuid
+             */
+            program_id: string;
+            /** Plan Id */
+            plan_id?: string | null;
+            /** Revision Basis Id */
+            revision_basis_id?: string | null;
+            /**
+             * Admission Term Id
+             * Format: uuid
+             */
+            admission_term_id: string;
+            /** Cohort Code */
+            cohort_code?: string | null;
+            /**
+             * Assignment Context
+             * @default ADMISSION
+             */
+            assignment_context: string;
+            /** Expected Assignment Hash */
+            expected_assignment_hash?: string | null;
+            /** Previous Plan Id */
+            previous_plan_id?: string | null;
+            /**
+             * Admission Verification Method
+             * @default SOURCE_SNAPSHOT
+             */
+            admission_verification_method: string;
+            /** Admission Record Reference */
+            admission_record_reference?: string | null;
         };
         /** AdminEnrollmentView */
         AdminEnrollmentView: {
@@ -3051,6 +3584,26 @@ export interface components {
             email: string;
             /** Display Name */
             display_name: string;
+            /** First Name */
+            first_name: string;
+            /** Middle Names */
+            middle_names: string;
+            /** First Surname */
+            first_surname: string;
+            /** Second Surname */
+            second_surname: string;
+            /** Preferred Name */
+            preferred_name: string;
+            /** Birth Date */
+            birth_date: string | null;
+            /** Age */
+            age: number | null;
+            /** Identity Data Status */
+            identity_data_status: string;
+            /** Identity Verification Method */
+            identity_verification_method: string;
+            /** Identity Version */
+            identity_version: string;
             /** Student Number */
             student_number: string;
             /**
@@ -3065,18 +3618,12 @@ export interface components {
             program_id: string;
             /** Program Name */
             program_name: string;
-            /**
-             * Plan Id
-             * Format: uuid
-             */
-            plan_id: string;
+            /** Plan Id */
+            plan_id: string | null;
             /** Plan Code */
-            plan_code: string;
-            /**
-             * Revision Basis Id
-             * Format: uuid
-             */
-            revision_basis_id: string;
+            plan_code: string | null;
+            /** Revision Basis Id */
+            revision_basis_id: string | null;
             /**
              * Admission Term Id
              * Format: uuid
@@ -3088,29 +3635,68 @@ export interface components {
             status: string;
             /** Cohort Code */
             cohort_code: string;
+            /** Review Reasons */
+            review_reasons: string[];
             /** Version */
             version: string;
         };
-        /** AdminEnrollmentCreatePayload */
-        AdminEnrollmentCreatePayload: {
-            /** Email */
-            email: string;
-            /** Temporary Password */
-            temporary_password: string;
-            /** Display Name */
-            display_name: string;
-            /** Student Number */
-            student_number: string;
+        /** AdminIdentityUpdatePayload */
+        AdminIdentityUpdatePayload: {
+            /** First Name */
+            first_name: string;
             /**
-             * Institution Id
+             * Middle Names
+             * @default
+             */
+            middle_names: string;
+            /** First Surname */
+            first_surname: string;
+            /**
+             * Second Surname
+             * @default
+             */
+            second_surname: string;
+            /**
+             * Preferred Name
+             * @default
+             */
+            preferred_name: string;
+            /**
+             * Birth Date
+             * Format: date
+             */
+            birth_date: string;
+            /** Rationale */
+            rationale: string;
+        };
+        /** AdminTransitionCreatePayload */
+        AdminTransitionCreatePayload: {
+            /**
+             * Admission Term Id
              * Format: uuid
              */
-            institution_id: string;
+            admission_term_id: string;
+            /** Context */
+            context: string;
             /**
-             * Program Id
-             * Format: uuid
+             * Cohort Code
+             * @default
              */
-            program_id: string;
+            cohort_code: string;
+            /**
+             * Admission Verification Method
+             * @default SOURCE_SNAPSHOT
+             */
+            admission_verification_method: string;
+            /** Admission Record Reference */
+            admission_record_reference?: string | null;
+            /** Expected Assignment Hash */
+            expected_assignment_hash: string;
+        };
+        /** AdminEnrollmentRevisionPayload */
+        AdminEnrollmentRevisionPayload: Record<string, never>;
+        /** AdminEnrollmentOverridePayload */
+        AdminEnrollmentOverridePayload: {
             /**
              * Plan Id
              * Format: uuid
@@ -3122,25 +3708,74 @@ export interface components {
              */
             revision_basis_id: string;
             /**
-             * Admission Term Id
+             * Evidence Id
              * Format: uuid
              */
-            admission_term_id: string;
+            evidence_id: string;
             /**
-             * Cohort Code
-             * @default
+             * Exception Id
+             * Format: uuid
              */
-            cohort_code: string;
+            exception_id: string;
+            /** Reason Code */
+            reason_code: string;
         };
-        /** AdminEnrollmentRevisionPayload */
-        AdminEnrollmentRevisionPayload: {
+        /** StudentOnboardingView */
+        StudentOnboardingView: {
             /**
-             * Revision Basis Id
+             * Enrollment Id
              * Format: uuid
              */
-            revision_basis_id: string;
-            /** Rationale */
-            rationale: string;
+            enrollment_id: string;
+            /** Program Name */
+            program_name: string;
+            /** Program Code */
+            program_code: string;
+            /** Admission Term Code */
+            admission_term_code: string;
+            /** Enrollment Status */
+            enrollment_status: string;
+            /** Plan Code */
+            plan_code: string | null;
+            /** Revision Code */
+            revision_code: string | null;
+            /** Assignment Reason Codes */
+            assignment_reason_codes: string[];
+            /** Identity Confirmed */
+            identity_confirmed: boolean;
+            /** History Step Status */
+            history_step_status: string;
+            /** Current Term Id */
+            current_term_id: string | null;
+            /** Planning Load Target */
+            planning_load_target: number | null;
+            /** Tour Status */
+            tour_status: string;
+            /** Completed */
+            completed: boolean;
+            /** Version */
+            version: string;
+        };
+        /** StudentOnboardingPayload */
+        StudentOnboardingPayload: {
+            /** Identity Confirmed */
+            identity_confirmed: boolean;
+            /** History Step Status */
+            history_step_status: string;
+            /**
+             * Current Term Id
+             * Format: uuid
+             */
+            current_term_id: string;
+            /** Planning Load Target */
+            planning_load_target: number;
+            /** Tour Status */
+            tour_status: string;
+            /**
+             * Complete
+             * @default false
+             */
+            complete: boolean;
         };
         /** AcademicTermCollectionView */
         AcademicTermCollectionView: {
@@ -4748,6 +5383,342 @@ export interface operations {
             };
         };
     };
+    modules_identity_api_profile_view: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonProfileView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_identity_api_profile_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonProfileUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonProfileView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_identity_api_profile_export: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonProfileExportView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     modules_identity_api_password_reset_request: {
         parameters: {
             query?: never;
@@ -5902,6 +6873,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DependencyGraphView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_governance_api_assignment_policy_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                policy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentPolicyPublicationView"];
                 };
             };
             /** @description Bad Request */
@@ -8524,6 +9607,236 @@ export interface operations {
             };
         };
     };
+    modules_student_records_admin_api_admin_assignment_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminAssignmentPreviewPayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAssignmentPreviewView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_admin_api_admin_transition_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminTransitionPayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAssignmentPreviewView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     modules_student_records_admin_api_admin_enrollments: {
         parameters: {
             query?: {
@@ -8657,7 +9970,353 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["AdminEnrollmentSummaryView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_admin_api_admin_enrollment_identity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["AdminEnrollmentView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_admin_api_admin_enrollment_identity_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminIdentityUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminEnrollmentView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_admin_api_admin_transition_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminTransitionCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminEnrollmentSummaryView"];
                 };
             };
             /** @description Bad Request */
@@ -8775,7 +10434,351 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminEnrollmentView"];
+                    "application/json": components["schemas"]["AdminEnrollmentSummaryView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_admin_api_admin_enrollment_assignment_override: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminEnrollmentOverridePayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminEnrollmentSummaryView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_onboarding_api_get_onboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentOnboardingView"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Precondition Required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    modules_student_records_onboarding_api_patch_onboarding: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentOnboardingPayload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentOnboardingView"];
                 };
             };
             /** @description Bad Request */

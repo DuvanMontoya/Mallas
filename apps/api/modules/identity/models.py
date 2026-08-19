@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import date
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import connection, models
 from django.db.models import F, Q
+from django.utils import timezone
 
 from domain.enums import UserRole, enum_choices
 from domain.errors import AuditEventImmutableError
@@ -52,6 +55,166 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.email
+
+
+class IdentityDataStatus(models.TextChoices):
+    CONFIRMED = "CONFIRMED", "Confirmed"
+    LEGACY_UNSTRUCTURED = "LEGACY_UNSTRUCTURED", "Legacy unstructured"
+    NEEDS_REVIEW = "NEEDS_REVIEW", "Needs review"
+
+
+class BirthDatePurpose(models.TextChoices):
+    ACADEMIC_ADMINISTRATION = "ACADEMIC_ADMINISTRATION", "Academic administration"
+
+
+class IdentityVerificationMethod(models.TextChoices):
+    LEGACY_UNKNOWN = "LEGACY_UNKNOWN", "Legacy or unknown"
+    PREEXISTING_UNCLASSIFIED = "PREEXISTING_UNCLASSIFIED", "Preexisting unclassified"
+    SELF_DECLARED = "SELF_DECLARED", "Self declared"
+    INSTITUTION_VERIFIED = "INSTITUTION_VERIFIED", "Institution verified"
+
+
+class PersonProfile(UUIDTimestampedModel):
+    """Private person identity, separate from authentication and academic records."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="person_profile"
+    )
+    first_name = models.CharField(max_length=80, blank=True)
+    middle_names = models.CharField(max_length=160, blank=True)
+    first_surname = models.CharField(max_length=80, blank=True)
+    second_surname = models.CharField(max_length=80, blank=True)
+    preferred_name = models.CharField(max_length=160, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    birth_date_purpose = models.CharField(
+        max_length=48, choices=BirthDatePurpose.choices, blank=True
+    )
+    birth_date_retention_until = models.DateField(null=True, blank=True)
+    data_status = models.CharField(
+        max_length=32,
+        choices=IdentityDataStatus.choices,
+        default=IdentityDataStatus.NEEDS_REVIEW,
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    verification_method = models.CharField(
+        max_length=32,
+        choices=IdentityVerificationMethod.choices,
+        default=IdentityVerificationMethod.LEGACY_UNKNOWN,
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["first_surname", "second_surname", "first_name", "user__email"]
+        indexes = [
+            models.Index(fields=["first_surname", "first_name"], name="person_surname_name_idx"),
+            models.Index(fields=["data_status"], name="person_data_status_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    ~Q(data_status=IdentityDataStatus.CONFIRMED)
+                    | (
+                        ~Q(first_name="")
+                        & ~Q(first_surname="")
+                        & Q(confirmed_at__isnull=False)
+                        & ~Q(verification_method=IdentityVerificationMethod.LEGACY_UNKNOWN)
+                    )
+                ),
+                name="person_confirmed_identity_complete",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        birth_date__isnull=True,
+                        birth_date_purpose="",
+                        birth_date_retention_until__isnull=True,
+                    )
+                    | (Q(birth_date__isnull=False) & ~Q(birth_date_purpose=""))
+                ),
+                name="person_birth_date_has_purpose",
+            ),
+        ]
+
+    @staticmethod
+    def _normalize_part(value: str) -> str:
+        return " ".join(value.split())
+
+    @property
+    def full_name(self) -> str:
+        return " ".join(
+            part
+            for part in (
+                self.first_name,
+                self.middle_names,
+                self.first_surname,
+                self.second_surname,
+            )
+            if part
+        )
+
+    def age_on(self, reference_date: date | None = None) -> int | None:
+        if self.birth_date is None:
+            return None
+        reference = reference_date or timezone.localdate()
+        return (
+            reference.year
+            - self.birth_date.year
+            - ((reference.month, reference.day) < (self.birth_date.month, self.birth_date.day))
+        )
+
+    def clean(self) -> None:
+        for field in (
+            "first_name",
+            "middle_names",
+            "first_surname",
+            "second_surname",
+            "preferred_name",
+        ):
+            setattr(self, field, self._normalize_part(getattr(self, field)))
+        if self.data_status == IdentityDataStatus.CONFIRMED and (
+            not self.first_name or not self.first_surname
+        ):
+            raise ValidationError(
+                {"data_status": "Confirmed identity requires first name and first surname."}
+            )
+        if (
+            self.data_status == IdentityDataStatus.CONFIRMED
+            and self.verification_method == IdentityVerificationMethod.LEGACY_UNKNOWN
+        ):
+            raise ValidationError(
+                {"verification_method": "Confirmed identity requires a verification method."}
+            )
+        if self.data_status == IdentityDataStatus.CONFIRMED and self.confirmed_at is None:
+            self.confirmed_at = timezone.now()
+        if self.birth_date is not None:
+            today = timezone.localdate()
+            if self.birth_date > today:
+                raise ValidationError({"birth_date": "Birth date cannot be in the future."})
+            calculated_age = self.age_on(today)
+            if calculated_age is not None and calculated_age > 120:
+                raise ValidationError({"birth_date": "Birth date is outside the supported range."})
+            if not self.birth_date_purpose:
+                raise ValidationError(
+                    {"birth_date_purpose": "A collection purpose is required for birth date."}
+                )
+        elif self.birth_date_purpose or self.birth_date_retention_until:
+            raise ValidationError(
+                {"birth_date": "Birth date is required when retention or purpose is recorded."}
+            )
+        if (
+            self.birth_date_retention_until is not None
+            and self.birth_date_retention_until < timezone.localdate()
+        ):
+            raise ValidationError(
+                {"birth_date_retention_until": "Retention date cannot already be expired."}
+            )
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.full_name or self.preferred_name or self.user.email
 
 
 class RoleAssignment(UUIDTimestampedModel):

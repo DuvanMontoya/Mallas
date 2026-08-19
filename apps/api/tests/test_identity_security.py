@@ -29,7 +29,14 @@ from modules.identity.application.authorization import (
     can_publish_revision,
     can_view_student,
 )
-from modules.identity.models import AuditEvent, RoleAssignment, User
+from modules.identity.application.rate_limit import consume_rate_limit
+from modules.identity.models import (
+    AuditEvent,
+    IdentityVerificationMethod,
+    PersonProfile,
+    RoleAssignment,
+    User,
+)
 from modules.student_records.models import StudentAdvisorAssignment
 from tests.factories import foundation
 
@@ -118,6 +125,123 @@ class IdentityApiTests(TestCase):
             AuditEvent.objects.filter(action="AUTH_LOGIN_SUCCEEDED", actor=self.user).exists()
         )
         self.assertTrue(AuditEvent.objects.filter(action="AUTH_LOGOUT", actor=self.user).exists())
+
+    def test_person_can_create_rectify_and_export_own_identity(self) -> None:
+        self.client.force_login(self.user)
+        empty = self.client.get("/api/v1/auth/profile")
+        self.assertEqual(empty.status_code, 200)
+        self.assertEqual(empty.headers["Cache-Control"], "private, no-store")
+        self.assertEqual(empty.json()["version"], "missing")
+        self.assertNotIn("birth_date", self.client.get("/api/v1/auth/me").json())
+
+        updated = self.client.patch(
+            "/api/v1/auth/profile",
+            {
+                "first_name": "  María ",
+                "middle_names": "  Fernanda ",
+                "first_surname": " De la Cruz ",
+                "second_surname": " Gómez ",
+                "preferred_name": "Mafe",
+                "birth_date": "2003-08-19",
+            },
+            content_type="application/json",
+            HTTP_IF_MATCH='"missing"',
+            **self.csrf_headers(),
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.headers["Cache-Control"], "private, no-store")
+        self.assertEqual(updated.json()["first_name"], "María")
+        self.assertEqual(updated.json()["first_surname"], "De la Cruz")
+        self.assertEqual(updated.json()["age"], PersonProfile.objects.get(user=self.user).age_on())
+
+        export = self.client.get("/api/v1/auth/profile/export")
+        self.assertEqual(export.status_code, 200)
+        self.assertEqual(export.headers["Cache-Control"], "private, no-store")
+        self.assertEqual(export.json()["schema_version"], "person-profile-export/1.0.0")
+        self.assertEqual(export.json()["identity"]["birth_date"], "2003-08-19")
+        audit = AuditEvent.objects.get(action="PERSON_IDENTITY_SELF_RECTIFIED")
+        self.assertEqual(
+            audit.metadata["changed_fields"],
+            [
+                "birth_date",
+                "first_name",
+                "first_surname",
+                "middle_names",
+                "preferred_name",
+                "second_surname",
+            ],
+        )
+        self.assertNotIn("María", str(audit.metadata))
+        self.assertTrue(AuditEvent.objects.filter(action="PERSON_IDENTITY_EXPORTED").exists())
+
+    def test_person_profile_update_requires_csrf_and_current_version(self) -> None:
+        self.client.force_login(self.user)
+        profile = PersonProfile.objects.create(
+            user=self.user,
+            first_name="Actual",
+            first_surname="Persona",
+            birth_date="2000-01-01",
+            birth_date_purpose="ACADEMIC_ADMINISTRATION",
+            data_status="CONFIRMED",
+            verification_method=IdentityVerificationMethod.INSTITUTION_VERIFIED,
+        )
+        payload = {
+            "first_name": "Cambio",
+            "first_surname": "Persona",
+            "birth_date": "2000-01-01",
+        }
+        denied = self.client.patch(
+            "/api/v1/auth/profile",
+            payload,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{profile.updated_at.isoformat()}"',
+        )
+        self.assertEqual(denied.status_code, 403)
+        stale = self.client.patch(
+            "/api/v1/auth/profile",
+            payload,
+            content_type="application/json",
+            HTTP_IF_MATCH='"stale"',
+            **self.csrf_headers(),
+        )
+        self.assertEqual(stale.status_code, 409)
+        profile.refresh_from_db()
+        self.assertEqual(profile.first_name, "Actual")
+
+        institutional = self.client.patch(
+            "/api/v1/auth/profile",
+            payload,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{profile.updated_at.isoformat()}"',
+            **self.csrf_headers(),
+        )
+        self.assertEqual(institutional.status_code, 409)
+        profile.refresh_from_db()
+        self.assertEqual(profile.first_name, "Actual")
+        self.assertEqual(
+            profile.verification_method,
+            IdentityVerificationMethod.INSTITUTION_VERIFIED,
+        )
+
+    @override_settings(API_MUTATION_RATE_LIMIT_PER_MINUTE=1)  # type: ignore[untyped-decorator]
+    def test_person_profile_update_uses_authenticated_mutation_rate_limit(self) -> None:
+        self.client.force_login(self.user)
+        self.assertTrue(
+            consume_rate_limit(key=f"user:{self.user.pk}", action="api:mutation", limit=1)
+        )
+        response = self.client.patch(
+            "/api/v1/auth/profile",
+            {
+                "first_name": "Ana",
+                "first_surname": "Persona",
+                "birth_date": "2000-01-01",
+            },
+            content_type="application/json",
+            HTTP_IF_MATCH='"missing"',
+            **self.csrf_headers(),
+        )
+        self.assertEqual(response.status_code, 429)
+        self.assertFalse(PersonProfile.objects.filter(user=self.user).exists())
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")  # type: ignore[untyped-decorator]
     def test_password_reset_is_non_enumerating_and_invalidates_token(self) -> None:

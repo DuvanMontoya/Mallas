@@ -13,6 +13,12 @@ from modules.curriculum.models import (
     CurriculumRevision,
     RequirementGroup,
 )
+from modules.identity.models import (
+    BirthDatePurpose,
+    IdentityDataStatus,
+    IdentityVerificationMethod,
+    PersonProfile,
+)
 from modules.institutions.models import Campus, Faculty, Institution, Program
 from modules.offerings.models import AcademicTerm
 from modules.student_records.models import ProgramEnrollment, StudentProfile
@@ -58,17 +64,26 @@ def foundation(*, suffix: str = "") -> dict[str, Any]:
         institution=institution,
         campus=campus,
         code=f"2026-1{suffix}",
-        starts_at=datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
+        starts_at=datetime.datetime(2026, 1, 1, 5, tzinfo=datetime.UTC),
         ends_at=datetime.datetime(2026, 6, 30, tzinfo=datetime.UTC),
     )
     user = get_user_model().objects.create_user(
         email=f"student{suffix}@example.test", password="safe-test-password"
     )
+    person = PersonProfile.objects.create(
+        user=user,
+        first_name="Test",
+        first_surname="Student",
+        birth_date=datetime.date(2000, 1, 1),
+        birth_date_purpose=BirthDatePurpose.ACADEMIC_ADMINISTRATION,
+        data_status=IdentityDataStatus.CONFIRMED,
+        verification_method=IdentityVerificationMethod.INSTITUTION_VERIFIED,
+    )
     student = StudentProfile.objects.create(
         user=user,
         institution=institution,
         student_number=f"S{suffix or '0'}",
-        display_name="Test Student",
+        legacy_display_name="",
     )
     enrollment = ProgramEnrollment.objects.create(
         student=student,

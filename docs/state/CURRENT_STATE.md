@@ -1,8 +1,71 @@
 # Current State
 
+## P101 cerrado; P102 siguiente — 2026-08-19
+
+### Terminado en esta sesión
+
+- P100 permanece cerrado con el alcance multiprograma, la especificación visual,
+  el inventario de hardcodes y el prototipo esquemático de `Mi malla`.
+- P101 incorporó `PersonProfile` 1:1 con `User`: nombres y apellidos separados,
+  nombre preferido, fecha de nacimiento protegida, edad derivada, estado y
+  método explícito de verificación.
+- Se migró `StudentProfile.display_name` a `legacy_display_name` sin dividir
+  nombres por heurística. El backfill conserva perfiles rectificados al revertir
+  y la base impone los invariantes representables de identidad confirmada.
+- La procedencia histórica se clasifica sólo con evidencia de auditoría:
+  `SELF_DECLARED`, `INSTITUTION_VERIFIED` o `PREEXISTING_UNCLASSIFIED`; una
+  identidad institucional o heredada sin procedencia no puede ser sobrescrita
+  por autoservicio.
+- El alta y la rectificación administrativas usan campos estructurados, bloqueo
+  canónico, ETag/`If-Match`, CSRF, códigos de motivo sin PII y MFA privilegiado
+  fail-closed. El listado masivo está minimizado y la fecha de nacimiento sólo
+  se carga bajo demanda, con auditoría, `no-store` y rate limit.
+- `/profile` permite revisar y actualizar identidad autorizada y exportar sólo
+  los datos de identidad, explicando finalidad, acceso, retención y el canal para
+  solicitar una copia integral. Las respuestas sensibles usan `no-store`.
+- OpenAPI y el cliente TypeScript fueron regenerados; el contrato legacy de alta
+  conserva `display_name` sin adivinar su estructura y marca el caso para revisión.
+- Arquitectura, código, seguridad y UX terminaron la reauditoría de P101 con
+  cero hallazgos Critical/High.
+
+### Verificaciones
+
+- `python3 scripts/verify.py`: PASS; 188 tests backend y un skip esperado del
+  trigger PostgreSQL, 49 tests frontend, migraciones, OpenAPI/cliente, Ruff,
+  mypy, ESLint, TypeScript, secretos, SAST, anti-MVP e invariantes curriculares.
+- Build production de Next.js 16.3.1: PASS, incluida la ruta `/profile`.
+- Suites focalizadas finales: 37 tests backend y cinco pruebas frontend/axe,
+  incluidas rectificación múltiple, MFA, minimización y cierre de detalle.
+- Diff breaking de OpenAPI, `git diff --check` y revisiones independientes:
+  PASS. Docker no existe en este host; la repetición PostgreSQL production-like
+  continúa siendo un gate explícito de P109.
+
+### No terminado / siguiente acción exacta
+
+- P102-P109 no están terminados y el producto todavía no está `READY`.
+- La siguiente acción exacta es P102: archivar evidencia institucional de la
+  fecha de publicación/aplicabilidad del Acuerdo 496 y de transiciones,
+  reingresos y grandfathering; después modelar `CurriculumAssignmentPolicy`,
+  implementar el resolver determinista y conectar preview, alta y onboarding.
+  Programa + contexto de ingreso deben producir una única asignación verificable
+  o `NEEDS_REVIEW`; cero o múltiples coincidencias nunca seleccionan la primera.
+- La auditoría preliminar P102 confirmó que 2023-05-09 es fecha de expedición,
+  no una fecha de publicación demostrada. El artículo 6 condiciona la vigencia a
+  la publicación; por ello la política 2514 permanece `UNKNOWN` y no se sembrará
+  como `VERIFIED` con la evidencia actual.
+- Las columnas del PDF y la tarjeta `Inglés VI` siguen sin interpretación
+  normativa; deben resolverse mediante revisión curricular humana.
+- No se creó commit, no se hizo push y no se desplegó.
+
 ## Snapshot
 
-P00–P10 están terminados y verificados. El repositorio tiene backend Django modular, frontend Next.js con shell responsive/role-aware, design system accesible y malla curricular interactiva, cliente TypeScript generado con frescura comprobable, Compose PostgreSQL, ingestión normativa idempotente, AST/evaluador académico puro, auditoría de grado determinista con ledger de créditos, identidad con ownership/RBAC, sesiones first-party seguras, rate limiting, audit log append-only, historia académica con importación privada, reconciliación y evidencia, contrato API v1 con errores correlacionables, paginación, concurrencia optimista e idempotencia, read models `academic-overview` y `curriculum-map`, dashboard auditado y E2E de estudiante/malla; todo sobre un núcleo persistente multiinstitución separado del dominio puro. Las capacidades de producto restantes se construirán en P11–P26.
+P00–P23, P93, P95 y P99 figuran `done`; P24–P26, P90–P92, P94 y P98
+siguen `in_progress`. El repositorio tiene un núcleo funcional avanzado, pero no
+está `READY`. El rebaseline solicitado se planificó como P100–P109; P100 y P101
+están `done`, mientras P102–P109 siguen `pending`: asignación automática, layout
+de fuente versionado, malla como inicio, experiencia completa de
+elecciones/requisitos, operación multiprograma real, cobertura total del
+universo de release, aceptación integrada y release production-like.
 
 ## Terminado en P00
 

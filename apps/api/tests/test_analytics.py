@@ -48,7 +48,10 @@ class AnalyticsApiTests(TestCase):
 
     def test_needs_review_returns_a_complete_safe_analytics_payload(self) -> None:
         self.data["enrollment"].status = "NEEDS_REVIEW"
-        self.data["enrollment"].save(update_fields=["status", "updated_at"])
+        self.data["enrollment"].review_reasons = ["LEGACY_REVIEW"]
+        self.data["enrollment"].save(
+            update_fields=["status", "review_reasons", "updated_at"]
+        )
         self.client.force_login(self.data["user"])
 
         response = self.client.get("/api/v1/analytics/student")
@@ -88,7 +91,7 @@ class AnalyticsApiTests(TestCase):
             user=second_user,
             institution=self.data["institution"],
             student_number="S-analytics-2",
-            display_name="Second Student",
+            legacy_display_name="Second Student",
         )
         second_enrollment = ProgramEnrollment.objects.create(
             student=second_student,

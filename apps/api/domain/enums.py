@@ -119,6 +119,39 @@ class EnrollmentStatus(StrEnum):
     NEEDS_REVIEW = "NEEDS_REVIEW"
 
 
+class CurriculumAssignmentContext(StrEnum):
+    ADMISSION = "ADMISSION"
+    REENTRY = "REENTRY"
+    TRANSFER = "TRANSFER"
+    DUAL_DEGREE = "DUAL_DEGREE"
+    PLAN_TRANSITION = "PLAN_TRANSITION"
+
+
+class CurriculumAssignmentPolicyStatus(StrEnum):
+    DRAFT = "DRAFT"
+    IN_REVIEW = "IN_REVIEW"
+    PUBLISHED = "PUBLISHED"
+    SUPERSEDED = "SUPERSEDED"
+    RETIRED = "RETIRED"
+
+
+class CurriculumAssignmentDecisionStatus(StrEnum):
+    RESOLVED = "RESOLVED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+    UNKNOWN = "UNKNOWN"
+
+
+class CurriculumAssignmentMethod(StrEnum):
+    AUTOMATIC = "AUTOMATIC"
+    POLICY_EVALUATION = "POLICY_EVALUATION"
+    ADMIN_OVERRIDE = "ADMIN_OVERRIDE"
+
+
+class AdmissionFactVerificationMethod(StrEnum):
+    SOURCE_SNAPSHOT = "SOURCE_SNAPSHOT"
+    INSTITUTIONAL_RECORD_REFERENCE = "INSTITUTIONAL_RECORD_REFERENCE"
+
+
 class AttemptStatus(StrEnum):
     PLANNED = "PLANNED"
     ENROLLED = "ENROLLED"

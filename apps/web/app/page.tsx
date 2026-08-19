@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { getAcademicOverview, getSessionSnapshot, type AcademicOverview } from "@/lib/api";
 
@@ -87,6 +88,7 @@ function StudentDecisionHome({ overview }: { overview: AcademicOverview }) {
 export default async function HomePage() {
   const headers = await requestHeaders();
   const session = await getSessionSnapshot(headers);
+  if (session.user?.onboarding_required && !session.user.must_change_password) redirect("/onboarding");
   const editorialOnly = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) && !session.user.student_profile_id && !session.user.roles.includes("STUDENT");
   if (editorialOnly) return <EditorialHome />;
   const overview = await getAcademicOverview({ headers });

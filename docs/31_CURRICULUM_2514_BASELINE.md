@@ -79,7 +79,11 @@ La aplicación debe mostrar `UNKNOWN` hasta verificación.
 
 ## Requisito de lengua extranjera
 
-No forma parte de los 141 créditos. Se modela como requisito no crediticio de grado, versionado por normativa institucional vigente. La página oficial de Admisiones consultada para este kit indica nivel B1.
+No forma parte de los 141 créditos. Se modela como requisito no crediticio de
+grado, versionado por normativa institucional. La página oficial de Admisiones
+consultada para este kit indicó nivel B1, pero el repositorio no conserva todavía
+un snapshot íntegro con hash y vigencia aplicable; por tanto B1 permanece
+`INFERRED_PENDING_REVIEW` y no es publicable como regla verificada.
 
 ## Machine-readable
 

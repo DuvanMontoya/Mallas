@@ -140,6 +140,34 @@ class PlanningScenarioApiTests(TestCase):
         self.assertEqual(stale.status_code, 409)
         self.assertEqual(stale.json()["code"], "STALE_RESOURCE")
 
+    def test_pending_curriculum_rejects_scenario_without_null_dereference(self) -> None:
+        self.enrollment.status = "NEEDS_REVIEW"
+        self.enrollment.plan = None
+        self.enrollment.revision_basis = None
+        self.enrollment.review_reasons = ["CURRICULUM_ASSIGNMENT"]
+        self.enrollment.save(
+            update_fields=(
+                "status",
+                "plan",
+                "revision_basis",
+                "review_reasons",
+                "updated_at",
+            )
+        )
+        response = self._json(
+            "post",
+            "/api/v1/scenarios",
+            {
+                "name": "No puede crearse",
+                "enrollment_id": str(self.enrollment.pk),
+                "target_term_id": str(self.term_two.pk),
+                "preferences": {},
+            },
+        )
+        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.json()["code"], "ENROLLMENT_NEEDS_REVIEW")
+        self.assertFalse(PlanScenario.objects.filter(enrollment=self.enrollment).exists())
+
     def test_prerequisite_ordering_and_same_term_corequisite_are_explicit(self) -> None:
         prerequisite = self._course("STAT201-PLANNING")
         corequisite = self._course("STAT202-PLANNING")

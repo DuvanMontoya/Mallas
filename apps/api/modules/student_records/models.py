@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.db.models import F, Q
 
 from domain.enums import (
     AttemptOrigin,
     AttemptStatus,
+    CurriculumAssignmentDecisionStatus,
+    CurriculumAssignmentMethod,
     EnrollmentStatus,
     ExceptionStatus,
     RecognitionType,
     enum_choices,
 )
+from domain.errors import CurriculumAssignmentDecisionImmutableError
 from modules.common.models import UUIDTimestampedModel
 
 
@@ -24,7 +27,7 @@ class StudentProfile(UUIDTimestampedModel):
         "institutions.Institution", on_delete=models.PROTECT, related_name="student_profiles"
     )
     student_number = models.CharField(max_length=80, blank=True)
-    display_name = models.CharField(max_length=240, blank=True)
+    legacy_display_name = models.CharField(max_length=240, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -41,6 +44,14 @@ class StudentProfile(UUIDTimestampedModel):
 
     def __str__(self) -> str:
         return self.display_name or self.user.email
+
+    @property
+    def display_name(self) -> str:
+        try:
+            person = self.user.person_profile
+        except ObjectDoesNotExist:
+            return self.legacy_display_name
+        return person.full_name or person.preferred_name or self.legacy_display_name
 
     def save(self, *args: object, **kwargs: object) -> None:
         self.full_clean()
@@ -98,10 +109,16 @@ class ProgramEnrollment(UUIDTimestampedModel):
         "institutions.Program", on_delete=models.PROTECT, related_name="student_enrollments"
     )
     plan = models.ForeignKey(
-        "curriculum.CurriculumPlan", on_delete=models.PROTECT, related_name="student_enrollments"
+        "curriculum.CurriculumPlan",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="student_enrollments",
     )
     revision_basis = models.ForeignKey(
         "curriculum.CurriculumRevision",
+        null=True,
+        blank=True,
         on_delete=models.PROTECT,
         related_name="student_enrollments",
     )
@@ -115,13 +132,29 @@ class ProgramEnrollment(UUIDTimestampedModel):
     )
     cohort_code = models.CharField(max_length=80, blank=True)
     transition_events = models.JSONField(default=list, blank=True)
+    review_reasons = models.JSONField(default=list, blank=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["student", "program", "admission_term"],
                 name="enrollment_student_program_term_unique",
-            )
+            ),
+            models.CheckConstraint(
+                condition=(Q(plan__isnull=True) & Q(revision_basis__isnull=True))
+                | (Q(plan__isnull=False) & Q(revision_basis__isnull=False)),
+                name="enrollment_plan_revision_both_or_neither",
+            ),
+            models.CheckConstraint(
+                condition=Q(status=EnrollmentStatus.NEEDS_REVIEW.value)
+                | (Q(plan__isnull=False) & Q(revision_basis__isnull=False)),
+                name="enrollment_resolved_status_has_curriculum",
+            ),
+            models.CheckConstraint(
+                condition=(Q(status=EnrollmentStatus.NEEDS_REVIEW.value) & ~Q(review_reasons=[]))
+                | (~Q(status=EnrollmentStatus.NEEDS_REVIEW.value) & Q(review_reasons=[])),
+                name="enrollment_review_status_matches_reasons",
+            ),
         ]
         indexes = [
             models.Index(fields=["student", "status"], name="enrollment_student_status_idx"),
@@ -129,6 +162,23 @@ class ProgramEnrollment(UUIDTimestampedModel):
         ]
 
     def clean(self) -> None:
+        if not isinstance(self.review_reasons, list) or any(
+            not isinstance(reason, str) or not reason.strip() for reason in self.review_reasons
+        ):
+            raise ValidationError(
+                {"review_reasons": "Review reasons must be a list of non-empty codes."}
+            )
+        if len(self.review_reasons) != len(set(self.review_reasons)):
+            raise ValidationError({"review_reasons": "Review reasons cannot be duplicated."})
+        requires_review = self.status == EnrollmentStatus.NEEDS_REVIEW.value
+        if requires_review != bool(self.review_reasons):
+            raise ValidationError(
+                {"review_reasons": "Review reasons must match the enrollment review status."}
+            )
+        if self.plan_id is None and "CURRICULUM_ASSIGNMENT" not in self.review_reasons:
+            raise ValidationError(
+                {"review_reasons": "An unresolved curriculum requires assignment review."}
+            )
         if self.plan_id and self.plan.program_id != self.program_id:
             raise ValidationError({"plan": "Enrollment plan must belong to the selected program."})
         if self.revision_basis_id and self.revision_basis.plan_id != self.plan_id:
@@ -148,6 +198,284 @@ class ProgramEnrollment(UUIDTimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.student} — {self.program.name}"
+
+
+class StudentOnboarding(UUIDTimestampedModel):
+    class HistoryStepStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        IMPORTED = "IMPORTED", "Imported"
+        SKIPPED = "SKIPPED", "Skipped for now"
+
+    class TourStatus(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        COMPLETED = "COMPLETED", "Completed"
+        SKIPPED = "SKIPPED", "Skipped"
+
+    enrollment = models.OneToOneField(
+        ProgramEnrollment, on_delete=models.PROTECT, related_name="onboarding"
+    )
+    identity_confirmed_at = models.DateTimeField(null=True, blank=True)
+    history_step_status = models.CharField(
+        max_length=16,
+        choices=HistoryStepStatus.choices,
+        default=HistoryStepStatus.PENDING,
+    )
+    current_term = models.ForeignKey(
+        "offerings.AcademicTerm",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="student_onboarding_selections",
+    )
+    planning_load_target = models.PositiveSmallIntegerField(null=True, blank=True)
+    tour_status = models.CharField(
+        max_length=16,
+        choices=TourStatus.choices,
+        default=TourStatus.PENDING,
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(planning_load_target__isnull=True)
+                | Q(planning_load_target__gte=1, planning_load_target__lte=30),
+                name="onboarding_planning_load_target_range",
+            )
+        ]
+
+    @property
+    def is_complete(self) -> bool:
+        return self.completed_at is not None
+
+
+class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
+    enrollment = models.ForeignKey(
+        ProgramEnrollment, on_delete=models.PROTECT, related_name="assignment_override_authorizations"
+    )
+    plan = models.ForeignKey(
+        "curriculum.CurriculumPlan",
+        on_delete=models.PROTECT,
+        related_name="assignment_override_authorizations",
+    )
+    revision_basis = models.ForeignKey(
+        "curriculum.CurriculumRevision",
+        on_delete=models.PROTECT,
+        related_name="assignment_override_authorizations",
+    )
+    reason_code = models.CharField(max_length=120)
+    evidence = models.ForeignKey(
+        "governance.Evidence",
+        on_delete=models.PROTECT,
+        related_name="assignment_override_authorizations",
+    )
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    prepared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="prepared_assignment_override_authorizations",
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="approved_assignment_override_authorizations",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    revision_content_hash = models.CharField(max_length=128, blank=True)
+    revision_source_set_hash = models.CharField(max_length=128, blank=True)
+    sealed_snapshot_id = models.UUIDField(null=True, blank=True)
+    sealed_snapshot_sha256 = models.CharField(max_length=64, blank=True)
+    sealed_storage_key_hash = models.CharField(max_length=64, blank=True)
+    sealed_excerpt_hash = models.CharField(max_length=128, blank=True)
+    content_hash = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["enrollment", "status"], name="assignment_override_auth_enroll_idx"
+            )
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(status="APPROVED")
+                | (
+                    Q(approved_by__isnull=False)
+                    & Q(approved_at__isnull=False)
+                    & ~Q(content_hash="")
+                    & ~Q(revision_content_hash="")
+                    & ~Q(revision_source_set_hash="")
+                    & Q(sealed_snapshot_id__isnull=False)
+                    & ~Q(sealed_snapshot_sha256="")
+                    & ~Q(sealed_storage_key_hash="")
+                    & ~Q(sealed_excerpt_hash="")
+                ),
+                name="assignment_override_approved_is_sealed",
+            ),
+            models.CheckConstraint(
+                condition=Q(approved_by__isnull=True) | ~Q(approved_by=F("prepared_by")),
+                name="assignment_override_separates_approval",
+            ),
+        ]
+
+    def clean(self) -> None:
+        if self.plan_id and self.plan.program_id != self.enrollment.program_id:
+            raise ValidationError({"plan": "Override plan must belong to the enrollment program."})
+        if self.revision_basis_id and self.revision_basis.plan_id != self.plan_id:
+            raise ValidationError({"revision_basis": "Override revision must belong to its plan."})
+        if self.approved_by_id and self.approved_by_id == self.prepared_by_id:
+            raise ValidationError({"approved_by": "A different person must approve the override."})
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).first()
+            if previous and previous.status == self.Status.APPROVED:
+                raise ValidationError("An approved curriculum override authorization is immutable.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class CurriculumAssignmentDecision(UUIDTimestampedModel):
+    enrollment = models.ForeignKey(
+        ProgramEnrollment, on_delete=models.PROTECT, related_name="assignment_decisions"
+    )
+    policy = models.ForeignKey(
+        "curriculum.CurriculumAssignmentPolicy",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="assignment_decisions",
+    )
+    status = models.CharField(
+        max_length=24, choices=enum_choices(CurriculumAssignmentDecisionStatus)
+    )
+    method = models.CharField(max_length=24, choices=enum_choices(CurriculumAssignmentMethod))
+    resolver_version = models.CharField(max_length=32)
+    input_data = models.JSONField()
+    reason_codes = models.JSONField(default=list)
+    candidates = models.JSONField(default=list, blank=True)
+    selected_plan = models.ForeignKey(
+        "curriculum.CurriculumPlan",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="assignment_decisions",
+    )
+    selected_revision = models.ForeignKey(
+        "curriculum.CurriculumRevision",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="assignment_decisions",
+    )
+    decision_hash = models.CharField(max_length=64)
+    override_reason_code = models.CharField(max_length=120, blank=True)
+    override_evidence = models.ForeignKey(
+        "governance.Evidence",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="curriculum_assignment_override_decisions",
+    )
+    override_authorization = models.ForeignKey(
+        "student_records.CurriculumAssignmentOverrideAuthorization",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="assignment_decisions",
+    )
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="curriculum_assignment_decisions",
+    )
+
+    class Meta:
+        ordering = ["enrollment", "created_at", "id"]
+        indexes = [
+            models.Index(
+                fields=["enrollment", "-created_at"], name="assignment_decision_enroll_idx"
+            ),
+            models.Index(fields=["decision_hash"], name="assignment_decision_hash_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(status=CurriculumAssignmentDecisionStatus.RESOLVED.value)
+                | (
+                    Q(selected_plan__isnull=False)
+                    & Q(selected_revision__isnull=False)
+                    & (
+                        Q(policy__isnull=False)
+                        | (
+                            Q(method=CurriculumAssignmentMethod.ADMIN_OVERRIDE.value)
+                            & Q(override_evidence__isnull=False)
+                            & Q(override_authorization__isnull=False)
+                        )
+                    )
+                ),
+                name="assignment_resolved_has_policy_target",
+            ),
+            models.CheckConstraint(
+                condition=~Q(method=CurriculumAssignmentMethod.AUTOMATIC.value)
+                | Q(status=CurriculumAssignmentDecisionStatus.RESOLVED.value),
+                name="assignment_automatic_is_resolved",
+            ),
+            models.CheckConstraint(
+                condition=(Q(selected_plan__isnull=True) & Q(selected_revision__isnull=True))
+                | (Q(selected_plan__isnull=False) & Q(selected_revision__isnull=False)),
+                name="assignment_selected_target_both_or_neither",
+            ),
+            models.CheckConstraint(
+                condition=~Q(method=CurriculumAssignmentMethod.ADMIN_OVERRIDE.value)
+                | (
+                    Q(decided_by__isnull=False)
+                    & ~Q(override_reason_code="")
+                    & Q(override_evidence__isnull=False)
+                    & Q(override_authorization__isnull=False)
+                    & Q(selected_plan__isnull=False)
+                    & Q(selected_revision__isnull=False)
+                ),
+                name="assignment_override_has_actor_reason_target",
+            ),
+        ]
+
+    def clean(self) -> None:
+        if self.selected_plan_id and self.selected_plan.program_id != self.enrollment.program_id:
+            raise ValidationError(
+                {"selected_plan": "Assignment decision plan must belong to the enrollment program."}
+            )
+        if self.selected_revision_id and self.selected_revision.plan_id != self.selected_plan_id:
+            raise ValidationError(
+                {"selected_revision": "Assignment decision revision must belong to its plan."}
+            )
+        if self.policy_id and (
+            self.policy.plan_id != self.selected_plan_id
+            or self.policy.revision_basis_id != self.selected_revision_id
+        ):
+            raise ValidationError(
+                {"policy": "Assignment decision target must match the selected policy."}
+            )
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise CurriculumAssignmentDecisionImmutableError(
+                "Curriculum assignment decisions are append-only."
+            )
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        raise CurriculumAssignmentDecisionImmutableError(
+            "Curriculum assignment decisions cannot be deleted."
+        )
 
 
 class CourseAttempt(UUIDTimestampedModel):

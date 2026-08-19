@@ -2,25 +2,32 @@ from __future__ import annotations
 
 import logging
 from binascii import Error as Base64Error
+from datetime import date, datetime
 from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.mail import send_mail
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from ninja import Router, Schema, Status
+from ninja import Header, Router, Schema, Status
 from ninja.errors import HttpError
 from ninja.security import APIKeyCookie, django_auth
 
 from modules.common.api import with_problem_responses
 from modules.identity.application.audit import digest_identifier, record_audit_event
 from modules.identity.application.authorization import roles_for
+from modules.identity.application.profile import (
+    PersonProfileError,
+    person_profile_export,
+    person_profile_view,
+    update_own_person_profile,
+)
 from modules.identity.application.rate_limit import consume_rate_limit
 from modules.identity.models import User
 
@@ -88,6 +95,7 @@ class UserView(Schema):
     roles: list[str]
     student_profile_id: str | None
     must_change_password: bool
+    onboarding_required: bool
 
 
 class AuthView(Schema):
@@ -103,11 +111,61 @@ class CsrfView(Schema):
     csrf_token: str
 
 
+class PersonProfileView(Schema):
+    email: str
+    first_name: str
+    middle_names: str
+    first_surname: str
+    second_surname: str
+    preferred_name: str
+    birth_date: date | None
+    age: int | None
+    data_status: str
+    verification_method: str
+    version: str
+
+
+class PersonProfileUpdatePayload(Schema):
+    first_name: str
+    middle_names: str = ""
+    first_surname: str
+    second_surname: str = ""
+    preferred_name: str = ""
+    birth_date: date
+
+
+class PersonProfileExportAccount(Schema):
+    email: str
+
+
+class PersonProfileExportIdentity(Schema):
+    first_name: str
+    middle_names: str
+    first_surname: str
+    second_surname: str
+    preferred_name: str
+    birth_date: date | None
+    data_status: str
+    verification_method: str
+
+
+class PersonProfileExportView(Schema):
+    schema_version: str
+    exported_at: datetime
+    account: PersonProfileExportAccount
+    identity: PersonProfileExportIdentity
+
+
 def _user_view(user: User) -> dict[str, Any]:
     try:
-        student_profile_id: str | None = str(user.student_profile.pk)
+        student_profile = user.student_profile
+        student_profile_id: str | None = str(student_profile.pk)
+        onboarding_required = student_profile.program_enrollments.filter(
+            onboarding__completed_at__isnull=True
+        ).exists()
     except User.student_profile.RelatedObjectDoesNotExist:
         student_profile_id = None
+        onboarding_required = False
     return {
         "id": user.pk,
         "email": user.email,
@@ -115,6 +173,7 @@ def _user_view(user: User) -> dict[str, Any]:
         "roles": list(roles_for(user)),
         "student_profile_id": student_profile_id,
         "must_change_password": user.must_change_password,
+        "onboarding_required": onboarding_required,
     }
 
 
@@ -253,6 +312,54 @@ def logout_view(request: HttpRequest) -> dict[str, str]:
 @router.get("/me", auth=django_auth, response=with_problem_responses(UserView))
 def me_view(request: HttpRequest) -> dict[str, Any]:
     return _user_view(request.auth)
+
+
+@router.get("/profile", auth=django_auth, response=with_problem_responses(PersonProfileView))
+def profile_view(request: HttpRequest, response: HttpResponse) -> dict[str, Any]:
+    response["Cache-Control"] = "private, no-store"
+    return person_profile_view(request.auth)
+
+
+@router.patch("/profile", auth=django_auth, response=with_problem_responses(PersonProfileView))
+def profile_update(
+    request: HttpRequest,
+    response: HttpResponse,
+    payload: PersonProfileUpdatePayload,
+    if_match: str | None = Header(None, alias="If-Match"),  # type: ignore[type-arg]
+) -> dict[str, Any]:
+    try:
+        profile = update_own_person_profile(
+            actor=request.auth,
+            expected_version=if_match,
+            request=request,
+            **payload.model_dump(),
+        )
+    except PersonProfileError as error:
+        status = (
+            428
+            if error.code == "person_profile_precondition_required"
+            else 409
+            if error.code
+            in {
+                "person_profile_stale_resource",
+                "person_profile_institutional_correction_required",
+            }
+            else 422
+        )
+        raise HttpError(status, str(error)) from error
+    response["Cache-Control"] = "private, no-store"
+    return person_profile_view(profile.user)
+
+
+@router.get(
+    "/profile/export",
+    auth=django_auth,
+    response=with_problem_responses(PersonProfileExportView),
+)
+def profile_export(request: HttpRequest, response: HttpResponse) -> dict[str, Any]:
+    record_audit_event(request, action="PERSON_IDENTITY_EXPORTED", actor=request.auth)
+    response["Cache-Control"] = "private, no-store"
+    return person_profile_export(request.auth)
 
 
 @router.post(

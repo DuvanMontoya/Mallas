@@ -13,8 +13,17 @@
 | Analítica agregada institucional | | | | | ✓ | ✓ |
 | Analítica estudiantil propia/asignada | ✓ | ✓* | | | | ✓* |
 | Ver PII analítica | | | | | ✗ | ✗ |
+| Ver/rectificar identidad propia | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Exportar identidad propia | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ver/rectificar identidad estudiantil | | | | | | ✓* |
 
 `✓*` no significa acceso arbitrario; debe auditarse y justificarse.
+
+La rectificación propia se limita siempre al `User` de la sesión. La
+rectificación administrativa requiere alcance institucional y de programa
+vigente; un UUID de matrícula nunca concede acceso por sí mismo. Asesores no
+reciben fecha de nacimiento en P101: cualquier necesidad posterior exige
+propósito, delegación y una nueva revisión de privacidad.
 
 ## Separación de funciones
 

@@ -632,3 +632,66 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
   administrativa. No se versionaron credenciales.
 - Commits locales `26da42c` y `f3ec82b` creados; push pendiente por ausencia
   de credenciales HTTPS de GitHub y de `gh` en este host (`main` está ahead 2).
+# Sesión 2026-08-18 — rebaseline multiprograma y malla visual
+
+- Se contrastó la implementación con el PDF visual de Estadística aportado por
+  el usuario y con las fuentes/estados del repositorio.
+- Hallazgos: multiprograma sólo demostrado de forma sintética; alta con
+  `display_name` monolítico; falta fecha de nacimiento/edad derivada; selección
+  curricular demasiado técnica; inicio no es directamente la malla; layout
+  actual deriva profundidad y separa bancos de elección.
+- Se documentó el plan integral P100-P109 en
+  `docs/plans/2026-08-18_PRODUCT_AND_CURRICULUM_UX_COMPLETION_PLAN.md` y se
+  añadieron los riesgos de identidad, posiciones visuales, cobertura falsa e
+  inglés/B1.
+- Se corrigió el alcance canónico: el producto es para pregrados
+  multiprograma/multisede/multiinstitución y Estadística es la primera
+  referencia real, no el alcance final.
+- Revisiones independientes read-only de arquitectura, UX y currículo
+  detectaron que el PDF no tenía procedencia archivada, que libre elección/B1
+  no podían mezclarse con su transcripción, que las ocurrencias repetidas no son
+  requisitos distintos y que dos programas no equivalen a cobertura total.
+  Todos los Critical/High se integraron en P100-P109.
+- No se cambió código de producto, esquema, reglas ni revisiones publicadas.
+- Comandos: `git status`, `git log`, `rg`, `sed`, `pdfinfo`, `pdftotext`,
+  `pdftoppm` e inspección visual del PNG.
+
+## 2026-08-19 — P100 cerrado
+
+- Se creó `docs/42_CURRICULUM_WORKSPACE_SPEC.md`, el registro visual 2514, el
+  inventario exhaustivo de 87 hardcodes y el walkthrough de aceptación.
+- Se construyó y probó en Chrome un prototipo interactivo esquemático de
+  `Mi malla`: desktop, tablet, 320 px, capas, drawer, Escape, foco, backdrop,
+  banco repetido y nombres accesibles.
+- Se corrigieron cuatro rondas de revisión hasta llegar a 0 Critical/High de
+  `architecture-reviewer`, `ux-reviewer` y `curriculum-auditor`.
+- Verificaciones: render del fragmento PASS; `git diff --check` PASS;
+  `python3 scripts/verify_state_recovery.py` PASS; conteo reproducible 87/87.
+- P100 pasó de `pending` a `done`. Siguiente acción: P101 `PersonProfile`.
+
+## 2026-08-19 — P101 cerrado
+
+- Se implementó `PersonProfile` 1:1 con identidad estructurada, fecha de
+  nacimiento protegida, edad derivada, procedencia y constraints de base.
+- Las migraciones preservan `legacy_display_name`, no dividen nombres por
+  heurística y no borran identidades rectificadas al revertir el backfill.
+- Autoservicio y administración incorporan ETag, auditoría sin valores PII,
+  minimización, detalle bajo demanda, `no-store`, rate limits y MFA privilegiado
+  fail-closed para consulta, rectificación y alta.
+- El frontend añadió `/profile`, alta estructurada y rectificación accesible;
+  una lectura pendiente se invalida al cerrar y el detalle sensible no se eleva
+  al estado del listado.
+- OpenAPI/cliente y documentación de dominio, API, privacidad y autorización se
+  actualizaron. Arquitectura, código, seguridad y UX finalizaron con 0
+  Critical/High.
+- `python3 scripts/verify.py` PASS: 188 backend + un skip esperado PostgreSQL,
+  49 frontend y todos los gates estáticos/contrato. Build Next PASS; suites
+  focalizadas finales: 37 backend y cinco frontend/axe.
+- Docker no está instalado en este host; P109 repetirá migraciones, concurrencia
+  y sistema completo sobre PostgreSQL production-like. No hubo commit, push ni
+  despliegue. Siguiente acción: P102, asignación curricular automática.
+- La auditoría preliminar de P102 encontró un bloqueo normativo: el Acuerdo 496
+  rige desde su publicación, pero el repositorio sólo demuestra su expedición el
+  2023-05-09 y no contiene reglas de transición, reingreso o grandfathering. La
+  búsqueda oficial confirmó el registro del acuerdo y su uso actual, no la fecha
+  ni las reglas faltantes. Se registró D-010; no se inventó una política 2514.

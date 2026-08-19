@@ -40,8 +40,8 @@ class StudentAnalyticsView(Schema):
     enrollment_id: UUID
     program_code: str
     program_name: str
-    plan_code: str
-    revision_code: str
+    plan_code: str | None
+    revision_code: str | None
     snapshot: dict[str, Any] | None
     metrics: dict[str, Any]
     definitions: list[AnalyticsDefinitionView]

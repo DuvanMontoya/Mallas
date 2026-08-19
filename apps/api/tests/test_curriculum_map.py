@@ -81,7 +81,7 @@ class CurriculumMapApiTests(TestCase):
             user=user,
             institution=institution,
             student_number="MAP-1",
-            display_name="Map Student",
+            legacy_display_name="Map Student",
         )
         enrollment = ProgramEnrollment.objects.create(
             student=student,

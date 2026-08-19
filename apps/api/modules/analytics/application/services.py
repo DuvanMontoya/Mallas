@@ -357,8 +357,12 @@ def build_student_analytics(actor: Any, enrollment_id: UUID | str | None = None)
             "enrollment_id": enrollment.pk,
             "program_code": enrollment.program.code,
             "program_name": enrollment.program.name,
-            "plan_code": enrollment.plan.code,
-            "revision_code": enrollment.revision_basis.revision_code,
+            "plan_code": enrollment.plan.code if enrollment.plan_id else None,
+            "revision_code": (
+                enrollment.revision_basis.revision_code
+                if enrollment.revision_basis_id
+                else None
+            ),
             "snapshot": None,
             "metrics": {
                 "credits": None,

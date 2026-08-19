@@ -9,8 +9,8 @@ and the rule-engine AST version.
 The current bounded-context routers are:
 
 - `Operations`: `/health/live`, `/health/ready`, and the generated `/openapi.json`;
-- `Identity`: `/auth/csrf`, `/auth/login`, `/auth/logout`, `/auth/me`, password reset,
-  and email verification;
+- `Identity`: `/auth/csrf`, `/auth/login`, `/auth/logout`, `/auth/me`,
+  `/auth/profile`, `/auth/profile/export`, password reset, and email verification;
 - `Student history`: `/history/imports`, `/history/attempts`, and their preview,
   reconciliation, confirmation, and mutation operations.
 - `Curriculum`: `/curriculum-map`, a provenance-aware public read model for a
@@ -25,6 +25,53 @@ The broader product resources (curriculum, offerings, planning, optimization,
 governance, and analytics) keep their domain ownership and are added as separate
 routers when their application service and evidence contract are published. A
 frontend feature must not invent an endpoint or duplicate a domain rule locally.
+
+## Structured identity and data access
+
+`GET /api/v1/auth/profile` returns only the authenticated person's structured
+identity, derived age, quality state and optimistic-concurrency `version`.
+`PATCH /api/v1/auth/profile` requires CSRF and `If-Match`; a missing
+precondition is `428` and a stale representation is `409`. The mutation
+normalizes whitespace, never guesses how to split legacy names, and records
+only changed field names in the append-only audit log.
+
+`GET /api/v1/auth/profile/export` returns a portable, versioned JSON projection
+of account email and identity fields. It excludes password material, session
+data, roles, internal metadata and audit records. Administrative identity
+reads and mutations live under `/api/v1/admin/students/enrollments`; they
+require an active institution/program scope and the same concurrency contract.
+The collection is minimized and excludes birth date, age and structured
+identity fields. `GET /admin/students/enrollments/{id}/identity` loads private
+detail on demand, emits an access event and responds `private, no-store`; its
+PATCH accepts stable verified-reason codes rather than free text that could
+copy PII into audit metadata. The legacy create shape remains compatible:
+`display_name` is preserved without splitting it, the profile stays
+`LEGACY_UNSTRUCTURED` and the enrollment requires review.
+In production the detail read requires the privileged-MFA session assertion
+and a dedicated per-admin read budget. Self profile reads, mutations and
+exports also respond `private, no-store`. Self-service cannot overwrite an
+institution-verified or preexisting-unclassified identity.
+Creating or rectifying an institution-verified identity independently
+rechecks the privileged-MFA assertion and returns a minimized summary after
+creation/revision operations; only the explicit identity detail response
+contains the private fields.
+Birth date is not returned by `/auth/me`, public curriculum, analytics or
+observability endpoints.
+
+## Asignación curricular administrativa
+
+`POST /api/v1/admin/students/assignment-preview` recibe programa, período,
+contexto, cohorte y plan anterior opcional. Devuelve estado, razones, todos los
+candidatos trazables, política/objetivo seleccionados cuando existe una única
+regla verificada, procedencia del período, versión del resolver y
+`decision_hash`.
+
+El alta nueva envía `expected_assignment_hash` y no selecciona plan/revisión.
+El backend repite el resolver dentro de la transacción, rechaza un hash obsoleto
+y persiste la decisión append-only. Cero o múltiples políticas nunca caen en la
+primera revisión disponible. Los campos legacy `plan_id` y
+`revision_basis_id` siguen aceptándose temporalmente, pero sin una política
+verificada producen `NEEDS_REVIEW`, no una matrícula activa.
 
 The authoritative machine-readable contract is
 [`artifacts/openapi.json`](../artifacts/openapi.json). It is exported from the

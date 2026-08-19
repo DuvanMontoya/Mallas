@@ -31,6 +31,13 @@
   --radius-control: .68rem;
 }
 
+.onboarding-workspace { display: grid; gap: 1rem; max-width: 960px; margin: 0 auto; }
+.onboarding-program { display: grid; grid-template-columns: minmax(220px, .7fr) minmax(300px, 1.3fr); gap: 1rem; align-items: center; }
+.onboarding-checklist { display: grid; gap: 1rem; }
+.onboarding-checklist fieldset { border: 0; border-bottom: 1px solid var(--border-default); padding: 0 0 1rem; display: grid; gap: .75rem; }
+.onboarding-checklist legend { font-weight: 750; margin-bottom: .5rem; }
+@media (max-width: 700px) { .onboarding-program { grid-template-columns: 1fr; } }
+
 [data-theme="dark"] {
   color-scheme: dark;
   --surface-canvas: #101915;
@@ -142,7 +149,7 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .notification-locale-field select { max-width: 12rem; border: 1px solid var(--border-default); border-radius: .45rem; background: var(--surface-0); color: var(--text-body); font-size: .67rem; padding: .3rem; }
 .notification-privacy-note { color: var(--text-muted) !important; font-size: .65rem !important; }
 .popover-label { font-size: .65rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.menu-action { display: flex; width: 100%; align-items: center; gap: .55rem; border: 0; border-radius: .55rem; background: transparent; color: var(--text-body); cursor: pointer; margin-top: .9rem; padding: .55rem 0; text-align: left; }
+.menu-action { display: flex; width: 100%; align-items: center; gap: .55rem; border: 0; border-radius: .55rem; background: transparent; color: var(--text-body); cursor: pointer; margin-top: .9rem; padding: .55rem 0; text-align: left; text-decoration: none; }
 .menu-action:hover { color: var(--accent-700); }
 .menu-error { color: var(--status-blocked) !important; }
 .connection-banner { display: flex; align-items: center; gap: .5rem; margin: 0 clamp(1rem, 4vw, 4.5rem) 1rem; border: 1px solid color-mix(in srgb, var(--status-unknown) 28%, var(--border-default)); border-radius: .7rem; background: color-mix(in srgb, var(--status-unknown) 8%, var(--surface-0)); color: var(--text-body); font-size: .74rem; padding: .65rem .8rem; }
@@ -1367,6 +1374,10 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .student-admin-resolution { grid-column: 1 / -1; width: 100%; }
 .student-admin-resolution > summary { cursor: pointer; color: var(--accent-700); font-size: .72rem; font-weight: 800; }
 .student-admin-resolution > div { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(16rem, 1.2fr) auto; align-items: end; gap: .65rem; padding-top: .65rem; }
+.student-admin-resolution > form { padding-top: .65rem; }
+.student-admin-resolution > form fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; border: 1px solid var(--border-default); border-radius: var(--radius-control); margin: 0; padding: .8rem; }
+.student-admin-resolution > form legend { color: var(--text-strong); font-size: .74rem; font-weight: 800; padding: 0 .35rem; }
+.student-admin-resolution > form .button, .student-admin-resolution > form [role="alert"] { grid-column: 1 / -1; justify-self: start; }
 .student-admin-resolution-context { grid-column: 1 / -1; align-self: stretch; display: grid; align-content: center; gap: .2rem; margin: 0; color: var(--text-muted); font-size: .7rem; line-height: 1.4; }
 .student-admin-resolution-context strong { color: var(--text-strong); }
 .sources-evidence-search { margin: .75rem 0; max-width: 32rem; }
@@ -1375,6 +1386,15 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .student-admin-form fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; border: 0; border-top: 1px solid var(--border-default); margin: 0; padding: 1rem 0 0; }
 .student-admin-form legend { grid-column: 1 / -1; color: var(--text-strong); font-size: .76rem; font-weight: 800; padding: 0 .45rem 0 0; }
 .student-admin-form .field-group small { color: var(--text-muted); font-size: .62rem; line-height: 1.35; }
+.profile-settings-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, .38fr); gap: 1rem; margin-top: 1rem; }
+.profile-settings-card, .profile-privacy-card { align-self: start; }
+.person-profile-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+.person-profile-form fieldset { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; border: 0; margin: 0; padding: 0; }
+.person-profile-form .button, .profile-form-summary { grid-column: 1 / -1; justify-self: start; }
+.profile-form-summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem 1rem; border-top: 1px solid var(--border-default); padding-top: 1rem; }
+.profile-form-summary span, .profile-privacy-card p { color: var(--text-muted); }
+.profile-privacy-card h2 { margin: .25rem 0 .75rem; }
 .student-admin-form .button { justify-self: start; }
 @media (max-width: 1040px) { .student-admin-layout { grid-template-columns: 1fr; } }
-@media (max-width: 700px) { .route-command { align-items: stretch; flex-direction: column; } .command-search { width: 100%; } .student-admin-form fieldset { grid-template-columns: 1fr; } .student-admin-rows article { grid-template-columns: minmax(0, 1fr) auto; } .student-admin-rows article > div:nth-child(2) { grid-column: 1 / -1; } .student-admin-resolution > div { grid-template-columns: minmax(0, 1fr); align-items: stretch; } .student-admin-resolution .button { justify-self: start; } }
+@media (max-width: 700px) { .route-command { align-items: stretch; flex-direction: column; } .command-search { width: 100%; } .student-admin-form fieldset, .student-admin-resolution > form fieldset { grid-template-columns: 1fr; } .student-admin-rows article { grid-template-columns: minmax(0, 1fr) auto; } .student-admin-rows article > div:nth-child(2) { grid-column: 1 / -1; } .student-admin-resolution > div { grid-template-columns: minmax(0, 1fr); align-items: stretch; } .student-admin-resolution .button { justify-self: start; } }
+@media (max-width: 800px) { .profile-settings-grid, .person-profile-form, .person-profile-form fieldset { grid-template-columns: 1fr; } }

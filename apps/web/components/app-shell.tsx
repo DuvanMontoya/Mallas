@@ -16,6 +16,7 @@ import {
   Menu,
   Network,
   Users,
+  UserRound,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -203,6 +204,9 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
                 </summary>
                 <div className="profile-popover">
                   <p className="popover-label">{messages["es-CO"].connectionAuthenticated}</p>
+                  <Link className="menu-action" href="/profile">
+                    <UserRound size={16} aria-hidden="true" /> Identidad y privacidad
+                  </Link>
                   <button className="menu-action" type="button" onClick={handleLogout} disabled={isPending}>
                     <LogOut size={16} aria-hidden="true" />
                     {isPending ? "Cerrando…" : messages["es-CO"].signOut}

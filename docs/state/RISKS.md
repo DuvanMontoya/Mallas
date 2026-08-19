@@ -11,6 +11,11 @@
 | Historia PDF extraída mal | High | preview/confirmation/idempotencia |
 | Sobrearquitectura | Medium | monolito modular, ADR gates |
 | Regla duplicada en frontend | High | backend authority + contract tests |
+| Dividir nombres legacy por heurística y corromper identidad | High | conservar `legacy_display_name`; completar campos estructurados sólo con confirmación o fuente autorizada |
+| Persistir edad y dejarla desactualizada | Medium | persistir fecha de nacimiento protegida y derivar edad en la zona horaria institucional |
+| Presentar posiciones del PDF como semestres oficiales | Critical | `CurriculumLayout` con evidencia y estado epistemológico separado de la revisión normativa |
+| Publicar programas sin currículo completo para aparentar cobertura | Critical | matriz de cobertura y pipeline de evidencia/revisión; programas incompletos quedan `EN_VALIDACIÓN` o `SIN_FUENTE` |
+| Contar inglés/B1 dentro de los créditos del plan | High | nodo visual `EXTERNAL_REQUIREMENT` y ledger de cero créditos separado |
 
 ## Riesgos operativos añadidos — 2026-08-17
 
@@ -51,6 +56,31 @@ drill continúan pendientes y por ello P24/P25 permanecen `in_progress`.
 | Latencia alta y timeout en estrés contra servidores de desarrollo | Medium para experiencia / High para release | Repetir carga contra build production-like con PostgreSQL, métricas y presupuesto p95; no extrapolar el resultado dev |
 | Importación muestra enums/JSON técnico y el error de batch puede ser poco accionable | Medium | Localizar etiquetas, resumir por fila/campo, conservar JSON en disclosure y mostrar correlation id/reintento |
 | Confirmación o anulación mediante estado obsoleto | Mitigado | `If-Match` en confirmación, locks batch→candidate y `ANNULLED` rechazado por create/update genéricos; pruebas focalizadas y verify PASS |
+
+## Riesgos P100 — 2026-08-19
+
+| Riesgo | Severidad | Mitigación / evidencia |
+|---|---|---|
+| La referencia visual aportada se interpreta como norma oficial | High | P100 la rotula como referencia de usuario/esquema; P103 exige procedencia archivada, hash y revisión antes de cualquier transcripción publicable |
+| Un cambio de capa oculta la selección sin explicación | Medium | P100 cierra y restaura foco correctamente; P104 debe anunciar explícitamente por qué el elemento dejó de estar visible |
+| Walkthrough experto se confunde con investigación humana | High | Spec, plan y evidencia declaran que no hubo participantes; umbrales reales, lector de pantalla y zoom 400 % permanecen en P104/P108 |
+
+## Riesgos P101 — 2026-08-19
+
+| Riesgo | Severidad | Mitigación / evidencia |
+|---|---|---|
+| Una identidad `PREEXISTING_UNCLASSIFIED` se interpreta como verificada | High | El método se conserva explícito, el autoservicio falla cerrado y la rectificación administrativa requiere revisión, auditoría y MFA |
+| Períodos legales de retención aún no fijados por autoridad competente | High para release | La UI declara la política actual sin inventar plazos; gobierno/privacidad debe aprobar períodos y proceso de supresión antes de producción |
+| Las carreras y constraints sólo se probaron localmente con SQLite | High para release | El diseño bloquea `User` → `PersonProfile` y las suites pasan; P109 debe repetir migración, concurrencia y rollback sobre PostgreSQL production-like |
+| La aserción de MFA privilegiado depende del IdP y su frescura | High para release | Backend falla cerrado cuando MFA es requerido; configurar, probar expiración/step-up y auditar la aserción real del IdP antes de producción |
+
+## Riesgos P102 — 2026-08-19
+
+| Riesgo | Severidad | Mitigación / evidencia |
+|---|---|---|
+| Usar 2023-05-09 como fecha de publicación del Acuerdo 496 | Critical | Es fecha de expedición; mantener aplicabilidad `UNKNOWN` hasta archivar la publicación oficial y revisión humana |
+| Inferir reglas de cohorte, transición o reingreso desde la vigencia general del acuerdo | Critical | Política versionada por contexto con evidencia específica; ausencia o conflicto produce `NEEDS_REVIEW` |
+| Crear un `ProgramEnrollment` sin resolución y rellenar plan/revisión con la primera opción | High | El preview no resuelto bloquea el alta o crea un caso de asignación separado; nunca persiste IDs curriculares ficticios |
 
 ## Riesgos revisados — 2026-08-17 17:30
 

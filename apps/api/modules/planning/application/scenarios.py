@@ -97,6 +97,11 @@ def _enrollment_for_create(actor: Any, enrollment_id: UUID | None) -> ProgramEnr
         raise ScenarioError(
             "You cannot create a scenario for this enrollment.", code="scenario_forbidden"
         )
+    if enrollment.status == "NEEDS_REVIEW" or enrollment.revision_basis_id is None:
+        raise ScenarioError(
+            "A curriculum assignment must be resolved before creating a planning scenario.",
+            code="enrollment_needs_review",
+        )
     return enrollment
 
 
@@ -348,7 +353,11 @@ def recompute_scenario_projection(scenario: PlanScenario) -> ScenarioAuditProjec
             "scenario_id": str(scenario.pk),
             "enrollment_id": str(enrollment.pk),
             "revision_id": str(enrollment.revision_basis_id),
-            "revision_content_hash": enrollment.revision_basis.content_hash,
+            "revision_content_hash": (
+                enrollment.revision_basis.content_hash
+                if enrollment.revision_basis_id
+                else None
+            ),
             "planned": [
                 {
                     "id": str(item.pk),
@@ -374,7 +383,11 @@ def recompute_scenario_projection(scenario: PlanScenario) -> ScenarioAuditProjec
             ],
             "planned_course_codes": [item.course_version.course.code for item in planned],
         }
-        revision_hash = enrollment.revision_basis.content_hash or str(enrollment.revision_basis_id)
+        revision_hash = (
+            enrollment.revision_basis.content_hash or str(enrollment.revision_basis_id)
+            if enrollment.revision_basis_id
+            else "UNRESOLVED"
+        )
         engine_version = ENGINE_VERSION
         result_hash = hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()

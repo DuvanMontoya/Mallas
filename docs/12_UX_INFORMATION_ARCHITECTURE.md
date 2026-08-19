@@ -2,15 +2,18 @@
 
 ## Navegación principal
 
-1. Inicio / Resumen
-2. Mi malla
-3. Auditoría
-4. Dependencias
-5. Planificador
-6. Oferta
-7. Historia
-8. Escenarios
-9. Perfil/preferencias
+1. Mi malla / Inicio
+2. Planificador y escenarios
+3. Historia
+4. Oferta
+5. Dependencias
+6. Auditoría detallada
+7. Perfil/preferencias
+
+`/` es el inicio estudiantil y muestra directamente la malla personalizada.
+`Resumen` deja de ser un destino separado: sus métricas viven en la franja
+contextual de la malla. La especificación completa del rebaseline está en
+`docs/42_CURRICULUM_WORKSPACE_SPEC.md`.
 
 ## Planificador de escenarios
 
@@ -56,26 +59,26 @@ Roles editoriales obtienen:
 13. Publicaciones
 14. Analítica
 
-## Dashboard estudiante
+## Franja contextual de Mi malla
 
-Above the fold:
+La implementación anterior usaba un dashboard separado; P104 lo retira. La
+franja superior de `Mi malla` conserva sólo:
 - avance total;
-- componente con mayor deuda;
-- próximos desbloqueos;
-- cursos elegibles;
-- alertas de requisitos;
-- escenario activo.
+- búsqueda;
+- modo de presentación;
+- período sólo cuando se consulta oferta.
 
 No presentar un «% graduado» engañoso calculado sólo por créditos.
 
-La implementación usa `GET /api/v1/academic-overview` como read model único.
-El dashboard muestra aprobados/aplicados/sin aplicar, progreso por componente y
+La implementación actual usa `GET /api/v1/academic-overview`; P104 lo integra en
+el futuro read model `student-curriculum-workspace`. El drawer y la auditoría
+detallada muestran aprobados/aplicados/sin aplicar, progreso por componente y
 agrupación, obligatorias faltantes, próximos desbloqueos, cursos elegibles y
 bloqueados, requisitos externos, advertencias y `UNKNOWN`. El porcentaje de
 créditos se recibe del backend y siempre se acompaña por el estado global de la
 auditoría y la explicación de sus límites.
 
-Los estados `NO_HISTORY` e `INCOMPLETE` son visibles y accionables: el primero
+Los estados `NO_HISTORY` e `INCOMPLETE` son visibles y accionables en la malla: el primero
 invita a cargar historia sin presentar ceros como progreso; el segundo expone
 cada hecho o requisito no verificable. Cursos, agrupaciones, requisitos,
 advertencias y evidencia conservan deep links para compartir el contexto sin

@@ -5,6 +5,11 @@ import {
 } from "@curriculum-navigator/api-client";
 
 export type UserView = ApiComponents["schemas"]["UserView"];
+export type PersonProfileView = ApiComponents["schemas"]["PersonProfileView"];
+export type PersonProfileUpdatePayload = ApiComponents["schemas"]["PersonProfileUpdatePayload"];
+export type PersonProfileExportView = ApiComponents["schemas"]["PersonProfileExportView"];
+export type StudentOnboardingView = ApiComponents["schemas"]["StudentOnboardingView"];
+export type StudentOnboardingPayload = ApiComponents["schemas"]["StudentOnboardingPayload"];
 export type ProblemDetails = ApiComponents["schemas"]["ProblemDetails"];
 export type AcademicOverview = ApiComponents["schemas"]["AcademicOverviewView"];
 export type CurriculumMap = ApiComponents["schemas"]["CurriculumMapView"];
@@ -69,6 +74,99 @@ export async function getSessionSnapshot(headers?: HeadersInit): Promise<Session
     return { state: "unavailable", user: null, correlationId: requestCorrelationId };
   } catch {
     return { state: "unavailable", user: null, correlationId: null };
+  }
+}
+
+export async function getStudentOnboarding(headers?: HeadersInit): Promise<{
+  data: StudentOnboardingView | null;
+  failure: ApiFailure | null;
+}> {
+  try {
+    const result = await api.GET("/api/v1/onboarding", { headers });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updateStudentOnboarding(
+  body: StudentOnboardingPayload,
+  version: string,
+): Promise<{ data: StudentOnboardingView | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PATCH("/api/v1/onboarding", {
+      body,
+      headers: await mutationHeaders({ ifMatch: `"${version}"` }),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getPersonProfile(headers?: HeadersInit): Promise<{
+  data: PersonProfileView | null;
+  failure: ApiFailure | null;
+}> {
+  try {
+    const result = await api.GET("/api/v1/auth/profile", { headers });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updatePersonProfile(
+  body: PersonProfileUpdatePayload,
+  version: string,
+): Promise<{ data: PersonProfileView | null; failure: ApiFailure | null }> {
+  try {
+    const csrfToken = await getCsrfToken();
+    const result = await api.PATCH("/api/v1/auth/profile", {
+      body,
+      headers: { "X-CSRFToken": csrfToken, "If-Match": `"${version}"` },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function exportPersonProfile(): Promise<{
+  data: PersonProfileExportView | null;
+  failure: ApiFailure | null;
+}> {
+  try {
+    const result = await api.GET("/api/v1/auth/profile/export");
+    if (result.data) return { data: result.data, failure: null };
+    return {
+      data: null,
+      failure: {
+        problem: problemFromUnknown(result.error),
+        correlationId: correlationId(result.response),
+        unavailable: false,
+      },
+    };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
   }
 }
 
@@ -1081,9 +1179,16 @@ export async function linkGovernanceRequirementEvidence(
 
 export type StudentAdminCatalog = ApiComponents["schemas"]["StudentAdminCatalogView"];
 export type AdminEnrollment = ApiComponents["schemas"]["AdminEnrollmentView"];
+export type AdminEnrollmentSummary = ApiComponents["schemas"]["AdminEnrollmentSummaryView"];
 export type AdminEnrollmentPage = ApiComponents["schemas"]["AdminEnrollmentCollectionView"];
 export type AdminEnrollmentCreatePayload = ApiComponents["schemas"]["AdminEnrollmentCreatePayload"];
+export type AdminAssignmentPreviewPayload = ApiComponents["schemas"]["AdminAssignmentPreviewPayload"];
+export type AdminAssignmentPreview = ApiComponents["schemas"]["AdminAssignmentPreviewView"];
 export type AdminEnrollmentRevisionPayload = ApiComponents["schemas"]["AdminEnrollmentRevisionPayload"];
+export type AdminIdentityUpdatePayload = ApiComponents["schemas"]["AdminIdentityUpdatePayload"];
+export type AdminTransitionPayload = ApiComponents["schemas"]["AdminTransitionPayload"];
+export type AdminTransitionCreatePayload = ApiComponents["schemas"]["AdminTransitionCreatePayload"];
+export type AdminEnrollmentOverridePayload = ApiComponents["schemas"]["AdminEnrollmentOverridePayload"];
 
 export async function getStudentAdminCatalog(options?: {
   headers?: HeadersInit;
@@ -1091,6 +1196,21 @@ export async function getStudentAdminCatalog(options?: {
   try {
     const result = await api.GET("/api/v1/admin/students/catalog", {
       headers: options?.headers,
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function previewAdminCurriculumAssignment(
+  body: AdminAssignmentPreviewPayload,
+): Promise<{ data: AdminAssignmentPreview | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/admin/students/assignment-preview", {
+      body,
+      headers: await mutationHeaders(),
     });
     if (result.data) return { data: result.data, failure: null };
     return { data: null, failure: failureFromResult(result) };
@@ -1123,9 +1243,23 @@ export async function getAdminEnrollments(options?: {
   }
 }
 
+export async function getAdminEnrollmentIdentity(
+  enrollmentId: string,
+): Promise<{ data: AdminEnrollment | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET("/api/v1/admin/students/enrollments/{enrollment_id}/identity", {
+      params: { path: { enrollment_id: enrollmentId } },
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
 export async function createAdminEnrollment(
   body: AdminEnrollmentCreatePayload,
-): Promise<{ data: AdminEnrollment | null; failure: ApiFailure | null }> {
+): Promise<{ data: AdminEnrollmentSummary | null; failure: ApiFailure | null }> {
   try {
     const result = await api.POST("/api/v1/admin/students/enrollments", {
       body,
@@ -1142,9 +1276,88 @@ export async function confirmAdminEnrollmentRevision(
   enrollmentId: string,
   body: AdminEnrollmentRevisionPayload,
   version: string,
-): Promise<{ data: AdminEnrollment | null; failure: ApiFailure | null }> {
+): Promise<{ data: AdminEnrollmentSummary | null; failure: ApiFailure | null }> {
   try {
     const result = await api.PATCH("/api/v1/admin/students/enrollments/{enrollment_id}/revision", {
+      params: { path: { enrollment_id: enrollmentId } },
+      body,
+      headers: await mutationHeaders({ ifMatch: `"${version}"` }),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function previewAdminEnrollmentTransition(
+  sourceEnrollmentId: string,
+  body: AdminTransitionPayload,
+): Promise<{ data: AdminAssignmentPreview | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/admin/students/enrollments/{source_enrollment_id}/transition-preview",
+      {
+        params: { path: { source_enrollment_id: sourceEnrollmentId } },
+        body,
+        headers: await mutationHeaders(),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function createAdminEnrollmentTransition(
+  sourceEnrollmentId: string,
+  body: AdminTransitionCreatePayload,
+): Promise<{ data: AdminEnrollmentSummary | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/admin/students/enrollments/{source_enrollment_id}/transitions",
+      {
+        params: { path: { source_enrollment_id: sourceEnrollmentId } },
+        body,
+        headers: await mutationHeaders(),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function overrideAdminEnrollmentAssignment(
+  enrollmentId: string,
+  body: AdminEnrollmentOverridePayload,
+  version: string,
+): Promise<{ data: AdminEnrollmentSummary | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/admin/students/enrollments/{enrollment_id}/assignment-override",
+      {
+        params: { path: { enrollment_id: enrollmentId } },
+        body,
+        headers: await mutationHeaders({ ifMatch: `"${version}"` }),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function updateAdminEnrollmentIdentity(
+  enrollmentId: string,
+  body: AdminIdentityUpdatePayload,
+  version: string,
+): Promise<{ data: AdminEnrollment | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.PATCH("/api/v1/admin/students/enrollments/{enrollment_id}/identity", {
       params: { path: { enrollment_id: enrollmentId } },
       body,
       headers: await mutationHeaders({ ifMatch: `"${version}"` }),
