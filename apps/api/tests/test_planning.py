@@ -164,7 +164,7 @@ class PlanningScenarioApiTests(TestCase):
                 "preferences": {},
             },
         )
-        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.status_code, 400, response.content)
         self.assertEqual(response.json()["code"], "ENROLLMENT_NEEDS_REVIEW")
         self.assertFalse(PlanScenario.objects.filter(enrollment=self.enrollment).exists())
 

@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -19,7 +19,6 @@ from domain.enums import (
     CurriculumAssignmentMethod,
     EnrollmentStatus,
     EpistemicStatus,
-    ExceptionStatus,
     RevisionStatus,
     UserRole,
 )
@@ -776,7 +775,9 @@ def assignment_override_authorization_view(
 def list_assignment_override_authorizations(
     *, actor: Any, enrollment_id: UUID | str
 ) -> list[CurriculumAssignmentOverrideAuthorization]:
-    enrollment = ProgramEnrollment.objects.select_related("student").filter(pk=enrollment_id).first()
+    enrollment = (
+        ProgramEnrollment.objects.select_related("student").filter(pk=enrollment_id).first()
+    )
     if enrollment is None:
         raise StudentAdministrationError(
             "Enrollment was not found.", code="student_admin_reference_not_found"
@@ -990,6 +991,9 @@ def approve_assignment_override_authorization(
     authorization.sealed_storage_key_hash = sealed["storage_key_hash"]
     authorization.sealed_excerpt_hash = evidence.excerpt_hash
     authorization.content_hash = canonical_content_hash(sealed)
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL app.assignment_override_approval = 'allowed'")
     authorization.save()
     record_audit_event(
         request,
@@ -1386,9 +1390,13 @@ def create_administered_enrollment(
             "Privileged authentication is required to create a verified identity.",
             code="student_admin_step_up_required",
         )
-    if assignment_context not in {item.value for item in CurriculumAssignmentContext}:
+    if (
+        assignment_context != CurriculumAssignmentContext.ADMISSION.value
+        or previous_plan_id is not None
+    ):
         raise StudentAdministrationError(
-            "Assignment context is not supported.", code="student_admin_validation"
+            "New accounts support admission only; use the existing-student workflow for later contexts.",
+            code="student_admin_validation",
         )
     if admission_verification_method not in {
         item.value for item in AdmissionFactVerificationMethod

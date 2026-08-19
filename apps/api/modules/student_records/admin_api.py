@@ -13,10 +13,14 @@ from modules.student_records.application.administration import (
     StudentAdministrationError,
     administered_enrollment_summary_view,
     administered_enrollment_view,
+    approve_assignment_override_authorization,
+    assignment_override_authorization_view,
     create_administered_enrollment,
     create_administered_transition_enrollment,
+    create_assignment_override_authorization,
     get_administered_identity,
     list_administered_enrollments,
+    list_assignment_override_authorizations,
     override_administered_enrollment_assignment,
     preview_administered_assignment,
     preview_administered_transition,
@@ -239,11 +243,34 @@ class AdminEnrollmentRevisionPayload(Schema):
 
 
 class AdminEnrollmentOverridePayload(Schema):
+    authorization_id: UUID
+
+
+class AdminOverrideAuthorizationCreatePayload(Schema):
     plan_id: UUID
     revision_basis_id: UUID
     evidence_id: UUID
-    exception_id: UUID
     reason_code: str
+
+
+class AdminOverrideAuthorizationView(Schema):
+    id: UUID
+    enrollment_id: UUID
+    plan_id: UUID
+    plan_code: str
+    revision_basis_id: UUID
+    revision_code: str
+    reason_code: str
+    evidence_id: UUID
+    status: str
+    prepared_by_id: int
+    approved_by_id: int | None
+    content_hash: str | None
+    version: str
+
+
+class AdminOverrideAuthorizationCollectionView(Schema):
+    items: list[AdminOverrideAuthorizationView]
 
 
 class AdminIdentityUpdatePayload(Schema):
@@ -294,6 +321,13 @@ def admin_catalog(request: HttpRequest) -> dict[str, Any]:
 def admin_assignment_preview(
     request: HttpRequest, response: HttpResponse, payload: AdminAssignmentPreviewPayload
 ) -> dict[str, Any]:
+    if payload.context != "ADMISSION" or payload.previous_plan_id is not None:
+        _error(
+            StudentAdministrationError(
+                "New-account preview supports admission only; use the existing-student workflow.",
+                code="student_admin_validation",
+            )
+        )
     try:
         result = preview_administered_assignment(actor=request.auth, **payload.model_dump())
     except StudentAdministrationError as error:
@@ -445,6 +479,65 @@ def admin_enrollment_assignment_override(
     except StudentAdministrationError as error:
         _error(error)
     return administered_enrollment_summary_view(enrollment)
+
+
+@router.get(
+    "/enrollments/{enrollment_id}/assignment-override-authorizations",
+    auth=django_auth,
+    response=with_problem_responses(AdminOverrideAuthorizationCollectionView),
+)
+def admin_override_authorizations(request: HttpRequest, enrollment_id: UUID) -> dict[str, Any]:
+    try:
+        items = list_assignment_override_authorizations(
+            actor=request.auth, enrollment_id=enrollment_id
+        )
+    except StudentAdministrationError as error:
+        _error(error)
+    return {"items": [assignment_override_authorization_view(item) for item in items]}
+
+
+@router.post(
+    "/enrollments/{enrollment_id}/assignment-override-authorizations",
+    auth=django_auth,
+    response=with_problem_responses({201: AdminOverrideAuthorizationView}),
+)
+def admin_override_authorization_create(
+    request: HttpRequest,
+    enrollment_id: UUID,
+    payload: AdminOverrideAuthorizationCreatePayload,
+) -> Status[dict[str, Any]]:
+    try:
+        authorization = create_assignment_override_authorization(
+            actor=request.auth,
+            enrollment_id=enrollment_id,
+            request=request,
+            **payload.model_dump(),
+        )
+    except StudentAdministrationError as error:
+        _error(error)
+    return Status(201, assignment_override_authorization_view(authorization))
+
+
+@router.post(
+    "/assignment-override-authorizations/{authorization_id}/approve",
+    auth=django_auth,
+    response=with_problem_responses(AdminOverrideAuthorizationView),
+)
+def admin_override_authorization_approve(
+    request: HttpRequest,
+    authorization_id: UUID,
+    if_match: str | None = Header(None, alias="If-Match"),  # type: ignore[type-arg]
+) -> dict[str, Any]:
+    try:
+        authorization = approve_assignment_override_authorization(
+            actor=request.auth,
+            authorization_id=authorization_id,
+            expected_version=if_match,
+            request=request,
+        )
+    except StudentAdministrationError as error:
+        _error(error)
+    return assignment_override_authorization_view(authorization)
 
 
 @router.patch(

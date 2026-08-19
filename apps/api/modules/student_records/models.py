@@ -256,7 +256,9 @@ class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
         REJECTED = "REJECTED", "Rejected"
 
     enrollment = models.ForeignKey(
-        ProgramEnrollment, on_delete=models.PROTECT, related_name="assignment_override_authorizations"
+        ProgramEnrollment,
+        on_delete=models.PROTECT,
+        related_name="assignment_override_authorizations",
     )
     plan = models.ForeignKey(
         "curriculum.CurriculumPlan",
@@ -299,7 +301,7 @@ class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
     class Meta:
         indexes = [
             models.Index(
-                fields=["enrollment", "status"], name="assignment_override_auth_enroll_idx"
+                fields=["enrollment", "status"], name="asg_ovr_auth_enroll_idx"
             )
         ]
         constraints = [

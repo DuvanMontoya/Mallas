@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 from django.utils import timezone
 
@@ -27,8 +28,8 @@ from modules.governance.models import Evidence, NormativeDocument, SourceSnapsho
 from modules.identity.models import RoleAssignment, User
 from modules.offerings.models import AcademicTerm
 from modules.student_records.models import (
-    AcademicException,
     CurriculumAssignmentDecision,
+    CurriculumAssignmentOverrideAuthorization,
     ProgramEnrollment,
 )
 from tests.factories import foundation
@@ -272,8 +273,12 @@ class CurriculumAssignmentPolicyTests(TestCase):
             content_type="application/json",
             HTTP_X_CSRFTOKEN=csrf,
         )
+        authorization_path = (
+            f"/api/v1/admin/students/enrollments/{created.json()['id']}"
+            "/assignment-override-authorizations"
+        )
         invalid = client.post(
-            f"/api/v1/admin/students/enrollments/{created.json()['id']}/assignment-override",
+            authorization_path,
             data={
                 "plan_id": str(self.data["plan"].pk),
                 "revision_basis_id": str(self.data["revision"].pk),
@@ -281,45 +286,66 @@ class CurriculumAssignmentPolicyTests(TestCase):
                 "reason_code": "FREE_TEXT_IS_NOT_ALLOWED",
             },
             content_type="application/json",
-            HTTP_IF_MATCH=f'"{created.json()["version"]}"',
             HTTP_X_CSRFTOKEN=csrf,
         )
         self.assertEqual(invalid.status_code, 422, invalid.content)
-        enrollment = ProgramEnrollment.objects.get(pk=created.json()["id"])
-        authorization = AcademicException.objects.create(
-            enrollment=enrollment,
-            exception_type="CURRICULUM_ASSIGNMENT_OVERRIDE",
-            scope={
-                "plan_id": str(self.data["plan"].pk),
-                "revision_id": str(self.data["revision"].pk),
-                "reason_code": "ADMISSION_POLICY_EXCEPTION",
-            },
-            status="APPROVED",
-            rationale="Verified institutional exception authorization.",
-            granted_by=self.data["user"],
+        preparer = User.objects.create_user(
+            email="override.preparer@example.test", password="safe-test-password"
         )
-        authorization.evidence.add(self.evidence)
-        overridden = client.post(
-            f"/api/v1/admin/students/enrollments/{created.json()['id']}/assignment-override",
+        RoleAssignment.objects.create(
+            user=preparer,
+            role=UserRole.ADMIN.value,
+            institution=self.data["institution"],
+        )
+        client.force_login(preparer)
+        csrf = client.get("/api/v1/auth/csrf").json()["csrf_token"]
+        prepared = client.post(
+            authorization_path,
             data={
                 "plan_id": str(self.data["plan"].pk),
                 "revision_basis_id": str(self.data["revision"].pk),
                 "evidence_id": str(self.evidence.pk),
-                "exception_id": str(authorization.pk),
                 "reason_code": "ADMISSION_POLICY_EXCEPTION",
             },
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(prepared.status_code, 201, prepared.content)
+        self.assertEqual(prepared.json()["status"], "DRAFT")
+        client.force_login(self.data["user"])
+        csrf = client.get("/api/v1/auth/csrf").json()["csrf_token"]
+        approved = client.post(
+            "/api/v1/admin/students/assignment-override-authorizations/"
+            f"{prepared.json()['id']}/approve",
+            data={},
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{prepared.json()["version"]}"',
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["status"], "APPROVED")
+        overridden = client.post(
+            f"/api/v1/admin/students/enrollments/{created.json()['id']}/assignment-override",
+            data={"authorization_id": approved.json()["id"]},
             content_type="application/json",
             HTTP_IF_MATCH=f'"{created.json()["version"]}"',
             HTTP_X_CSRFTOKEN=csrf,
         )
         self.assertEqual(overridden.status_code, 200, overridden.content)
         self.assertEqual(overridden.json()["status"], "ACTIVE")
-        enrollment.refresh_from_db()
+        enrollment = ProgramEnrollment.objects.get(pk=created.json()["id"])
         decision = enrollment.assignment_decisions.order_by("-created_at").first()
         self.assertEqual(decision.method, "ADMIN_OVERRIDE")
         self.assertEqual(decision.override_evidence_id, self.evidence.pk)
-        self.assertEqual(decision.override_exception_id, authorization.pk)
+        self.assertEqual(str(decision.override_authorization_id), approved.json()["id"])
         self.assertEqual(decision.override_reason_code, "ADMISSION_POLICY_EXCEPTION")
+        authorization = CurriculumAssignmentOverrideAuthorization.objects.get(
+            pk=approved.json()["id"]
+        )
+        self.assertEqual(len(authorization.content_hash), 64)
+        with pytest.raises(ValidationError):
+            authorization.reason_code = "LEGACY_RECORD_VERIFIED"
+            authorization.save()
 
     def test_reentry_derives_previous_plan_and_creates_a_second_enrollment(self) -> None:
         RoleAssignment.objects.create(

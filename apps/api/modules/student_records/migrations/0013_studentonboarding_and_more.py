@@ -7,6 +7,19 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+def backfill_student_onboarding(apps: object, schema_editor: object) -> None:
+    del schema_editor
+    enrollment_model = apps.get_model("student_records", "ProgramEnrollment")  # type: ignore[attr-defined]
+    onboarding_model = apps.get_model("student_records", "StudentOnboarding")  # type: ignore[attr-defined]
+    existing = set(onboarding_model.objects.values_list("enrollment_id", flat=True))
+    onboarding_model.objects.bulk_create(
+        onboarding_model(enrollment_id=enrollment_id)
+        for enrollment_id in enrollment_model.objects.exclude(id__in=existing).values_list(
+            "id", flat=True
+        )
+    )
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("curriculum", "0012_curriculumassignmentpolicy_allow_retired_revision"),
@@ -132,4 +145,5 @@ class Migration(migrations.Migration):
                 name="onboarding_planning_load_target_range",
             ),
         ),
+        migrations.RunPython(backfill_student_onboarding, migrations.RunPython.noop),
     ]
