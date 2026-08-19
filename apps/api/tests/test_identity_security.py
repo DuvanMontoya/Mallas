@@ -20,6 +20,7 @@ from modules.curriculum.application.services import (
     CurriculumRevisionService,
     RevisionTransitionError,
 )
+from modules.curriculum.models import CurriculumRevision
 from modules.identity.api import email_verification_token_generator
 from modules.identity.application.audit import record_audit_event
 from modules.identity.application.authorization import (
@@ -48,6 +49,7 @@ class LocalAdminBootstrapCommandTests(TestCase):
 
             self.assertTrue(user.is_superuser)
             self.assertTrue(user.is_staff)
+            self.assertTrue(CurriculumRevision.objects.filter(plan__code="2514").exists())
             self.assertIn("EMAIL=admin@localhost", content)
             self.assertEqual(os.stat(credentials_file).st_mode & 0o777, 0o600)
             password = next(

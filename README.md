@@ -65,17 +65,21 @@ cat var/local-admin-credentials.txt
 ```
 
 El comando genera una contraseña aleatoria, crea `admin@localhost` como
-superusuario y guarda las credenciales sólo en
+superusuario, importa de forma idempotente el baseline curricular verificado y
+guarda las credenciales sólo en
 `var/local-admin-credentials.txt` (permisos `0600`, ruta ignorada por Git).
-Úsalas en `http://localhost:8000/admin/` o con el formulario de
+Así, la malla, el grafo y la procedencia quedan disponibles desde el primer
+arranque. Úsalas en `http://localhost:8000/admin/` o con el formulario de
 `http://localhost:3000/login`. Si necesitas regenerarla durante desarrollo:
 
 ```bash
 uv run --project apps/api python apps/api/manage.py bootstrap_local_admin --reset-password
 ```
 
-El comando sólo funciona con `DJANGO_DEBUG=true`; no es un mecanismo de alta
-de cuentas para producción.
+El baseline se conserva en `DRAFT`: la aplicación no simula una publicación
+curricular ni convierte sus incertidumbres explícitas en hechos. El comando
+sólo funciona con `DJANGO_DEBUG=true`; no es un mecanismo de alta de cuentas
+para producción.
 
 5. Ejecute el backend y el frontend en terminales separadas:
 

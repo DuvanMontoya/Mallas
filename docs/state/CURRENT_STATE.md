@@ -1370,7 +1370,8 @@ No hay mocks ni reglas académicas inventadas en los resultados mostrados.
 ### Terminado
 
 - Se añadió `bootstrap_local_admin`: crea o rota de forma explícita un
-  superusuario local sólo con `DJANGO_DEBUG=true` y guarda las credenciales en
+  superusuario local sólo con `DJANGO_DEBUG=true`, importa idempotentemente el
+  baseline verificable 2514 y guarda las credenciales en
   `var/local-admin-credentials.txt`, una ruta ignorada por Git.
 - La escritura de credenciales es atómica, con archivo `0600`, directorio
   `0700`, rechazo de symlinks y rollback de identidad si no se puede persistir
@@ -1397,6 +1398,6 @@ No hay mocks ni reglas académicas inventadas en los resultados mostrados.
 - Docker no está instalado en este host; sigue pendiente la matriz
   PostgreSQL/Compose P24/P25. Para reanudar: `uv run --project apps/api python
   apps/api/manage.py runserver 127.0.0.1:8000` y `pnpm --dir apps/web dev`.
-- Commit local `507df94` creado. El push a `origin/main` quedó pendiente porque
-  este host no tiene credenciales HTTPS de GitHub ni `gh` instalado; el branch
-  local está `ahead 1`.
+- Commits locales `26da42c` y `f3ec82b` creados. El push a `origin/main` quedó
+  pendiente porque este host no tiene credenciales HTTPS de GitHub ni `gh`
+  instalado; el branch local está `ahead 2`.

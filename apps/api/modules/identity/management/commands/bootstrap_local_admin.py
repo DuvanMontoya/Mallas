@@ -9,11 +9,13 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from modules.curriculum.models import CurriculumRevision
 from modules.identity.models import User
+from modules.imports.application.services import import_curriculum_baseline
 
 
 class Command(BaseCommand):
-    help = "Create a local-only Django superuser and save its credentials outside Git."
+    help = "Prepare the local curriculum baseline and create a local-only Django superuser."
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("--email", default="admin@localhost")
@@ -56,6 +58,16 @@ class Command(BaseCommand):
             temporary.unlink(missing_ok=True)
             raise
 
+    @staticmethod
+    def _ensure_local_curriculum(actor: User) -> bool:
+        if CurriculumRevision.objects.filter(plan__code="2514").exists():
+            return False
+        import_curriculum_baseline(
+            report_path=settings.PROJECT_ROOT / "var" / "bootstrap" / "curriculum-import.md",
+            created_by=actor,
+        )
+        return True
+
     def handle(self, *args: object, **options: object) -> None:
         if not settings.DEBUG:
             raise CommandError("This command is intentionally restricted to DJANGO_DEBUG=true.")
@@ -93,6 +105,7 @@ class Command(BaseCommand):
                     user.set_password(password)
                     user.save(update_fields=["password"])
                     action = "rotated"
+                curriculum_imported = self._ensure_local_curriculum(user)
                 os.replace(temporary, credentials_file)
         finally:
             temporary.unlink(missing_ok=True)
@@ -101,3 +114,5 @@ class Command(BaseCommand):
                 f"Local superuser {action}. Credentials saved to {credentials_file}."
             )
         )
+        if curriculum_imported:
+            self.stdout.write("Verified curriculum baseline imported as a local DRAFT revision.")

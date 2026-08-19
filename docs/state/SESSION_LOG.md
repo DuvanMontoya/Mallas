@@ -620,8 +620,9 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
 - Se instaló el runtime local faltante (`uv` 0.11.19) y dependencias fijadas;
   Docker no está presente, por lo que la ejecución local usa SQLite.
 - Se implementó y probó `bootstrap_local_admin`: credenciales locales sólo en
-  `var/local-admin-credentials.txt` (`0600`) y directorio `0700`; README tiene
-  únicamente instrucciones de creación/rotación.
+  `var/local-admin-credentials.txt` (`0600`) y directorio `0700`; además
+  importa idempotentemente el baseline 2514 en una clonación limpia. README
+  tiene únicamente instrucciones de creación/rotación.
 - Se corrigieron permisos privados bajo `umask`, el constructor de backup sin
   Docker y los tipos Windows del aislamiento de parser.
 - `python scripts/verify.py` PASS: 173 backend passed + 1 skip esperado,
@@ -629,5 +630,5 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
   OpenAPI/cliente, secretos y SAST verdes. Build Next PASS.
 - Chrome real autenticó `admin@localhost` y mostró superficies editorial y
   administrativa. No se versionaron credenciales.
-- Commit local `507df94` creado; push pendiente por ausencia de credenciales
-  HTTPS de GitHub y de `gh` en este host (`main` está ahead 1).
+- Commits locales `26da42c` y `f3ec82b` creados; push pendiente por ausencia
+  de credenciales HTTPS de GitHub y de `gh` en este host (`main` está ahead 2).
