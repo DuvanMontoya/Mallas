@@ -125,6 +125,10 @@ def store_artifact(*, batch_id: UUID | str, content_sha256: str, content: bytes)
     root = private_storage_root()
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if os.name != "nt":
+        os.chmod(root, 0o700)
+        os.chmod(path.parent.parent, 0o700)
+        os.chmod(path.parent, 0o700)
     try:
         file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
         file_flags |= getattr(os, "O_BINARY", 0)

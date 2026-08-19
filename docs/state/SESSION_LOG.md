@@ -614,3 +614,20 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
 - `python scripts/verify.py` final PASS: 170 backend passed + 1 skip esperado,
   16 archivos / 46 pruebas frontend, lint, tipos, formato, migraciones,
   OpenAPI/cliente, secretos, SAST, anti-MVP e invariantes curriculares PASS.
+
+## Continuación — 2026-08-18 — bootstrap local y aceptación de administrador
+
+- Se instaló el runtime local faltante (`uv` 0.11.19) y dependencias fijadas;
+  Docker no está presente, por lo que la ejecución local usa SQLite.
+- Se implementó y probó `bootstrap_local_admin`: credenciales locales sólo en
+  `var/local-admin-credentials.txt` (`0600`) y directorio `0700`; README tiene
+  únicamente instrucciones de creación/rotación.
+- Se corrigieron permisos privados bajo `umask`, el constructor de backup sin
+  Docker y los tipos Windows del aislamiento de parser.
+- `python scripts/verify.py` PASS: 173 backend passed + 1 skip esperado,
+  Vitest 16 archivos / 46 tests, checks, migraciones, Ruff, formato, mypy,
+  OpenAPI/cliente, secretos y SAST verdes. Build Next PASS.
+- Chrome real autenticó `admin@localhost` y mostró superficies editorial y
+  administrativa. No se versionaron credenciales.
+- Commit local `507df94` creado; push pendiente por ausencia de credenciales
+  HTTPS de GitHub y de `gh` en este host (`main` está ahead 1).

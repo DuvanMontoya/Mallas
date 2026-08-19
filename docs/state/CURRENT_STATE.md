@@ -1364,3 +1364,39 @@ No hay mocks ni reglas académicas inventadas en los resultados mostrados.
 - Evolucionar el fundamento de resolución curricular desde metadata textual a
   evidencia institucional estructurada cuando exista el proceso documental.
 - No se creó commit, no se hizo push y no se desplegó.
+
+## Local bootstrap & administrator acceptance — 2026-08-18
+
+### Terminado
+
+- Se añadió `bootstrap_local_admin`: crea o rota de forma explícita un
+  superusuario local sólo con `DJANGO_DEBUG=true` y guarda las credenciales en
+  `var/local-admin-credentials.txt`, una ruta ignorada por Git.
+- La escritura de credenciales es atómica, con archivo `0600`, directorio
+  `0700`, rechazo de symlinks y rollback de identidad si no se puede persistir
+  el archivo. README documenta el primer arranque sin versionar contraseñas.
+- Se endureció el almacenamiento privado de importaciones frente a `umask` y
+  el constructor de comandos de backup volvió a ser testeable sin Docker,
+  manteniendo el fallo explícito al ejecutar sin Docker.
+- API en `127.0.0.1:8000` y web en `localhost:3000` están activos con SQLite
+  de desarrollo porque este host no dispone de Docker. Chrome autenticó
+  correctamente a `admin@localhost` y mostró navegación editorial y
+  administrativa.
+
+### Verificaciones
+
+- `python scripts/verify.py` → PASS: 173 backend passed, 1 skip esperado del
+  trigger exclusivo de PostgreSQL; 16 archivos / 46 pruebas frontend PASS.
+- `pnpm --dir apps/web build` → PASS. Health, CSRF, login, `/auth/me` y flags
+  Django de superusuario → PASS contra localhost.
+- Revisión read-only de código: los High sobre escritura de credenciales y
+  consistencia transaccional se resolvieron; no quedan Critical/High abiertos.
+
+### Siguiente acción / riesgo
+
+- Docker no está instalado en este host; sigue pendiente la matriz
+  PostgreSQL/Compose P24/P25. Para reanudar: `uv run --project apps/api python
+  apps/api/manage.py runserver 127.0.0.1:8000` y `pnpm --dir apps/web dev`.
+- Commit local `507df94` creado. El push a `origin/main` quedó pendiente porque
+  este host no tiene credenciales HTTPS de GitHub ni `gh` instalado; el branch
+  local está `ahead 1`.

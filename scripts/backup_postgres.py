@@ -103,10 +103,7 @@ def _command(
 ) -> list[str]:
     args = [binary]
     if container:
-        docker = shutil.which("docker")
-        if docker is None:
-            raise BackupError("docker is required when --container is used")
-        args = [docker, "exec", "-i"]
+        args = [shutil.which("docker") or "docker", "exec", "-i"]
         if target.password and container_env_file is None:
             raise BackupError("container credentials require a temporary env file")
         if container_env_file is not None:
@@ -185,6 +182,8 @@ def create_backup(
     timeout_seconds: int = 3600,
 ) -> tuple[Path, Path]:
     target = _database_target(database_url)
+    if container and shutil.which("docker") is None:
+        raise BackupError("docker is required when --container is used")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", label):
         raise BackupError("label contains unsupported characters")
     output_dir = output_dir.resolve()

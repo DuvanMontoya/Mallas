@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import os
 import re
 from datetime import timedelta
+from pathlib import Path
+from uuid import uuid4
 
+from django.conf import settings
 from django.core import mail
 from django.core.exceptions import ValidationError
+from django.core.management import CommandError, call_command
 from django.db import DatabaseError, connection, transaction
 from django.test import Client, TestCase, override_settings
 from django.utils import timezone
@@ -26,6 +31,43 @@ from modules.identity.application.authorization import (
 from modules.identity.models import AuditEvent, RoleAssignment, User
 from modules.student_records.models import StudentAdvisorAssignment
 from tests.factories import foundation
+
+
+class LocalAdminBootstrapCommandTests(TestCase):
+    def credentials_file(self) -> Path:
+        return settings.PROJECT_ROOT / "var" / f"test-local-admin-{uuid4().hex}.txt"
+
+    def test_creates_local_superuser_and_private_credentials_file(self) -> None:
+        credentials_file = self.credentials_file()
+        try:
+            with override_settings(DEBUG=True):
+                call_command("bootstrap_local_admin", credentials_file=str(credentials_file))
+
+            user = User.objects.get(email="admin@localhost")
+            content = credentials_file.read_text(encoding="utf-8")
+
+            self.assertTrue(user.is_superuser)
+            self.assertTrue(user.is_staff)
+            self.assertIn("EMAIL=admin@localhost", content)
+            self.assertEqual(os.stat(credentials_file).st_mode & 0o777, 0o600)
+            password = next(
+                line.removeprefix("PASSWORD=")
+                for line in content.splitlines()
+                if line.startswith("PASSWORD=")
+            )
+            self.assertTrue(user.check_password(password))
+        finally:
+            credentials_file.unlink(missing_ok=True)
+
+    def test_refuses_to_overwrite_an_existing_account_without_explicit_rotation(self) -> None:
+        User.objects.create_superuser(email="admin@localhost", password="LocalAdminPassword!2026")
+
+        with override_settings(DEBUG=True), self.assertRaises(CommandError):
+            call_command("bootstrap_local_admin", credentials_file=str(self.credentials_file()))
+
+    def test_refuses_to_run_outside_debug_mode(self) -> None:
+        with override_settings(DEBUG=False), self.assertRaises(CommandError):
+            call_command("bootstrap_local_admin", credentials_file=str(self.credentials_file()))
 
 
 class IdentityApiTests(TestCase):

@@ -56,7 +56,28 @@ Sin Docker, el backend usa SQLite local para desarrollo y pruebas:
 uv run --project apps/api python apps/api/manage.py migrate
 ```
 
-4. Ejecute el backend y el frontend en terminales separadas:
+4. Cree el administrador local de primer uso (no hay credenciales compartidas ni
+incluidas en Git):
+
+```bash
+uv run --project apps/api python apps/api/manage.py bootstrap_local_admin
+cat var/local-admin-credentials.txt
+```
+
+El comando genera una contraseña aleatoria, crea `admin@localhost` como
+superusuario y guarda las credenciales sólo en
+`var/local-admin-credentials.txt` (permisos `0600`, ruta ignorada por Git).
+Úsalas en `http://localhost:8000/admin/` o con el formulario de
+`http://localhost:3000/login`. Si necesitas regenerarla durante desarrollo:
+
+```bash
+uv run --project apps/api python apps/api/manage.py bootstrap_local_admin --reset-password
+```
+
+El comando sólo funciona con `DJANGO_DEBUG=true`; no es un mecanismo de alta
+de cuentas para producción.
+
+5. Ejecute el backend y el frontend en terminales separadas:
 
 ```bash
 uv run --project apps/api python apps/api/manage.py runserver 127.0.0.1:8000

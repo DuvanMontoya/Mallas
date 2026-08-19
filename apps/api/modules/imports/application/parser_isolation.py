@@ -92,7 +92,8 @@ def _assign_windows_memory_job(process_id: int, memory_bytes: int) -> int | None
             ("PeakJobMemoryUsed", ctypes.c_size_t),
         ]
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32: Any = getattr(ctypes, "WinDLL")("kernel32", use_last_error=True)  # noqa: B009
+    get_last_error = getattr(ctypes, "get_last_error")  # noqa: B009
     kernel32.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
     kernel32.CreateJobObjectW.restype = wintypes.HANDLE
     kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
@@ -110,11 +111,11 @@ def _assign_windows_memory_job(process_id: int, memory_bytes: int) -> int | None
     kernel32.CloseHandle.restype = wintypes.BOOL
     job = kernel32.CreateJobObjectW(None, None)
     if not job:
-        raise OSError(ctypes.get_last_error(), "Could not create parser memory job")
+        raise OSError(get_last_error(), "Could not create parser memory job")
     process_handle = kernel32.OpenProcess(0x0100 | 0x0001, False, process_id)
     if not process_handle:
         kernel32.CloseHandle(job)
-        raise OSError(ctypes.get_last_error(), "Could not open parser process")
+        raise OSError(get_last_error(), "Could not open parser process")
     try:
         limits = ExtendedLimits()
         limits.BasicLimitInformation.LimitFlags = 0x00000100
@@ -122,9 +123,9 @@ def _assign_windows_memory_job(process_id: int, memory_bytes: int) -> int | None
         if not kernel32.SetInformationJobObject(
             job, 9, ctypes.byref(limits), ctypes.sizeof(limits)
         ):
-            raise OSError(ctypes.get_last_error(), "Could not configure parser memory job")
+            raise OSError(get_last_error(), "Could not configure parser memory job")
         if not kernel32.AssignProcessToJobObject(job, process_handle):
-            raise OSError(ctypes.get_last_error(), "Could not isolate parser process")
+            raise OSError(get_last_error(), "Could not isolate parser process")
     except BaseException:
         kernel32.CloseHandle(job)
         raise
@@ -137,7 +138,7 @@ def _close_windows_handle(handle: int | None) -> None:
     if handle is not None and os.name == "nt":
         from ctypes import wintypes
 
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32: Any = getattr(ctypes, "WinDLL")("kernel32", use_last_error=True)  # noqa: B009
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
         kernel32.CloseHandle(handle)
