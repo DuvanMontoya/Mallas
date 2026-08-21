@@ -9,6 +9,13 @@ Añadir una entrada por sesión significativa:
 - Pendiente:
 - Siguiente:
 
+## 2026-08-21 17:10 — Codex / GPT-5
+- Objetivo: cerrar el acceso local, validar una cuenta sintética con Chrome y eliminar la presentación MVP del onboarding.
+- Cambios: allowlist local CSRF/CORS completo para `localhost`/`127.0.0.1` en puertos 3000/3100, defaults vacíos fuera de DEBUG y `.env.example` coherente; onboarding editorial de cinco decisiones, contexto curricular, progreso y responsive; el fin de onboarding abre siempre `/curriculum` para permitir explorar el plan sin falsificar estados personales.
+- Verificaciones: revisión independiente de seguridad/código sin Critical/High; Chrome real verificó administrador, alta auditada de estudiante sintético, cambio inicial de clave, onboarding y malla 2514 (102 cursos, 13 obligatorias, 84 opciones, `Sin estado personal`); `python3 scripts/verify.py` PASS con 242 backend + un skip PostgreSQL esperado y 21 archivos/60 pruebas frontend, además de Ruff/formato/MyPy/OpenAPI/cliente/ESLint/TypeScript/SAST/secretos/anti-MVP.
+- Pendiente: P102 no puede publicar asignación automática 2514 hasta que exista evidencia institucional de aplicabilidad; PostgreSQL production-like sigue como gate externo.
+- Siguiente: continuar P94/P102 desde la evidencia curricular archivada; para demostración local, iniciar API 8000 y web 3100 y abrir `/curriculum` con una sesión autenticada.
+
 ## 2026-08-21 16:15 — Codex / GPT-5
 - Objetivo: rediseñar el acceso, impedir pérdida del administrador local y cerrar recuperación de contraseña real.
 - Cambios: login académico responsive; visibilidad de clave y confirmación post-reset; ruta/reset UI; bootstrap de `admin@localhost` idempotente con credencial privada y rotación explícita; guía local sin `.env`; delivery de reset bloqueado hasta configuración explícita de producción; bypass público con `Referrer-Policy: no-referrer`; documentación/configuración y tests actualizados.

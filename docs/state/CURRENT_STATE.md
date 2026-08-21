@@ -1,5 +1,49 @@
 # Current State
 
+## Flujo local completo de estudiante y onboarding editorial — 2026-08-21
+
+### Terminado en esta sesión
+
+- El allowlist local de CSRF/CORS reconoce de forma explícita los cuatro
+  orígenes loopback usados por la web (`localhost` y `127.0.0.1`, puertos
+  `3000` y `3100`) sólo bajo `DEBUG`; en producción los defaults siguen vacíos.
+  `.env.example` ya no anula el puerto `3100`.
+- Se rediseñó el onboarding de estudiante como una superficie académica
+  editorial: contexto de matrícula, progreso explicable, navegación de cinco
+  decisiones, secciones jerarquizadas, leyenda de malla y acciones claras,
+  conservando validaciones, accesibilidad y estados fail-closed.
+- Al terminar el onboarding, cualquier estudiante va directamente a
+  `/curriculum`. Cuando la asignación está pendiente, la malla se puede explorar
+  pero cada curso conserva el estado honesto `Sin estado personal`; no se
+  inventan avance, elegibilidad ni faltantes.
+- Chrome verificó el flujo real completo en la instancia local: acceso de
+  administrador, alta auditada de una identidad sintética, primer cambio de
+  contraseña, onboarding y malla de Estadística plan 2514. La malla mostró 102
+  cursos, 13 obligatorias y 84 opciones con el estado personal no calculado.
+
+### Verificaciones
+
+- Revisiones independientes de código y seguridad del cambio CORS/CSRF: sin
+  hallazgos Critical/High; se cerraron las brechas de `.env.example`,
+  `127.0.0.1` y defaults de producción.
+- `python3 scripts/verify.py` PASS: 242 backend passed, un skip esperado del
+  trigger exclusivo de PostgreSQL, 21 archivos/60 pruebas Vitest, Ruff,
+  formato, MyPy, OpenAPI/cliente, ESLint, TypeScript, SAST, secretos,
+  invariantes curriculares, anti-MVP y checks de migración.
+- Chrome real verificó login, alta, onboarding y malla; el componente de
+  onboarding pasó Vitest y axe como parte de la suite completa.
+
+### Estado de Git y siguiente acción
+
+- `82aef7f Improve onboarding flow and local web origin support` está en
+  `main` y `origin/main`.
+- P102 continúa pendiente: no existe evidencia archivada suficiente para
+  publicar una política automática 2514; el comportamiento visto en Chrome es
+  deliberadamente fail-closed y no constituye una decisión curricular.
+- Para reanudar la demostración local: iniciar API en `8000`, web en `3100` con
+  `API_INTERNAL_URL=http://127.0.0.1:8000`, entrar con el administrador local o
+  con la cuenta sintética ya creada y abrir `/curriculum`.
+
 ## Acceso, recuperación y bootstrap local reforzados — 2026-08-21
 
 ### Terminado en esta sesión
@@ -37,17 +81,16 @@
 
 ### No terminado / siguiente acción exacta
 
-- `python3 scripts/verify.py` fue interrumpido por el cambio de prioridad del
-  usuario después de superar los gates iniciales y ~63% de pytest; debe repetirse
-  y terminar en PASS antes de declarar una release.
+- La ejecución histórica de `python3 scripts/verify.py` fue interrumpida; la
+  repetición completa posterior cerró en PASS y está registrada en la entrada
+  superior de esta misma sección de estado.
 - La recuperación por correo en producción requiere configurar y probar el
   proveedor institucional, fuera de este checkout. No se habilita con SMTP local
   implícito.
-- La creación de una persona/matrícula real exige datos personales y evidencia
-  de admisión autorizados; no se crearán identidades o hechos académicos falsos.
-- Commit local creado: `a9f3d42 Improve secure login and local admin recovery`.
-  El push a `origin/main` permanece bloqueado porque este equipo no tiene
-  credencial HTTPS ni clave SSH autorizada para GitHub.
+- Las validaciones locales pueden crear identidades sintéticas trazables, pero
+  no sustituyen datos personales reales ni evidencia de admisión institucional.
+- Los commits de acceso y onboarding ya están publicados en `origin/main`; no
+  quedan pushes pendientes de esta sesión.
 
 ## Límite de producto autenticado reforzado — 2026-08-21
 
