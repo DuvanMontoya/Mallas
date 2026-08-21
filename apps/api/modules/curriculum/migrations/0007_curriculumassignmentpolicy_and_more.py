@@ -7,90 +7,221 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('curriculum', '0006_cross_scope_invariants'),
-        ('governance', '0004_publicationevent_publicationimpact_and_more'),
-        ('institutions', '0001_initial'),
+        ("curriculum", "0006_cross_scope_invariants"),
+        ("governance", "0004_publicationevent_publicationimpact_and_more"),
+        ("institutions", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CurriculumAssignmentPolicy',
+            name="CurriculumAssignmentPolicy",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('policy_code', models.CharField(max_length=120)),
-                ('version', models.PositiveIntegerField(default=1)),
-                ('context', models.CharField(choices=[('ADMISSION', 'Admission'), ('REENTRY', 'Reentry'), ('TRANSFER', 'Transfer'), ('DUAL_DEGREE', 'Dual Degree'), ('PLAN_TRANSITION', 'Plan Transition')], max_length=24)),
-                ('admission_from', models.DateField(blank=True, null=True)),
-                ('admission_to', models.DateField(blank=True, null=True)),
-                ('cohort_code', models.CharField(blank=True, max_length=80)),
-                ('normative_published_on', models.DateField(blank=True, null=True)),
-                ('effective_from', models.DateField(blank=True, null=True)),
-                ('effective_to', models.DateField(blank=True, null=True)),
-                ('status', models.CharField(choices=[('DRAFT', 'Draft'), ('IN_REVIEW', 'In Review'), ('PUBLISHED', 'Published'), ('SUPERSEDED', 'Superseded'), ('RETIRED', 'Retired')], default='DRAFT', max_length=24)),
-                ('epistemic_status', models.CharField(choices=[('VERIFIED', 'Verified'), ('DERIVED', 'Derived'), ('INFERRED_PENDING_REVIEW', 'Inferred Pending Review'), ('UNKNOWN', 'Unknown'), ('DISPUTED', 'Disputed'), ('SUPERSEDED', 'Superseded')], default='UNKNOWN', max_length=32)),
-                ('source_set_hash', models.CharField(blank=True, max_length=64)),
-                ('content_hash', models.CharField(blank=True, max_length=64)),
-                ('published_at', models.DateTimeField(blank=True, null=True)),
-                ('metadata', models.JSONField(blank=True, default=dict)),
-                ('plan', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='assignment_policies', to='curriculum.curriculumplan')),
-                ('previous_plan', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='transition_assignment_policies', to='curriculum.curriculumplan')),
-                ('program', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='curriculum_assignment_policies', to='institutions.program')),
-                ('revision_basis', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='assignment_policies', to='curriculum.curriculumrevision')),
-                ('supersedes', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='successors', to='curriculum.curriculumassignmentpolicy')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("policy_code", models.CharField(max_length=120)),
+                ("version", models.PositiveIntegerField(default=1)),
+                (
+                    "context",
+                    models.CharField(
+                        choices=[
+                            ("ADMISSION", "Admission"),
+                            ("REENTRY", "Reentry"),
+                            ("TRANSFER", "Transfer"),
+                            ("DUAL_DEGREE", "Dual Degree"),
+                            ("PLAN_TRANSITION", "Plan Transition"),
+                        ],
+                        max_length=24,
+                    ),
+                ),
+                ("admission_from", models.DateField(blank=True, null=True)),
+                ("admission_to", models.DateField(blank=True, null=True)),
+                ("cohort_code", models.CharField(blank=True, max_length=80)),
+                ("normative_published_on", models.DateField(blank=True, null=True)),
+                ("effective_from", models.DateField(blank=True, null=True)),
+                ("effective_to", models.DateField(blank=True, null=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("DRAFT", "Draft"),
+                            ("IN_REVIEW", "In Review"),
+                            ("PUBLISHED", "Published"),
+                            ("SUPERSEDED", "Superseded"),
+                            ("RETIRED", "Retired"),
+                        ],
+                        default="DRAFT",
+                        max_length=24,
+                    ),
+                ),
+                (
+                    "epistemic_status",
+                    models.CharField(
+                        choices=[
+                            ("VERIFIED", "Verified"),
+                            ("DERIVED", "Derived"),
+                            ("INFERRED_PENDING_REVIEW", "Inferred Pending Review"),
+                            ("UNKNOWN", "Unknown"),
+                            ("DISPUTED", "Disputed"),
+                            ("SUPERSEDED", "Superseded"),
+                        ],
+                        default="UNKNOWN",
+                        max_length=32,
+                    ),
+                ),
+                ("source_set_hash", models.CharField(blank=True, max_length=64)),
+                ("content_hash", models.CharField(blank=True, max_length=64)),
+                ("published_at", models.DateTimeField(blank=True, null=True)),
+                ("metadata", models.JSONField(blank=True, default=dict)),
+                (
+                    "plan",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="assignment_policies",
+                        to="curriculum.curriculumplan",
+                    ),
+                ),
+                (
+                    "previous_plan",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="transition_assignment_policies",
+                        to="curriculum.curriculumplan",
+                    ),
+                ),
+                (
+                    "program",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="curriculum_assignment_policies",
+                        to="institutions.program",
+                    ),
+                ),
+                (
+                    "revision_basis",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="assignment_policies",
+                        to="curriculum.curriculumrevision",
+                    ),
+                ),
+                (
+                    "supersedes",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="successors",
+                        to="curriculum.curriculumassignmentpolicy",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['program__name', 'policy_code', '-version'],
+                "ordering": ["program__name", "policy_code", "-version"],
             },
         ),
         migrations.CreateModel(
-            name='CurriculumAssignmentPolicyEvidence',
+            name="CurriculumAssignmentPolicyEvidence",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('purpose', models.CharField(blank=True, max_length=120)),
-                ('evidence', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='assignment_policy_links', to='governance.evidence')),
-                ('policy', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='evidence_links', to='curriculum.curriculumassignmentpolicy')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("purpose", models.CharField(blank=True, max_length=120)),
+                (
+                    "evidence",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="assignment_policy_links",
+                        to="governance.evidence",
+                    ),
+                ),
+                (
+                    "policy",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="evidence_links",
+                        to="curriculum.curriculumassignmentpolicy",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['policy', 'evidence'],
+                "ordering": ["policy", "evidence"],
             },
         ),
         migrations.AddField(
-            model_name='curriculumassignmentpolicy',
-            name='evidence',
-            field=models.ManyToManyField(related_name='curriculum_assignment_policies', through='curriculum.CurriculumAssignmentPolicyEvidence', to='governance.evidence'),
+            model_name="curriculumassignmentpolicy",
+            name="evidence",
+            field=models.ManyToManyField(
+                related_name="curriculum_assignment_policies",
+                through="curriculum.CurriculumAssignmentPolicyEvidence",
+                to="governance.evidence",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='curriculumassignmentpolicyevidence',
-            constraint=models.UniqueConstraint(fields=('policy', 'evidence'), name='assignment_policy_evidence_unique'),
+            model_name="curriculumassignmentpolicyevidence",
+            constraint=models.UniqueConstraint(
+                fields=("policy", "evidence"), name="assignment_policy_evidence_unique"
+            ),
         ),
         migrations.AddIndex(
-            model_name='curriculumassignmentpolicy',
-            index=models.Index(fields=['program', 'context', 'status'], name='assign_policy_scope_status_idx'),
+            model_name="curriculumassignmentpolicy",
+            index=models.Index(
+                fields=["program", "context", "status"], name="assign_policy_scope_status_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='curriculumassignmentpolicy',
-            index=models.Index(fields=['admission_from', 'admission_to'], name='assign_policy_admission_idx'),
+            model_name="curriculumassignmentpolicy",
+            index=models.Index(
+                fields=["admission_from", "admission_to"], name="assign_policy_admission_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='curriculumassignmentpolicy',
-            constraint=models.UniqueConstraint(fields=('policy_code', 'version'), name='assignment_policy_code_version_unique'),
+            model_name="curriculumassignmentpolicy",
+            constraint=models.UniqueConstraint(
+                fields=("policy_code", "version"), name="assignment_policy_code_version_unique"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='curriculumassignmentpolicy',
-            constraint=models.CheckConstraint(condition=models.Q(('admission_to__isnull', True), ('admission_from__isnull', True), ('admission_to__gt', models.F('admission_from')), _connector='OR'), name='assignment_policy_admission_range_valid'),
+            model_name="curriculumassignmentpolicy",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("admission_to__isnull", True),
+                    ("admission_from__isnull", True),
+                    ("admission_to__gt", models.F("admission_from")),
+                    _connector="OR",
+                ),
+                name="assignment_policy_admission_range_valid",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='curriculumassignmentpolicy',
-            constraint=models.CheckConstraint(condition=models.Q(('effective_to__isnull', True), ('effective_from__isnull', True), ('effective_to__gt', models.F('effective_from')), _connector='OR'), name='assignment_policy_effective_range_valid'),
+            model_name="curriculumassignmentpolicy",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("effective_to__isnull", True),
+                    ("effective_from__isnull", True),
+                    ("effective_to__gt", models.F("effective_from")),
+                    _connector="OR",
+                ),
+                name="assignment_policy_effective_range_valid",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='curriculumassignmentpolicy',
-            constraint=models.CheckConstraint(condition=models.Q(('version__gte', 1)), name='assignment_policy_version_positive'),
+            model_name="curriculumassignmentpolicy",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("version__gte", 1)), name="assignment_policy_version_positive"
+            ),
         ),
     ]

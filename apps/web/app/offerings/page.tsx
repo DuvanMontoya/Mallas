@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
-
 import { OfferingsExplorer } from "@/components/offerings-explorer";
 import { getOfferingSchedule, getOfferings } from "@/lib/api";
+import { requireAuthenticatedSession } from "@/lib/require-authenticated-session";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +23,7 @@ export default async function OfferingsPage({ searchParams }: OfferingsPageProps
   const courseCode = first(params.course);
   const enrollmentId = first(params.enrollment);
   const sectionIds = (first(params.sections) ?? "").split(",").map((value) => value.trim()).filter(Boolean);
-  let headers: HeadersInit | undefined;
-  try {
-    const cookieHeader = (await cookies()).toString();
-    headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
-  } catch {
-    headers = undefined;
-  }
+  const { headers } = await requireAuthenticatedSession("/offerings");
   const result = await getOfferings({ termCode, courseCode, enrollmentId, headers });
   const scheduleResult = termCode && sectionIds.length
     ? await getOfferingSchedule({ termCode, sectionIds, headers })

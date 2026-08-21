@@ -8,7 +8,7 @@ from typing import Any
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.http import HttpRequest, HttpResponse
 from django.middleware.csrf import get_token
@@ -159,9 +159,9 @@ class PersonProfileExportView(Schema):
 def _user_view(user: User) -> dict[str, Any]:
     try:
         student_profile = user.student_profile
-        student_profile_id: str | None = str(student_profile.pk)
+        student_profile_id = str(student_profile.pk)
         onboarding_required = student_profile.program_enrollments.filter(
-            onboarding__completed_at__isnull=True
+            onboarding__isnull=False, onboarding__completed_at__isnull=True
         ).exists()
     except User.student_profile.RelatedObjectDoesNotExist:
         student_profile_id = None

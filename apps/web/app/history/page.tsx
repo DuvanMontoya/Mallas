@@ -1,18 +1,12 @@
-import { cookies } from "next/headers";
-
 import { HistoryWorkspace } from "@/components/history-workspace";
 import { SessionRequired } from "@/components/session-required";
-import { getAcademicTerms, getCurriculumMap, getHistoryAttempts, getHistoryContext, getSessionSnapshot } from "@/lib/api";
+import { getAcademicTerms, getCurriculumMap, getHistoryAttempts, getHistoryContext } from "@/lib/api";
+import { requireAuthenticatedSession } from "@/lib/require-authenticated-session";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const cookieHeader = (await cookies()).toString();
-  const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
-  const session = await getSessionSnapshot(headers);
-  if (session.state !== "authenticated") {
-    return <SessionRequired nextPath="/history" title="Inicia sesión para consultar tu historia" description="Los intentos, notas y reconocimientos sólo son visibles para su propietario o un rol autorizado." />;
-  }
+  const { headers } = await requireAuthenticatedSession("/history");
   const context = await getHistoryContext({ headers });
   if (!context.data) {
     return <SessionRequired nextPath="/history" title="No hay una matrícula seleccionada" description="Esta cuenta no tiene una matrícula propia disponible. El acceso administrativo a otra persona requiere un flujo explícito y auditado." showSignIn={false} />;

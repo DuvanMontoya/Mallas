@@ -1,13 +1,11 @@
-import { cookies } from "next/headers";
-
 import { HistoryImportWorkspace } from "@/components/history-import-workspace";
 import { SessionRequired } from "@/components/session-required";
 import {
   getCurriculumMap,
   getHistoryContext,
   getHistoryImport,
-  getSessionSnapshot,
 } from "@/lib/api";
+import { requireAuthenticatedSession } from "@/lib/require-authenticated-session";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +18,7 @@ function first(value: string | string[] | undefined) {
 }
 
 export default async function ImportHistoryPage({ searchParams }: ImportHistoryPageProps) {
-  const cookieHeader = (await cookies()).toString();
-  const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
-  const session = await getSessionSnapshot(headers);
-  if (session.state !== "authenticated") {
-    return <SessionRequired nextPath="/history/import" title="Inicia sesión antes de importar" description="El archivo, sus candidatos y la reconciliación pertenecen a una matrícula privada." />;
-  }
+  const { headers } = await requireAuthenticatedSession("/history/import");
   const context = await getHistoryContext({ headers });
   if (!context.data) {
     return <SessionRequired nextPath="/history" title="No hay una matrícula disponible" description="La importación exige una matrícula propia o una autorización administrativa auditada." showSignIn={false} />;

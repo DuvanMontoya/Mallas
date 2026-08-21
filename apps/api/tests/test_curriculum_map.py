@@ -29,8 +29,13 @@ class CurriculumMapApiTests(TestCase):
         imported = import_curriculum_baseline(BASELINE)
         self.revision = CurriculumRevision.objects.get(pk=imported.revision_id)
         self.client = Client()
+        self.user = get_user_model().objects.create_user(
+            email="map-reader@example.test", password="safe-test-password"
+        )
 
-    def test_public_map_preserves_non_normative_layout_and_provenance(self) -> None:
+    def test_map_requires_authentication_and_preserves_layout_and_provenance(self) -> None:
+        self.assertEqual(self.client.get("/api/v1/curriculum-map").status_code, 401)
+        self.client.force_login(self.user)
         response = self.client.get("/api/v1/curriculum-map")
 
         self.assertEqual(response.status_code, 200)

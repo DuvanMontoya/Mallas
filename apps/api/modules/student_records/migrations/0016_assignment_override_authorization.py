@@ -168,9 +168,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="curriculumassignmentoverrideauthorization",
-            index=models.Index(
-                fields=["enrollment", "status"], name="asg_ovr_auth_enroll_idx"
-            ),
+            index=models.Index(fields=["enrollment", "status"], name="asg_ovr_auth_enroll_idx"),
         ),
         migrations.AddConstraint(
             model_name="curriculumassignmentoverrideauthorization",

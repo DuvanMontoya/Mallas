@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
+from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
 from modules.curriculum.models import CurriculumRevision
@@ -24,9 +26,17 @@ class DependencyGraphApiTests(TestCase):
         imported = import_curriculum_baseline(BASELINE)
         self.revision = CurriculumRevision.objects.get(pk=imported.revision_id)
         self.client = Client()
+        self.user = get_user_model().objects.create_user(
+            email="graph-reader@example.test", password="safe-test-password"
+        )
+
+    def _authenticated_get(self, path: str) -> Any:
+        self.assertEqual(self.client.get(path).status_code, 401)
+        self.client.force_login(self.user)
+        return self.client.get(path)
 
     def test_projection_contains_semantic_conditions_and_focus_analysis(self) -> None:
-        response = self.client.get("/api/v1/dependency-graph?selected=2016379")
+        response = self._authenticated_get("/api/v1/dependency-graph?selected=2016379")
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -52,7 +62,7 @@ class DependencyGraphApiTests(TestCase):
         self.assertTrue(any("CONDITION" in edge_kind for edge_kind in path["edge_kinds"]))
 
     def test_unknown_focus_is_explainable_and_does_not_change_the_graph(self) -> None:
-        response = self.client.get("/api/v1/dependency-graph?selected=DOES-NOT-EXIST")
+        response = self._authenticated_get("/api/v1/dependency-graph?selected=DOES-NOT-EXIST")
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()

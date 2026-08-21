@@ -1,31 +1,18 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getAcademicOverview, getSessionSnapshot, type AcademicOverview } from "@/lib/api";
+import { getAcademicOverview, type AcademicOverview } from "@/lib/api";
+import { requireAuthenticatedSession } from "@/lib/require-authenticated-session";
 
 export const dynamic = "force-dynamic";
 
-async function requestHeaders() {
-  try {
-    const cookieHeader = (await cookies()).toString();
-    return cookieHeader ? { Cookie: cookieHeader } : undefined;
-  } catch {
-    // Vitest renders the Server Component outside a request context. The API
-    // boundary will then return the honest unavailable state.
-    return undefined;
-  }
-}
-
-type EntryState = "anonymous" | "unavailable" | "enrollment-missing" | "enrollment-review";
+type EntryState = "unavailable" | "enrollment-missing" | "enrollment-review";
 
 function EmptyDashboardHome({ state }: { state: EntryState }) {
   const unavailable = state === "unavailable";
   const enrollmentMissing = state === "enrollment-missing";
   const enrollmentReview = state === "enrollment-review";
-  return (
-    <section className="panel compact-entry" aria-labelledby="start-title"><div><p className="eyebrow">{unavailable ? "Servicio temporalmente no disponible" : enrollmentReview ? "Vinculación curricular en revisión" : enrollmentMissing ? "Acceso académico pendiente" : "Plan 2514 · Estadística"}</p><h1 id="start-title">{unavailable ? "No pudimos cargar tu estado académico" : enrollmentReview ? "Aún no podemos determinar tu avance" : enrollmentMissing ? "Tu cuenta aún no tiene una matrícula vinculada" : "Explora la malla curricular"}</h1><p>{unavailable ? "Tus datos no se modificaron. Puedes reintentar o consultar la malla pública." : enrollmentReview ? "La administración debe confirmar qué revisión corresponde a tu ingreso. Puedes consultar la malla pública, pero no mostraremos elegibilidad ni faltantes como definitivos." : enrollmentMissing ? "La vinculación debe resolverla la administración académica; importar un archivo todavía no está habilitado para esta cuenta." : "Consulta obligatorias, opciones y prerrequisitos sin iniciar sesión."}</p></div><div className="compact-entry-actions"><Link className="button button-primary" href={unavailable ? "/" : "/curriculum"}>{unavailable ? "Reintentar" : "Abrir malla"}</Link>{state === "anonymous" ? <Link className="button button-secondary" href="/login">Iniciar sesión</Link> : unavailable ? <Link className="button button-secondary" href="/curriculum">Ver malla pública</Link> : null}</div></section>
-  );
+  return <section className="panel compact-entry" aria-labelledby="start-title"><div><p className="eyebrow">{unavailable ? "Servicio temporalmente no disponible" : enrollmentReview ? "Vinculación curricular en revisión" : "Acceso académico pendiente"}</p><h1 id="start-title">{unavailable ? "No pudimos cargar tu estado académico" : enrollmentReview ? "Aún no podemos determinar tu avance" : "Tu cuenta aún no tiene una matrícula vinculada"}</h1><p>{unavailable ? "Tus datos no se modificaron. Puedes reintentar cuando el servicio esté disponible." : enrollmentReview ? "La administración debe confirmar qué revisión corresponde a tu ingreso antes de mostrar decisiones académicas." : "La vinculación debe resolverla la administración académica antes de habilitar herramientas académicas."}</p></div><div className="compact-entry-actions"><Link className="button button-primary" href={unavailable ? "/" : "/curriculum"}>{unavailable ? "Reintentar" : "Abrir mi malla"}</Link></div></section>;
 }
 
 function EditorialHome() {
@@ -86,8 +73,7 @@ function StudentDecisionHome({ overview }: { overview: AcademicOverview }) {
 }
 
 export default async function HomePage() {
-  const headers = await requestHeaders();
-  const session = await getSessionSnapshot(headers);
+  const { headers, session } = await requireAuthenticatedSession("/");
   if (session.user?.onboarding_required && !session.user.must_change_password) redirect("/onboarding");
   const editorialOnly = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) && !session.user.student_profile_id && !session.user.roles.includes("STUDENT");
   if (editorialOnly) return <EditorialHome />;
@@ -98,10 +84,10 @@ export default async function HomePage() {
   const enrollmentReview = session.state === "authenticated" && overview.failure?.problem?.code?.toLocaleLowerCase("es-CO") === "enrollment_needs_review";
   const entryState: EntryState = enrollmentReview
     ? "enrollment-review"
-    : overview.failure?.unavailable || session.state === "unavailable" || (session.state === "authenticated" && !enrollmentMissing)
+    : overview.failure?.unavailable || !enrollmentMissing
     ? "unavailable"
     : enrollmentMissing
       ? "enrollment-missing"
-      : "anonymous";
+      : "enrollment-missing";
   return <div className="content-grid"><EmptyDashboardHome state={entryState} /></div>;
 }

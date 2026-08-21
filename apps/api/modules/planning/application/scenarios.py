@@ -354,9 +354,7 @@ def recompute_scenario_projection(scenario: PlanScenario) -> ScenarioAuditProjec
             "enrollment_id": str(enrollment.pk),
             "revision_id": str(enrollment.revision_basis_id),
             "revision_content_hash": (
-                enrollment.revision_basis.content_hash
-                if enrollment.revision_basis_id
-                else None
+                enrollment.revision_basis.content_hash if enrollment.revision_basis_id else None
             ),
             "planned": [
                 {
@@ -833,7 +831,7 @@ def compare_scenarios(actor: Any, left_id: UUID, right_id: UUID) -> dict[str, An
     }
 
 
-def shared_scenario_view(token: UUID) -> dict[str, Any]:
+def shared_scenario_view(actor: Any, token: UUID) -> dict[str, Any]:
     scenario = (
         PlanScenario.objects.filter(share_token=token, sharing_enabled=True)
         .select_related("target_term")
@@ -842,6 +840,8 @@ def shared_scenario_view(token: UUID) -> dict[str, Any]:
     )
     if scenario is None:
         raise ScenarioError("Shared scenario was not found.", code="share_not_found")
+    if not can_view_enrollment(actor, scenario.enrollment):
+        raise ScenarioError("You cannot view this private scenario.", code="scenario_forbidden")
     return {
         "id": scenario.pk,
         "name": scenario.name,

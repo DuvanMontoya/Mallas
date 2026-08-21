@@ -461,6 +461,22 @@ class StudentAdministrationApiTests(TransactionTestCase):
         enrollment.status = "NEEDS_REVIEW"
         enrollment.review_reasons = ["IDENTITY_REVIEW"]
         enrollment.save(update_fields=("status", "review_reasons", "updated_at"))
+        second_term = AcademicTerm.objects.create(
+            institution=self.data["institution"],
+            campus=self.data["campus"],
+            code="2027-2-IDENTITY-HOLD",
+            starts_at=self.data["term"].starts_at + datetime.timedelta(days=365),
+            ends_at=self.data["term"].ends_at + datetime.timedelta(days=365),
+        )
+        second_enrollment = ProgramEnrollment.objects.create(
+            student=enrollment.student,
+            program=enrollment.program,
+            plan=None,
+            revision_basis=None,
+            admission_term=second_term,
+            status="NEEDS_REVIEW",
+            review_reasons=["CURRICULUM_ASSIGNMENT", "IDENTITY_REVIEW"],
+        )
         detail = self.client.get(
             f"/api/v1/admin/students/enrollments/{enrollment.pk}/identity"
         ).json()
@@ -483,8 +499,11 @@ class StudentAdministrationApiTests(TransactionTestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         enrollment.refresh_from_db()
+        second_enrollment.refresh_from_db()
         self.assertEqual(enrollment.status, "ACTIVE")
         self.assertEqual(enrollment.review_reasons, [])
+        self.assertEqual(second_enrollment.status, "NEEDS_REVIEW")
+        self.assertEqual(second_enrollment.review_reasons, ["CURRICULUM_ASSIGNMENT"])
 
     @override_settings(PRIVILEGED_MFA_REQUIRED=True)  # type: ignore[untyped-decorator]
     def test_private_identity_detail_requires_privileged_step_up(self) -> None:

@@ -79,6 +79,25 @@ reemplazada por self-service: la persona debe iniciar una rectificación
 institucional; sólo identidades declaradas por sí mismas o legacy aún no
 verificadas pueden actualizarse directamente.
 
+### Asignación curricular y excepciones
+
+La referencia individual de admisión se protege con una huella con clave y se
+vincula a `AdmissionFact`, programa, período y evidencia archivada; no se
+considera verificada una referencia libre del cliente. En transiciones, el
+servidor compara el HMAC del número estudiantil con el sello inmutable del
+hecho; una mutación posterior de metadata no cambia esa identidad. Las políticas bajo
+revisión y las autorizaciones de excepción congelan objetivo, hashes de la
+revisión, snapshot, almacenamiento, fuente, localizador y extracto. El segundo
+aprobador ve ese mismo material y la aprobación usa `If-Match`, MFA y una
+persona distinta del preparador.
+
+Catálogos de evidencia y autorizaciones están limitados a la matrícula y al
+alcance institucional/programa. Una excepción individual sólo puede aportar
+evidencia a esa misma matrícula; la evidencia compartida debe pertenecer a una
+política verificada y publicada para el objetivo. Las decisiones y transiciones
+son append-only y las defensas PostgreSQL bloquean actualización o borrado
+directo.
+
 No existe un borrado HTTP instantáneo de una cuenta académica: podría destruir
 evidencia que la institución deba conservar. Una solicitud de supresión debe
 clasificar cada dato según la política legal/institucional aplicable:

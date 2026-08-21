@@ -5,15 +5,19 @@ import { useMemo, useState } from "react";
 
 import {
   applyGovernanceCandidates,
+  getAssignmentPolicies,
   getGovernanceProposal,
   linkGovernanceRequirementEvidence,
   previewGovernanceCandidates,
+  publishAssignmentPolicy,
   publishGovernanceProposal,
   problemMessage,
   reviewGovernanceCandidate,
   reviewGovernanceProposal,
   submitGovernanceProposal,
+  submitAssignmentPolicy,
   type ApiFailure,
+  type AssignmentPolicySummary,
   type GovernanceProposal,
   type SourceInbox,
 } from "@/lib/api";
@@ -126,6 +130,101 @@ function CandidateRow({
   );
 }
 
+function AssignmentPolicyReviewMaterial({ policy }: { policy: AssignmentPolicySummary }) {
+  if (policy.status !== "IN_REVIEW") return null;
+  return (
+    <details>
+      <summary>Ver material sometido</summary>
+      <dl>
+        <dt>Rango de admisión</dt><dd>{policy.admission_from ?? "Sin inicio"} – {policy.admission_to ?? "abierto"}</dd>
+        <dt>Cohorte</dt><dd>{policy.cohort_code || "No restringida"}</dd>
+        <dt>Plan anterior</dt><dd>{policy.previous_plan_code ?? "No aplica"}</dd>
+        <dt>Publicación normativa</dt><dd>{policy.normative_published_on ?? "No demostrada"}</dd>
+        <dt>Vigencia</dt><dd>{policy.effective_from ?? "Sin inicio"} – {policy.effective_to ?? "abierta"}</dd>
+        <dt>Revisión objetivo</dt><dd>{policy.revision_code} · {policy.revision_status}</dd>
+        <dt>Huella de contenido de revisión</dt><dd><code>{policy.revision_content_hash}</code></dd>
+        <dt>Huella de fuentes de revisión</dt><dd><code>{policy.revision_source_set_hash}</code></dd>
+        <dt>Permite revisión retirada</dt><dd>{policy.allow_retired_revision ? "Sí, explícitamente" : "No"}</dd>
+        <dt>Huella del paquete</dt><dd><code>{policy.review_content_hash}</code></dd>
+        <dt>Huella de evidencia de política</dt><dd><code>{policy.source_set_hash}</code></dd>
+      </dl>
+      {policy.evidence.map((item) => (
+        <article key={`${item.purpose}-${item.excerpt_hash}`}>
+          <strong>{item.purpose} · {item.source_title}</strong>
+          <span>{item.locator}</span>
+          <p>{item.excerpt}</p>
+          <code>{item.excerpt_hash}</code>
+          <code>{item.snapshot_sha256}</code>
+        </article>
+      ))}
+    </details>
+  );
+}
+
+function AssignmentPolicyGovernance({ roles, currentUserId }: { roles: string[]; currentUserId: number }) {
+  const [policies, setPolicies] = useState<AssignmentPolicySummary[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+
+  async function load() {
+    const result = await getAssignmentPolicies();
+    if (!result.data) {
+      setError(result.failure?.problem?.detail ?? "No fue posible cargar las políticas de asignación.");
+      return;
+    }
+    setPolicies(result.data);
+    setLoaded(true);
+  }
+
+  async function publish(policy: AssignmentPolicySummary) {
+    if (!window.confirm(`¿Publicar la política ${policy.policy_code}? Confirma que revisaste el paquete sellado y que no eres la persona preparadora.`)) return;
+    setBusyId(policy.id);
+    setError(null);
+    const result = await publishAssignmentPolicy(policy.id);
+    setBusyId(null);
+    if (!result.data) {
+      setError(result.failure?.problem?.detail ?? "La política no superó el gate de publicación.");
+      return;
+    }
+    setPolicies((current) => current.map((item) => item.id === policy.id ? {
+      ...item,
+      status: result.data!.status,
+      approved_by_id: result.data!.approved_by_id,
+    } : item));
+    setAnnouncement(`Política ${policy.policy_code} publicada por una segunda persona.`);
+  }
+
+  async function submit(policy: AssignmentPolicySummary) {
+    setBusyId(policy.id);
+    setError(null);
+    const result = await submitAssignmentPolicy(policy.id);
+    setBusyId(null);
+    if (!result.data) {
+      setError(result.failure?.problem?.detail ?? "La política no pudo enviarse a revisión.");
+      return;
+    }
+    setPolicies((current) => current.map((item) => item.id === policy.id ? result.data! : item));
+    setAnnouncement(`Política ${policy.policy_code} enviada a revisión. Otra persona debe publicarla.`);
+  }
+
+  return (
+    <details className="governance-workflow panel" onToggle={(event) => {
+      if (event.currentTarget.open && !loaded) void load();
+    }}>
+      <summary><span><b>Políticas de asignación curricular</b><small>Publicación evidenciada que decide plan y revisión</small></span></summary>
+      <section aria-labelledby="assignment-policy-governance-title">
+        <h2 id="assignment-policy-governance-title">Asignación automática</h2>
+        <p className="muted-copy">Quien prepara la política la envía a revisión; una persona distinta debe publicarla. El servidor vuelve a comprobar evidencia, revisión, alcance, solapamientos y hashes.</p>
+        <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+        {error ? <Alert tone="error">{error}</Alert> : null}
+        {!loaded ? <p role="status">Cargando políticas…</p> : policies.length ? <div className="table-scroll"><table className="governance-table"><caption>Políticas dentro de su alcance editorial</caption><thead><tr><th>Política</th><th>Destino</th><th>Contexto</th><th>Estado</th><th><span className="sr-only">Acción</span></th></tr></thead><tbody>{policies.map((policy) => { const canSubmit = policy.status === "DRAFT" && roles.some((role) => ["EDITOR", "ADMIN"].includes(role)) && (policy.prepared_by_id === null || policy.prepared_by_id === currentUserId); const canPublish = policy.status === "IN_REVIEW" && roles.some((role) => ["REVIEWER", "ADMIN"].includes(role)) && policy.prepared_by_id !== currentUserId; return <tr key={policy.id}><td><strong>{policy.policy_code}</strong><small> v{policy.version} · {policy.program_name}</small><AssignmentPolicyReviewMaterial policy={policy} /></td><td>Plan {policy.plan_code} · {policy.revision_code}</td><td>{policy.context}</td><td><StatusBadge tone={statusTone(policy.status)} label={`${editorialStatus(policy.status)} · ${editorialStatus(policy.epistemic_status)}`} /></td><td>{canSubmit ? <button className="button button-primary" type="button" disabled={busyId === policy.id} onClick={() => void submit(policy)}>{busyId === policy.id ? `Enviando ${policy.policy_code}…` : `Enviar ${policy.policy_code} a revisión`}</button> : canPublish ? <button className="button button-primary" type="button" disabled={busyId === policy.id} onClick={() => void publish(policy)}>{busyId === policy.id ? `Publicando ${policy.policy_code}…` : `Publicar política verificada ${policy.policy_code}`}</button> : <span className="muted-copy">{policy.status === "IN_REVIEW" && policy.prepared_by_id === currentUserId ? "Esperando publicación por otra persona" : "Sin acción permitida para tu rol"}</span>}</td></tr>; })}</tbody></table></div> : <EmptyState title="Sin políticas preparadas" description="Las políticas aparecerán aquí después de su preparación y revisión evidenciada." />}
+      </section>
+    </details>
+  );
+}
+
 export function GovernanceBackoffice({
   initialInbox,
   initialFailure,
@@ -133,6 +232,7 @@ export function GovernanceBackoffice({
   initialProposalEtag,
   initialProposalFailure,
   roles,
+  currentUserId,
 }: {
   initialInbox: SourceInbox | null;
   initialFailure: ApiFailure | null;
@@ -140,6 +240,7 @@ export function GovernanceBackoffice({
   initialProposalEtag: string | null;
   initialProposalFailure: ApiFailure | null;
   roles: string[];
+  currentUserId: number;
 }) {
   const [inbox] = useState(initialInbox);
   const [selectedId, setSelectedId] = useState<string | null>(initialInbox?.proposals[0]?.id ?? null);
@@ -301,6 +402,8 @@ export function GovernanceBackoffice({
       {failure ? <Alert tone={failure.problem?.code === "GOVERNANCE_CONCURRENCY_CONFLICT" ? "error" : "info"}><strong>{failure.problem?.code === "GOVERNANCE_CONCURRENCY_CONFLICT" ? "Conflicto de concurrencia." : "Estado editorial."}</strong> {failureText(failure)} {failure.problem?.code === "GOVERNANCE_CONCURRENCY_CONFLICT" ? <button className="button button-quiet" type="button" onClick={() => selectedId && void loadProposal(selectedId)}>Recargar versión actual</button> : null}</Alert> : null}
 
       <details className="governance-workflow panel"><summary><span><b>Cómo se protege una publicación</b><small>La cadena completa de procedencia y separación de funciones</small></span></summary><section aria-labelledby="governance-workflow-title"><h2 id="governance-workflow-title" className="sr-only">Flujo editorial completo</h2><ol className="governance-workflow-list">{inbox.workflow.map((stage, index) => <li key={stage}><span>{String(index + 1).padStart(2, "0")}</span><strong>{editorialStatus(stage)}</strong></li>)}</ol></section></details>
+
+      <AssignmentPolicyGovernance roles={roles} currentUserId={currentUserId} />
 
       <div className="governance-layout">
         <aside className="panel governance-sidebar" aria-labelledby="governance-queue-title">

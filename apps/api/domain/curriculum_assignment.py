@@ -34,6 +34,8 @@ class AssignmentInput:
     admission_source_sha256: str | None = None
     admission_verification_method: str | None = None
     admission_record_reference_hash: str | None = None
+    admission_fact_id: str | None = None
+    admission_fact_content_hash: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -46,6 +48,8 @@ class AssignmentInput:
             "admission_source_sha256": self.admission_source_sha256,
             "admission_verification_method": self.admission_verification_method,
             "admission_record_reference_hash": self.admission_record_reference_hash,
+            "admission_fact_id": self.admission_fact_id,
+            "admission_fact_content_hash": self.admission_fact_content_hash,
         }
 
 
@@ -74,6 +78,7 @@ class AssignmentPolicyCandidate:
     revision_content_hash: str
     revision_source_set_hash: str
     evidence_sealed: bool
+    evidence_purposes_valid: bool
     allow_retired_revision: bool
 
     def applies_to(self, value: AssignmentInput) -> bool:
@@ -85,10 +90,7 @@ class AssignmentPolicyCandidate:
             and (not self.cohort_code or self.cohort_code == value.cohort_code)
             and (self.effective_from is None or self.effective_from <= value.admission_date)
             and (self.effective_to is None or value.admission_date < self.effective_to)
-            and (
-                self.previous_plan_id is None
-                or self.previous_plan_id == value.previous_plan_id
-            )
+            and (self.previous_plan_id is None or self.previous_plan_id == value.previous_plan_id)
         )
 
     @property
@@ -108,6 +110,7 @@ class AssignmentPolicyCandidate:
             and bool(self.revision_content_hash)
             and bool(self.revision_source_set_hash)
             and self.evidence_sealed
+            and self.evidence_purposes_valid
         )
 
     def trace(self) -> dict[str, object]:
@@ -126,6 +129,7 @@ class AssignmentPolicyCandidate:
             "revision_content_hash": self.revision_content_hash,
             "revision_source_set_hash": self.revision_source_set_hash,
             "evidence_sealed": self.evidence_sealed,
+            "evidence_purposes_valid": self.evidence_purposes_valid,
             "allow_retired_revision": self.allow_retired_revision,
             "effective_from": self.effective_from.isoformat() if self.effective_from else None,
             "effective_to": self.effective_to.isoformat() if self.effective_to else None,
@@ -173,7 +177,9 @@ def resolve_curriculum_assignment(
             reason_codes=(AssignmentReason.NO_APPLICABLE_POLICY.value,),
             candidates=(),
         )
-    superseded_ids = {candidate.supersedes_id for candidate in applicable if candidate.supersedes_id}
+    superseded_ids = {
+        candidate.supersedes_id for candidate in applicable if candidate.supersedes_id
+    }
     effective_applicable = tuple(
         candidate for candidate in applicable if candidate.policy_id not in superseded_ids
     )
@@ -194,9 +200,11 @@ def resolve_curriculum_assignment(
     # institutional adapter resolves it to an archived fact, it cannot prove admission.
     admission_fact_verified = (
         value.admission_verification_method
-        == AdmissionFactVerificationMethod.SOURCE_SNAPSHOT.value
+        == AdmissionFactVerificationMethod.VERIFIED_ADMISSION_FACT.value
         and bool(value.admission_source_snapshot_id)
         and bool(value.admission_source_sha256)
+        and bool(value.admission_fact_id)
+        and bool(value.admission_fact_content_hash)
     )
     if not admission_fact_verified:
         return AssignmentDecision(

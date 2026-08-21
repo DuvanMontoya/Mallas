@@ -4,15 +4,20 @@ from datetime import date, datetime
 from typing import Any, NoReturn
 from uuid import UUID
 
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from ninja import Header, Router, Schema
 from ninja.security import django_auth
 
+from domain.enums import UserRole
 from modules.common.api import raise_problem, require_if_match, with_problem_responses
 from modules.curriculum.application.assignment import (
     CurriculumAssignmentPolicyError,
     publish_assignment_policy,
+    submit_assignment_policy,
 )
+from modules.curriculum.models import CurriculumAssignmentPolicy
+from modules.identity.application.authorization import active_role_assignments
 
 from .application.services import (
     GovernanceError,
@@ -44,6 +49,156 @@ class AssignmentPolicyPublicationView(Schema):
     approved_by_id: int
 
 
+class AssignmentPolicyEvidenceReviewView(Schema):
+    purpose: str
+    source_title: str
+    locator: str
+    excerpt: str
+    excerpt_hash: str
+    snapshot_sha256: str
+
+
+class AssignmentPolicySummaryView(Schema):
+    id: UUID
+    policy_code: str
+    version: int
+    program_name: str
+    plan_code: str
+    revision_code: str
+    revision_status: str
+    revision_content_hash: str
+    revision_source_set_hash: str
+    context: str
+    epistemic_status: str
+    status: str
+    prepared_by_id: int | None
+    approved_by_id: int | None
+    admission_from: date | None
+    admission_to: date | None
+    cohort_code: str
+    previous_plan_code: str | None
+    normative_published_on: date | None
+    effective_from: date | None
+    effective_to: date | None
+    allow_retired_revision: bool
+    review_content_hash: str | None
+    source_set_hash: str | None
+    evidence: list[AssignmentPolicyEvidenceReviewView]
+
+
+class AssignmentPolicyCollectionView(Schema):
+    items: list[AssignmentPolicySummaryView]
+
+
+def _assignment_policy_summary(policy: CurriculumAssignmentPolicy) -> dict[str, Any]:
+    return {
+        "id": policy.pk,
+        "policy_code": policy.policy_code,
+        "version": policy.version,
+        "program_name": policy.program.name,
+        "plan_code": policy.plan.code,
+        "revision_code": policy.revision_basis.revision_code,
+        "revision_status": policy.revision_basis.status,
+        "revision_content_hash": policy.revision_basis.content_hash,
+        "revision_source_set_hash": policy.revision_basis.source_set_hash,
+        "context": policy.context,
+        "epistemic_status": policy.epistemic_status,
+        "status": policy.status,
+        "prepared_by_id": policy.prepared_by_id,
+        "approved_by_id": policy.approved_by_id,
+        "admission_from": policy.admission_from,
+        "admission_to": policy.admission_to,
+        "cohort_code": policy.cohort_code,
+        "previous_plan_code": policy.previous_plan.code if policy.previous_plan_id else None,
+        "normative_published_on": policy.normative_published_on,
+        "effective_from": policy.effective_from,
+        "effective_to": policy.effective_to,
+        "allow_retired_revision": policy.allow_retired_revision,
+        "review_content_hash": policy.content_hash or None,
+        "source_set_hash": policy.source_set_hash or None,
+        "evidence": [
+            {
+                "purpose": link.purpose,
+                "source_title": link.sealed_source_title,
+                "locator": link.sealed_locator,
+                "excerpt": link.sealed_excerpt,
+                "excerpt_hash": link.sealed_excerpt_hash,
+                "snapshot_sha256": link.sealed_snapshot_sha256,
+            }
+            for link in policy.evidence_links.all()
+        ],
+    }
+
+
+@router.get(
+    "/governance/assignment-policies",
+    auth=django_auth,
+    response=with_problem_responses(AssignmentPolicyCollectionView),
+)
+def assignment_policies(request: HttpRequest, response: HttpResponse) -> dict[str, Any]:
+    assignments = [
+        assignment
+        for assignment in active_role_assignments(request.auth)
+        if assignment.role in {UserRole.EDITOR.value, UserRole.REVIEWER.value, UserRole.ADMIN.value}
+    ]
+    if not assignments and not getattr(request.auth, "is_superuser", False):
+        raise_problem(
+            status=403,
+            code="ASSIGNMENT_POLICY_FORBIDDEN",
+            title="Assignment policy access denied",
+            detail="An active governance role is required.",
+        )
+    query = CurriculumAssignmentPolicy.objects.select_related(
+        "program", "plan", "revision_basis", "previous_plan"
+    ).prefetch_related("evidence_links")
+    if not getattr(request.auth, "is_superuser", False):
+        scope = Q(pk__in=[])
+        for assignment in assignments:
+            if assignment.program_id:
+                scope |= Q(program_id=assignment.program_id)
+            elif assignment.institution_id:
+                scope |= Q(program__faculty__campus__institution_id=assignment.institution_id)
+            else:
+                scope = Q()
+                break
+        query = query.filter(scope)
+    response["Cache-Control"] = "private, no-store"
+    return {
+        "items": [
+            _assignment_policy_summary(policy)
+            for policy in query.order_by("program__name", "policy_code", "-version")[:500]
+        ]
+    }
+
+
+@router.post(
+    "/governance/assignment-policies/{policy_id}/submit",
+    auth=django_auth,
+    response=with_problem_responses(AssignmentPolicySummaryView),
+)
+def assignment_policy_submit(
+    request: HttpRequest, response: HttpResponse, policy_id: UUID
+) -> dict[str, Any]:
+    try:
+        policy = submit_assignment_policy(policy_id, actor=request.auth, request=request)
+    except CurriculumAssignmentPolicy.DoesNotExist:
+        raise_problem(
+            status=404,
+            code="ASSIGNMENT_POLICY_NOT_FOUND",
+            title="Assignment policy not found",
+            detail="The assignment policy does not exist or is outside the governed scope.",
+        )
+    except CurriculumAssignmentPolicyError as error:
+        raise_problem(
+            status=403 if error.code == "assignment_policy_forbidden" else 409,
+            code=error.code.upper(),
+            title="Assignment policy submission failed",
+            detail=str(error),
+        )
+    response["Cache-Control"] = "private, no-store"
+    return _assignment_policy_summary(policy)
+
+
 @router.post(
     "/governance/assignment-policies/{policy_id}/publish",
     auth=django_auth,
@@ -54,11 +209,23 @@ def assignment_policy_publish(
 ) -> dict[str, Any]:
     try:
         policy = publish_assignment_policy(policy_id, actor=request.auth, request=request)
+    except CurriculumAssignmentPolicy.DoesNotExist:
+        raise_problem(
+            status=404,
+            code="ASSIGNMENT_POLICY_NOT_FOUND",
+            title="Assignment policy not found",
+            detail="The assignment policy does not exist or is outside the governed scope.",
+        )
     except CurriculumAssignmentPolicyError as error:
-        status = 403 if error.code in {
-            "assignment_policy_forbidden",
-            "assignment_policy_step_up_required",
-        } else 409
+        status = (
+            403
+            if error.code
+            in {
+                "assignment_policy_forbidden",
+                "assignment_policy_step_up_required",
+            }
+            else 409
+        )
         raise_problem(
             status=status,
             code=error.code.upper(),

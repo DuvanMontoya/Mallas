@@ -1,18 +1,11 @@
-import { cookies } from "next/headers";
-
 import { AcademicDashboard } from "@/components/academic-dashboard";
 import { getAcademicOverview } from "@/lib/api";
+import { requireAuthenticatedSession } from "@/lib/require-authenticated-session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuditPage() {
-  let headers: HeadersInit | undefined;
-  try {
-    const cookieHeader = (await cookies()).toString();
-    headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
-  } catch {
-    headers = undefined;
-  }
+  const { headers } = await requireAuthenticatedSession("/audit");
   const result = await getAcademicOverview({ headers });
 
   return (

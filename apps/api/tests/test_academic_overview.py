@@ -47,13 +47,26 @@ class AcademicOverviewApiTests(TestCase):
 
     def test_needs_review_enrollment_fails_closed_without_audit_conclusions(self) -> None:
         self.enrollment.status = EnrollmentStatus.NEEDS_REVIEW.value
-        self.enrollment.save(update_fields=["status", "updated_at"])
+        self.enrollment.review_reasons = ["LEGACY_REVIEW"]
+        self.enrollment.save(update_fields=["status", "review_reasons", "updated_at"])
         self.client.force_login(self.user)
 
         response = self.client.get("/api/v1/academic-overview")
 
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["code"], "ENROLLMENT_NEEDS_REVIEW")
+        self.assertNotIn("audit", response.json())
+
+    def test_incoherent_revision_input_degrades_honestly_not_as_server_error(self) -> None:
+        group = RequirementGroup.objects.get(revision=self.revision)
+        group.required_credits = 3
+        group.save(update_fields=["required_credits"])
+        self.client.force_login(self.user)
+
+        response = self.client.get("/api/v1/academic-overview")
+
+        self.assertEqual(response.status_code, 409, response.content)
+        self.assertEqual(response.json()["code"], "AUDIT_INPUT_INCONSISTENT")
         self.assertNotIn("audit", response.json())
 
     def test_read_model_preserves_unknown_external_requirement_and_backend_eligibility(

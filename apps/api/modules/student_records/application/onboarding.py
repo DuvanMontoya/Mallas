@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
+from modules.identity.application.audit import record_audit_event
 from modules.offerings.models import AcademicTerm
 from modules.student_records.models import StudentOnboarding
 
@@ -24,7 +25,8 @@ def _state_for_user(user: Any, *, lock: bool = False) -> StudentOnboarding:
         _ = user.student_profile.pk
     except ObjectDoesNotExist as exc:
         raise StudentOnboardingError(
-            "A student profile is required for onboarding.", code="onboarding_student_required"
+            "Se requiere un perfil de estudiante para la configuración inicial.",
+            code="onboarding_student_required",
         ) from exc
     query = StudentOnboarding.objects.select_related(
         "enrollment__student",
@@ -43,14 +45,13 @@ def _state_for_user(user: Any, *, lock: bool = False) -> StudentOnboarding:
     ).first()
     if state is None:
         raise StudentOnboardingError(
-            "This account does not have a pending onboarding flow.",
+            "Esta cuenta no tiene un flujo de configuración inicial pendiente.",
             code="onboarding_not_available",
         )
     return state
 
 
-def onboarding_view(user: Any) -> dict[str, Any]:
-    state = _state_for_user(user)
+def _onboarding_state_view(state: StudentOnboarding) -> dict[str, Any]:
     enrollment = state.enrollment
     latest_decision = enrollment.assignment_decisions.order_by("-created_at", "-id").first()
     return {
@@ -74,6 +75,10 @@ def onboarding_view(user: Any) -> dict[str, Any]:
     }
 
 
+def onboarding_view(user: Any) -> dict[str, Any]:
+    return _onboarding_state_view(_state_for_user(user))
+
+
 @transaction.atomic  # type: ignore[untyped-decorator]
 def update_onboarding(
     *,
@@ -85,6 +90,7 @@ def update_onboarding(
     planning_load_target: int,
     tour_status: str,
     complete: bool,
+    request: Any | None = None,
 ) -> dict[str, Any]:
     if expected_version is None:
         raise StudentOnboardingError(
@@ -107,18 +113,12 @@ def update_onboarding(
         raise StudentOnboardingError(
             "Onboarding is already complete.", code="onboarding_already_complete"
         )
-    if history_step_status not in {
-        StudentOnboarding.HistoryStepStatus.IMPORTED,
-        StudentOnboarding.HistoryStepStatus.SKIPPED,
-    }:
+    if history_step_status not in {"IMPORTED", "SKIPPED"}:
         raise StudentOnboardingError(
             "Choose whether history was imported or will be completed later.",
             code="onboarding_history_disposition_required",
         )
-    if tour_status not in {
-        StudentOnboarding.TourStatus.COMPLETED,
-        StudentOnboarding.TourStatus.SKIPPED,
-    }:
+    if tour_status not in {"COMPLETED", "SKIPPED"}:
         raise StudentOnboardingError(
             "Complete or skip the interface tour.", code="onboarding_tour_disposition_required"
         )
@@ -153,4 +153,20 @@ def update_onboarding(
             )
         state.completed_at = timezone.now()
     state.save()
-    return onboarding_view(user)
+    record_audit_event(
+        request,
+        action="STUDENT_ONBOARDING_UPDATED",
+        actor=user,
+        object_type="StudentOnboarding",
+        object_id=state.pk,
+        institution_id=enrollment.student.institution_id,
+        metadata={
+            "enrollment_id": str(enrollment.pk),
+            "history_step_status": state.history_step_status,
+            "current_term_id": str(state.current_term_id),
+            "planning_load_target": state.planning_load_target,
+            "tour_status": state.tour_status,
+            "completed": state.is_complete,
+        },
+    )
+    return _onboarding_state_view(state)

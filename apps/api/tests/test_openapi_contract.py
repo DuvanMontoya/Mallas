@@ -104,14 +104,17 @@ class ApiProblemContractTests(TestCase):
         self.assertIn("fields", invalid.json())
 
     def test_openapi_declares_shared_problem_schema_on_operations(self) -> None:
-        document = self.client.get("/api/v1/openapi.json").json()
+        from config.api import api
+
+        self.assertEqual(self.client.get("/api/v1/openapi.json").status_code, 404)
+        self.assertEqual(self.client.get("/api/v1/docs").status_code, 404)
+        document = api.get_openapi_schema()
         self.assertIn("ProblemDetails", document["components"]["schemas"])
         for path, item in document["paths"].items():
             for method, operation in item.items():
                 if method.upper() not in {"GET", "POST", "PUT", "PATCH", "DELETE"}:
                     continue
-                self.assertIn("400", operation["responses"], f"{method} {path}")
-                error_schema = operation["responses"]["400"]["content"]["application/json"][
-                    "schema"
-                ]
+                responses = {str(status): value for status, value in operation["responses"].items()}
+                self.assertIn("400", responses, f"{method} {path}")
+                error_schema = responses["400"]["content"]["application/json"]["schema"]
                 self.assertEqual(error_schema["$ref"], "#/components/schemas/ProblemDetails")

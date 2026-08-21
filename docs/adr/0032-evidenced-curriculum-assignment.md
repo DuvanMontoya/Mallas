@@ -38,7 +38,25 @@ reingresos o transiciones.
    `NEEDS_REVIEW`, pero no la activa como resolución automática. El flujo nuevo
    no expone selectores técnicos de plan/revisión.
 7. Ninguna matrícula existente cambia de revisión automáticamente. Toda
-   transición posterior crea una nueva decisión auditable.
+   transición posterior crea una nueva decisión auditable. Reingreso y
+   transición de plan se representan además mediante `EnrollmentTransition`
+   append-only con matrículas fuente/destino, contexto, estado anterior/final
+   de la fuente y hash de decisión. Una transición de plan cierra la fuente
+   como `TRANSITIONED`; un reingreso parte de una vinculación histórica,
+   suspendida o retirada.
+8. Una política nace `DRAFT`; sólo quien figura como preparador puede enviarla
+   a `IN_REVIEW`, y sólo otra persona con rol reviewer/admin y MFA privilegiado
+   puede publicarla. Ambos pasos generan auditoría y la publicación vuelve a
+   validar evidencia, revisión, alcance, hashes y solapamientos bajo el mismo
+   lock de ámbito que el resolver.
+9. Un override individual requiere preparación y aprobación por dos personas.
+   Al preparar se congela el objetivo y el material exacto que verá quien
+   aprueba: snapshot, SHA, título, localizador, extracto y hashes. `If-Match`,
+   un `content_hash` del envelope y guards de PostgreSQL impiden aprobar un
+   objeto distinto del revisado.
+10. El onboarding pertenece a una matrícula concreta. Una persona con varias
+   vinculaciones atiende cada onboarding accionable de forma determinista, sin
+   mezclar períodos ni decisiones entre matrículas.
 
 ## Consecuencias
 
@@ -48,3 +66,7 @@ reingresos o transiciones.
   D-010. La plataforma explica la causa y no selecciona silenciosamente.
 - Reingreso, traslado, doble titulación y transición son contextos distintos y
   no heredan la regla de admisión ordinaria.
+- P102 implementa operacionalmente `ADMISSION`, `REENTRY` y
+  `PLAN_TRANSITION`. `TRANSFER` y `DUAL_DEGREE` permanecen modelados como
+  contextos diferentes pero no se declaran implementados hasta contar con su
+  lifecycle, política y evidencia institucionales.

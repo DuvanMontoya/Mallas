@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from datetime import timedelta
+from importlib import import_module
 
+from django.apps import apps
 from django.test import Client, TestCase
 from django.utils import timezone
 
@@ -126,3 +128,41 @@ class StudentOnboardingApiTests(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["enrollment_id"], str(enrollment.pk))
         self.assertFalse(response.json()["completed"])
+
+    def test_enrollment_without_onboarding_flow_does_not_trap_the_session(self) -> None:
+        self.state.delete()
+        me = self.client.get("/api/v1/auth/me")
+        self.assertFalse(me.json()["onboarding_required"])
+        missing = self.client.get("/api/v1/onboarding")
+        self.assertEqual(missing.status_code, 422)
+        self.assertEqual(missing.json()["code"], "ONBOARDING_NOT_AVAILABLE")
+
+    def test_historical_onboarding_normalization_is_idempotent(self) -> None:
+        newer_term = AcademicTerm.objects.create(
+            institution=self.data["institution"],
+            campus=self.data["campus"],
+            code="ONBOARDING-PREFERRED",
+            starts_at=timezone.now() + timedelta(days=365),
+            ends_at=timezone.now() + timedelta(days=480),
+        )
+        newer = ProgramEnrollment.objects.create(
+            student=self.data["student"],
+            program=self.data["program"],
+            plan=self.data["plan"],
+            revision_basis=self.data["revision"],
+            admission_term=newer_term,
+            status="ACTIVE",
+        )
+        newer_state = StudentOnboarding.objects.create(enrollment=newer)
+        self.data["enrollment"].status = "WITHDRAWN"
+        self.data["enrollment"].review_reasons = []
+        self.data["enrollment"].save(update_fields=("status", "review_reasons", "updated_at"))
+        migration = import_module(
+            "modules.student_records.migrations.0020_normalize_historical_onboarding"
+        )
+        migration.normalize_historical_onboarding(apps, None)
+        migration.normalize_historical_onboarding(apps, None)
+        self.state.refresh_from_db()
+        newer_state.refresh_from_db()
+        self.assertIsNotNone(self.state.completed_at)
+        self.assertIsNone(newer_state.completed_at)

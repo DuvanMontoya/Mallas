@@ -1,25 +1,31 @@
 # 16 — API contract
 
-## Public namespace and ownership
+## Private namespace and ownership
 
-The public HTTP namespace is `/api/v1`. The version is an API contract version; it
+The HTTP namespace is `/api/v1`. The version is an API contract version; it
 is independent from curriculum revision versions, import `schema_version` values,
 and the rule-engine AST version.
 
+All product endpoints require a valid first-party session. The only anonymous
+identity operations are the CSRF bootstrap, login, password-reset and
+email-verification flows. Liveness/readiness are operational endpoints behind
+deployment-network controls. The HTTP OpenAPI document and interactive docs are
+disabled; the canonical contract is generated locally into `artifacts/openapi.json`.
+
 The current bounded-context routers are:
 
-- `Operations`: `/health/live`, `/health/ready`, and the generated `/openapi.json`;
+- `Operations`: `/health/live` and `/health/ready`;
 - `Identity`: `/auth/csrf`, `/auth/login`, `/auth/logout`, `/auth/me`,
   `/auth/profile`, `/auth/profile/export`, password reset, and email verification;
 - `Student history`: `/history/imports`, `/history/attempts`, and their preview,
   reconciliation, confirmation, and mutation operations.
-- `Curriculum`: `/curriculum-map`, a provenance-aware public read model for a
+- `Curriculum`: `/curriculum-map`, a provenance-aware authenticated read model for a
   curriculum revision and its non-normative visual layouts.
 - `Offerings`: `/academic-terms`, `/offerings` and `/offerings/schedule`, with
   temporal source freshness and exact schedule conflict read models.
 - `Planning`: `/scenarios`, `/scenarios/{id}`, planned-course mutations,
-  duplication, archive, compare and the redacted public
-  `/shared/scenarios/{share_token}` view.
+  duplication, archive, compare and the authenticated owner/advisor-only
+  `/shared/scenarios/{share_token}` compatibility view.
 
 The broader product resources (curriculum, offerings, planning, optimization,
 governance, and analytics) keep their domain ownership and are added as separate
@@ -55,7 +61,7 @@ Creating or rectifying an institution-verified identity independently
 rechecks the privileged-MFA assertion and returns a minimized summary after
 creation/revision operations; only the explicit identity detail response
 contains the private fields.
-Birth date is not returned by `/auth/me`, public curriculum, analytics or
+Birth date is not returned by `/auth/me`, curriculum, analytics or
 observability endpoints.
 
 ## Asignación curricular administrativa
@@ -66,12 +72,43 @@ candidatos trazables, política/objetivo seleccionados cuando existe una única
 regla verificada, procedencia del período, versión del resolver y
 `decision_hash`.
 
+Una resolución automática exige dos procedencias distintas: la fuente del
+período y un `AdmissionFact` individual `VERIFIED`. Un texto o hash aportado por
+el cliente no verifica por sí mismo la admisión. La respuesta expone por
+separado `admission_term_source_status` y `admission_fact_status`.
+`POST /api/v1/admin/students/admission-facts/verify` admite
+`source_enrollment_id` en reingreso/transición para comprobar antes del preview
+que el manifiesto sellado pertenece al número estudiantil de esa matrícula.
+
 El alta nueva envía `expected_assignment_hash` y no selecciona plan/revisión.
 El backend repite el resolver dentro de la transacción, rechaza un hash obsoleto
 y persiste la decisión append-only. Cero o múltiples políticas nunca caen en la
 primera revisión disponible. Los campos legacy `plan_id` y
 `revision_basis_id` siguen aceptándose temporalmente, pero sin una política
 verificada producen `NEEDS_REVIEW`, no una matrícula activa.
+
+Los reingresos y transiciones de plan usan
+`POST /api/v1/admin/students/enrollments/{id}/transition-preview` y
+`POST /api/v1/admin/students/enrollments/{id}/transitions`; el servidor deriva
+el plan anterior de la matrícula fuente, bloquea ambos períodos, verifica la
+cronología y persiste `EnrollmentTransition`. `TRANSFER` y `DUAL_DEGREE` están
+modelados, pero no son flujos operativos de P102.
+
+Una excepción no selecciona plan por UUID libre. El backoffice prepara una
+autorización mediante
+`POST /enrollments/{id}/assignment-override-authorizations`, muestra al segundo
+aprobador el objetivo y el paquete de evidencia congelado, lo aprueba con
+`If-Match`, separación de funciones y MFA, y sólo entonces aplica
+`POST /enrollments/{id}/assignment-override`.
+
+Las políticas se consultan con `GET /api/v1/governance/assignment-policies`, se
+sellan para revisión con `POST .../{id}/submit` y se publican con
+`POST .../{id}/publish`. Las lecturas de gobernanza y autorización privada usan
+`Cache-Control: private, no-store`.
+
+`GET/PATCH /api/v1/onboarding` opera sobre la matrícula accionable pendiente;
+la respuesta incluye `enrollment_id`. Completar una matrícula no reutiliza sus
+campos o períodos al pasar a otra.
 
 The authoritative machine-readable contract is
 [`artifacts/openapi.json`](../artifacts/openapi.json). It is exported from the
@@ -157,11 +194,12 @@ The response includes incremental validation and a
 `ScenarioAuditProjectionView`; the latter is explicitly a projection and is
 never an official audit run.
 
-`POST /scenarios` creates a private scenario by default. `sharing_enabled` is
-an explicit opt-in. The public share response contains only scenario name,
-status, target term, planned course code/name/credits/term and a privacy
-statement. It never returns `enrollment_id`, student identity, attempts,
-preferences or audit projection.
+`POST /scenarios` creates a private scenario by default. Capability links are
+not a public access mechanism: `/shared/scenarios/{share_token}` requires a
+valid session and the same owner/advisor authorization as the scenario itself.
+The response is retained only for compatibility and remains redacted; it never
+returns `enrollment_id`, student identity, attempts, preferences or audit
+projection. The web UI does not create public share links.
 
 Error responses use the common `ProblemDetails` envelope. The frontend must
 keep backend warning codes and correlation IDs available to the user/support
@@ -341,14 +379,13 @@ contract.
 
 ## Curriculum map read model
 
-`GET /api/v1/curriculum-map` is the read model for the interactive curriculum
-map. It accepts `plan_code` (default `2514`), an optional `revision_id`, an
-optional `enrollment_id`, and an optional `term_code`. The request is public
-when no enrollment is requested: it exposes curriculum facts, source evidence,
-the dependency projection, and the explicitly non-normative layout policy.
-When `enrollment_id` is supplied, the backend applies the same ownership and
-advisor authorization boundary as the audit read model; a caller cannot use an
-IDOR to obtain another student's personal statuses.
+`GET /api/v1/curriculum-map` is the authenticated read model for the
+interactive curriculum map. It accepts `plan_code` (default `2514`), an
+optional `revision_id`, an optional `enrollment_id`, and an optional
+`term_code`. Every request requires a session; when `enrollment_id` is
+supplied, the backend also applies the ownership and advisor authorization
+boundary of the audit read model, so a caller cannot use an IDOR to obtain
+another student's personal statuses.
 
 The response contains `revision`, `layout_policy`, `components`, `groups`,
 `courses`, `offering_context`, `personal`, `warnings`, and `links`. Courses
@@ -417,8 +454,8 @@ browser.
 
 ## Academic terms, offerings and schedules
 
-The temporal offering contract is independent of curriculum revisions. Public
-read endpoints are:
+The temporal offering contract is independent of curriculum revisions. Its
+read endpoints require an authenticated session:
 
 - `GET /api/v1/academic-terms` and `GET /api/v1/academic-terms/{id}` for term
   metadata, status, campus dates and source freshness;
@@ -444,5 +481,5 @@ Term administration uses `POST`, `PATCH` and `DELETE` on
 `/api/v1/academic-terms` and is restricted to the existing scoped governance
 roles. These mutations affect temporal data only and never publish or mutate a
 curriculum revision. Offering ingestion is an application service behind the
-`OfferingSourceAdapter`; the public API does not scrape an authenticated SIA
+`OfferingSourceAdapter`; the authenticated product API does not scrape an SIA
 session or perform enrollment.

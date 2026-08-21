@@ -1,6 +1,43 @@
 # Current State
 
-## P101 cerrado; P102 siguiente — 2026-08-19
+## Límite de producto autenticado reforzado — 2026-08-21
+
+### Terminado en esta sesión
+
+- Todas las rutas de producto Next (`/`, malla, grafo, oferta, auditoría,
+  historia, planificación, analítica, fuentes, perfil, onboarding y
+  administración) validan la sesión Django en servidor antes de renderizar;
+  cookie ausente, falsa, vencida o identidad no verificable redirige a login.
+  `proxy.ts` cubre además el caso sin cookie sin reemplazar esa validación.
+- Las lecturas de currículo, dependencia, períodos, oferta, secciones,
+  reuniones y definiciones analíticas ahora exigen `django_auth`. Las respuestas
+  API autenticadas usan `Cache-Control: private, no-store` por defecto.
+- El capability link de escenarios dejó de ser público: necesita sesión y la
+  misma autorización de propietario/asesor que el escenario. La UI dejó de
+  crear enlaces externos.
+- Se retiraron `/api/v1/openapi.json` y `/api/v1/docs` de la superficie HTTP;
+  el contrato se mantiene como artefacto generado localmente. ADR-0033 registra
+  la decisión y los documentos de API, frontend, smoke y autorización reflejan
+  la frontera privada.
+
+### Verificaciones
+
+- `python3 scripts/verify.py`: PASS — 241 backend passed, 1 skip esperado;
+  Ruff, formato, mypy, OpenAPI/cliente, ESLint, TypeScript, Vitest 19/56,
+  SAST, secretos, invariantes y checks de migración pasan.
+- `pnpm --dir apps/web build`: PASS con rutas dinámicas y `Proxy` compilado.
+- Pruebas negativas cubren 401 anónimo para malla, grafo, oferta, períodos,
+  agenda y definiciones; un tercero autenticado recibe 403 para un escenario
+  por token ajeno.
+
+### No terminado / siguiente acción exacta
+
+- Este endurecimiento no cierra P102–P109 ni autoriza un despliegue. Persisten
+  las decisiones y gates externos ya registrados para evidencia curricular,
+  PostgreSQL production-like, MFA/IdP, malware scanning y cobertura de release.
+- No se creó commit, no se hizo push y no se desplegó.
+
+## P102 implementado fail-closed; gate aún pendiente — 2026-08-19
 
 ### Terminado en esta sesión
 
@@ -27,13 +64,43 @@
   conserva `display_name` sin adivinar su estructura y marca el caso para revisión.
 - Arquitectura, código, seguridad y UX terminaron la reauditoría de P101 con
   cero hallazgos Critical/High.
+- P102 implementó el resolver puro y determinista de asignación curricular. Una
+  única política `VERIFIED`, publicada, evidenciada y aplicable puede resolver;
+  cero o múltiples coincidencias producen `UNKNOWN`/`NEEDS_REVIEW`.
+- La admisión individual se representa mediante `AdmissionFact` verificado e
+  inmutable. El hecho sella una huella HMAC del número estudiantil, se consume
+  una sola vez bajo lock y nunca confunde el snapshot del período o una
+  referencia libre del cliente con prueba de admisión.
+- Una matrícula pendiente admite `plan`/`revision_basis` nulos y motivos de
+  revisión explícitos. Cada evaluación, reevaluación y excepción genera una
+  decisión append-only; planificación degrada honestamente ante matrícula sin
+  revisión en vez de producir un 500.
+- Las políticas recorren `DRAFT → IN_REVIEW → PUBLISHED`: el envío sella campos,
+  revisión y evidencia tipada, y una persona distinta con MFA publica exactamente
+  el paquete revisado. Los guardas de modelo y PostgreSQL impiden bypass directo.
+- El override individual exige autorización preparada y aprobada por dos personas,
+  evidencia vinculada a la matrícula/objetivo, paquete sellado visible, ETag, MFA
+  y auditoría antes de aplicarse.
+- Alta, reingreso y transición de plan tienen preview con hash esperado. Las
+  transiciones sellan términos/fechas y cierran la fuente cuando corresponde; el
+  onboarding pertenece a cada matrícula y el upgrade histórico es conservador.
+- El período queda congelado en campus, fechas y procedencia al ser referenciado
+  por una matrícula o un hecho de admisión verificado; nuevas importaciones sí
+  refrescan ofertas y secciones con su propio snapshot.
+- Onboarding conserva estados pendientes hasta una elección explícita. El
+  backoffice muestra trazabilidad en `RESOLVED` y `NEEDS_REVIEW`, valida admisión
+  dentro de la transición y anuncia siempre el efecto `ACTIVE → TRANSITIONED`.
 
 ### Verificaciones
 
-- `python3 scripts/verify.py`: PASS; 188 tests backend y un skip esperado del
-  trigger PostgreSQL, 49 tests frontend, migraciones, OpenAPI/cliente, Ruff,
-  mypy, ESLint, TypeScript, secretos, SAST, anti-MVP e invariantes curriculares.
-- Build production de Next.js 16.3.1: PASS, incluida la ruta `/profile`.
+- `python scripts/verify.py`: PASS canónico con 222 tests backend y un skip
+  esperado del trigger PostgreSQL; Ruff, formato, mypy y gates estáticos pasan.
+- Suite frontend completa: PASS, 18 archivos y 53 tests; ESLint y TypeScript PASS.
+- `manage.py check`, `makemigrations --check --dry-run`, migraciones locales,
+  OpenAPI/cliente y breaking diff: PASS.
+- Build production de Next.js 16.3.1: PASS.
+- Arquitectura, currículo, código, seguridad y UX concluyeron con cero hallazgos
+  Critical/High.
 - Suites focalizadas finales: 37 tests backend y cinco pruebas frontend/axe,
   incluidas rectificación múltiple, MFA, minimización y cierre de detalle.
 - Diff breaking de OpenAPI, `git diff --check` y revisiones independientes:
@@ -43,12 +110,12 @@
 ### No terminado / siguiente acción exacta
 
 - P102-P109 no están terminados y el producto todavía no está `READY`.
-- La siguiente acción exacta es P102: archivar evidencia institucional de la
-  fecha de publicación/aplicabilidad del Acuerdo 496 y de transiciones,
-  reingresos y grandfathering; después modelar `CurriculumAssignmentPolicy`,
-  implementar el resolver determinista y conectar preview, alta y onboarding.
-  Programa + contexto de ingreso deben producir una única asignación verificable
-  o `NEEDS_REVIEW`; cero o múltiples coincidencias nunca seleccionan la primera.
+- P102 no puede marcarse `done`: su implementación y revisiones pasaron, pero
+  depende de P94, que continúa `in_progress`, y no existe evidencia normativa
+  suficiente para publicar una política automática 2514.
+- Gobierno curricular debe archivar evidencia institucional de la fecha de
+  publicación/aplicabilidad del Acuerdo 496 y reglas de transición, reingreso y
+  grandfathering. Sólo entonces se puede preparar y publicar una política 2514.
 - La auditoría preliminar P102 confirmó que 2023-05-09 es fecha de expedición,
   no una fecha de publicación demostrada. El artículo 6 condiciona la vigencia a
   la publicación; por ello la política 2514 permanece `UNKNOWN` y no se sembrará

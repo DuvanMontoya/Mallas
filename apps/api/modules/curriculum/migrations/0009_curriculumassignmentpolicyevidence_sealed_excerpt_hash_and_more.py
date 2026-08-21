@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('curriculum', '0008_assignment_policy_immutability'),
+        ("curriculum", "0008_assignment_policy_immutability"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='curriculumassignmentpolicyevidence',
-            name='sealed_excerpt_hash',
+            model_name="curriculumassignmentpolicyevidence",
+            name="sealed_excerpt_hash",
             field=models.CharField(blank=True, max_length=128),
         ),
         migrations.AddField(
-            model_name='curriculumassignmentpolicyevidence',
-            name='sealed_locator_hash',
+            model_name="curriculumassignmentpolicyevidence",
+            name="sealed_locator_hash",
             field=models.CharField(blank=True, max_length=64),
         ),
         migrations.AddField(
-            model_name='curriculumassignmentpolicyevidence',
-            name='sealed_snapshot_sha256',
+            model_name="curriculumassignmentpolicyevidence",
+            name="sealed_snapshot_sha256",
             field=models.CharField(blank=True, max_length=64),
         ),
     ]

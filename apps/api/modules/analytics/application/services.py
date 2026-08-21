@@ -168,7 +168,14 @@ def _resolve_enrollment(actor: Any, enrollment_id: UUID | str | None) -> Program
             )
         return enrollment
 
-    for status in ("ACTIVE", "NEEDS_REVIEW", "COMPLETED", "SUSPENDED", "WITHDRAWN"):
+    for status in (
+        "ACTIVE",
+        "NEEDS_REVIEW",
+        "COMPLETED",
+        "SUSPENDED",
+        "WITHDRAWN",
+        "TRANSITIONED",
+    ):
         enrollment = query.filter(
             student__user_id=getattr(actor, "pk", None), status=status
         ).first()
@@ -359,9 +366,7 @@ def build_student_analytics(actor: Any, enrollment_id: UUID | str | None = None)
             "program_name": enrollment.program.name,
             "plan_code": enrollment.plan.code if enrollment.plan_id else None,
             "revision_code": (
-                enrollment.revision_basis.revision_code
-                if enrollment.revision_basis_id
-                else None
+                enrollment.revision_basis.revision_code if enrollment.revision_basis_id else None
             ),
             "snapshot": None,
             "metrics": {

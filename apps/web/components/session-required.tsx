@@ -20,7 +20,7 @@ export function SessionRequired({
         <h1>{title}</h1>
         <p>{description}</p>
         {showSignIn ? <Link className="button button-primary" href={`/login?next=${encodeURIComponent(nextPath)}`}>Iniciar sesión</Link> : null}
-        <small>La malla pública sigue disponible sin exponer historia, escenarios ni datos personales.</small>
+        <small>Las herramientas académicas sólo están disponibles dentro de una sesión autenticada.</small>
       </section>
     </div>
   );

@@ -79,7 +79,10 @@ def patch_onboarding(
 ) -> dict[str, Any]:
     try:
         result = update_onboarding(
-            user=request.auth, expected_version=if_match, **payload.model_dump()
+            user=request.auth,
+            expected_version=if_match,
+            request=request,
+            **payload.model_dump(),
         )
     except StudentOnboardingError as error:
         _error(error)

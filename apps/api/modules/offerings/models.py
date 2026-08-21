@@ -57,6 +57,24 @@ class AcademicTerm(UUIDTimestampedModel):
             raise ValidationError({"campus": "Campus must belong to the term institution."})
 
     def save(self, *args: object, **kwargs: object) -> None:
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).first()
+            if previous and (
+                previous.admissions.exists()
+                or previous.admission_facts.filter(status="VERIFIED").exists()
+            ):
+                protected = (
+                    "institution_id",
+                    "campus_id",
+                    "code",
+                    "starts_at",
+                    "ends_at",
+                    "source_snapshot_id",
+                )
+                if any(getattr(previous, field) != getattr(self, field) for field in protected):
+                    raise ValidationError(
+                        "Term scope, dates and provenance are immutable after an enrollment references it."
+                    )
         self.full_clean()
         super().save(*args, **kwargs)
 

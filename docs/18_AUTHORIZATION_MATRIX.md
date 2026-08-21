@@ -2,7 +2,7 @@
 
 | Acción | Student | Advisor | Editor | Reviewer | Analyst | Admin |
 |---|---:|---:|---:|---:|---:|---:|
-| Ver currículo público | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ver currículo autenticado | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Ver propia historia | ✓ | | | | | ✓* |
 | Editar propia historia manual | ✓ | | | | | ✓* |
 | Ver estudiante asignado | | ✓ | | | | ✓ |
@@ -16,6 +16,11 @@
 | Ver/rectificar identidad propia | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Exportar identidad propia | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Ver/rectificar identidad estudiantil | | | | | | ✓* |
+| Enviar política de asignación a revisión | | | ✓* | | | ✓* |
+| Publicar política de asignación | | | | ✓* | | ✓* |
+| Preparar excepción de asignación | | | | | | ✓* |
+| Aprobar/aplicar excepción de asignación | | | | | | ✓* |
+| Alta, reingreso o transición de matrícula | | | | | | ✓* |
 
 `✓*` no significa acceso arbitrario; debe auditarse y justificarse.
 
@@ -28,6 +33,10 @@ propósito, delegación y una nueva revisión de privacidad.
 ## Separación de funciones
 
 En producción institucional, editor y reviewer deben ser personas distintas para publicación ordinaria.
+La política de asignación sólo puede ser enviada por su preparador y publicada
+por otra persona. Una excepción curricular exige también preparador y aprobador
+distintos; publicación, aprobación y aplicación requieren MFA privilegiado y
+alcance vigente sobre la matrícula/programa.
 
 ## Enforcement P05
 

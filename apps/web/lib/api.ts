@@ -501,6 +501,23 @@ export async function getAcademicTerms(options?: {
   }
 }
 
+export type AcademicTermCreatePayload = ApiComponents["schemas"]["AcademicTermCreate"];
+
+export async function createAcademicTerm(
+  body: AcademicTermCreatePayload,
+): Promise<{ data: ApiComponents["schemas"]["AcademicTermView"] | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/academic-terms", {
+      body,
+      headers: await mutationHeaders(),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
 export async function getOfferings(options?: {
   termCode?: string;
   courseCode?: string;
@@ -573,6 +590,8 @@ export type PlannedCoursePatchPayload = ApiComponents["schemas"]["PlannedCourseP
 export type OptimizationRun = ApiComponents["schemas"]["OptimizationRunView"];
 export type OptimizationRequestPayload = ApiComponents["schemas"]["OptimizationRequestPayload"];
 export type SourceInbox = ApiComponents["schemas"]["SourceInboxView"];
+export type AssignmentPolicySummary = ApiComponents["schemas"]["AssignmentPolicySummaryView"];
+export type AssignmentPolicyPublication = ApiComponents["schemas"]["AssignmentPolicyPublicationView"];
 export type GovernanceProposal = ApiComponents["schemas"]["ProposalDetailView"];
 export type GovernanceReviewPayload = ApiComponents["schemas"]["ReviewPayload"];
 export type GovernanceCandidateReviewPayload = ApiComponents["schemas"]["CandidateReviewPayload"];
@@ -1035,6 +1054,55 @@ async function governanceMutationHeaders(options: ScenarioMutationOptions = {}):
   return mutationHeaders(options);
 }
 
+export async function getAssignmentPolicies(headers?: HeadersInit): Promise<{
+  data: AssignmentPolicySummary[] | null;
+  failure: ApiFailure | null;
+}> {
+  try {
+    const result = await api.GET("/api/v1/governance/assignment-policies", { headers });
+    if (result.data) return { data: result.data.items, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function publishAssignmentPolicy(
+  policyId: string,
+): Promise<{ data: AssignmentPolicyPublication | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/governance/assignment-policies/{policy_id}/publish",
+      {
+        params: { path: { policy_id: policyId } },
+        headers: await governanceMutationHeaders(),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function submitAssignmentPolicy(
+  policyId: string,
+): Promise<{ data: AssignmentPolicySummary | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/governance/assignment-policies/{policy_id}/submit",
+      {
+        params: { path: { policy_id: policyId } },
+        headers: await governanceMutationHeaders(),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
 export async function submitGovernanceProposal(
   proposalId: string,
   body: { comment?: string },
@@ -1189,6 +1257,11 @@ export type AdminIdentityUpdatePayload = ApiComponents["schemas"]["AdminIdentity
 export type AdminTransitionPayload = ApiComponents["schemas"]["AdminTransitionPayload"];
 export type AdminTransitionCreatePayload = ApiComponents["schemas"]["AdminTransitionCreatePayload"];
 export type AdminEnrollmentOverridePayload = ApiComponents["schemas"]["AdminEnrollmentOverridePayload"];
+export type AdminOverrideAuthorization = ApiComponents["schemas"]["AdminOverrideAuthorizationView"];
+export type AdminOverrideAuthorizationCreatePayload = ApiComponents["schemas"]["AdminOverrideAuthorizationCreatePayload"];
+export type AdminOverrideEvidence = ApiComponents["schemas"]["AdminOverrideEvidenceView"];
+export type AdminAdmissionFactVerifyPayload = ApiComponents["schemas"]["AdminAdmissionFactVerifyPayload"];
+export type AdminAdmissionFact = ApiComponents["schemas"]["AdminAdmissionFactView"];
 
 export async function getStudentAdminCatalog(options?: {
   headers?: HeadersInit;
@@ -1209,6 +1282,21 @@ export async function previewAdminCurriculumAssignment(
 ): Promise<{ data: AdminAssignmentPreview | null; failure: ApiFailure | null }> {
   try {
     const result = await api.POST("/api/v1/admin/students/assignment-preview", {
+      body,
+      headers: await mutationHeaders(),
+    });
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function verifyAdminAdmissionFact(
+  body: AdminAdmissionFactVerifyPayload,
+): Promise<{ data: AdminAdmissionFact | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST("/api/v1/admin/students/admission-facts/verify", {
       body,
       headers: await mutationHeaders(),
     });
@@ -1341,6 +1429,76 @@ export async function overrideAdminEnrollmentAssignment(
       {
         params: { path: { enrollment_id: enrollmentId } },
         body,
+        headers: await mutationHeaders({ ifMatch: `"${version}"` }),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getAdminOverrideAuthorizations(
+  enrollmentId: string,
+): Promise<{ data: AdminOverrideAuthorization[] | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.GET(
+      "/api/v1/admin/students/enrollments/{enrollment_id}/assignment-override-authorizations",
+      { params: { path: { enrollment_id: enrollmentId } } },
+    );
+    if (result.data) return { data: result.data.items, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function getAdminOverrideEvidence(enrollmentId: string): Promise<{
+  data: AdminOverrideEvidence[] | null;
+  failure: ApiFailure | null;
+}> {
+  try {
+    const result = await api.GET(
+      "/api/v1/admin/students/enrollments/{enrollment_id}/assignment-override-evidence",
+      { params: { path: { enrollment_id: enrollmentId } } },
+    );
+    if (result.data) return { data: result.data.items, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function createAdminOverrideAuthorization(
+  enrollmentId: string,
+  body: AdminOverrideAuthorizationCreatePayload,
+): Promise<{ data: AdminOverrideAuthorization | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/admin/students/enrollments/{enrollment_id}/assignment-override-authorizations",
+      {
+        params: { path: { enrollment_id: enrollmentId } },
+        body,
+        headers: await mutationHeaders(),
+      },
+    );
+    if (result.data) return { data: result.data, failure: null };
+    return { data: null, failure: failureFromResult(result) };
+  } catch {
+    return { data: null, failure: { problem: null, correlationId: null, unavailable: true } };
+  }
+}
+
+export async function approveAdminOverrideAuthorization(
+  authorizationId: string,
+  version: string,
+): Promise<{ data: AdminOverrideAuthorization | null; failure: ApiFailure | null }> {
+  try {
+    const result = await api.POST(
+      "/api/v1/admin/students/assignment-override-authorizations/{authorization_id}/approve",
+      {
+        params: { path: { authorization_id: authorizationId } },
         headers: await mutationHeaders({ ifMatch: `"${version}"` }),
       },
     );

@@ -40,6 +40,7 @@ def candidate(**overrides: object) -> AssignmentPolicyCandidate:
         "revision_content_hash": "c" * 64,
         "revision_source_set_hash": "d" * 64,
         "evidence_sealed": True,
+        "evidence_purposes_valid": True,
         "allow_retired_revision": False,
     }
     values.update(overrides)
@@ -55,8 +56,10 @@ def assignment_input(**overrides: object) -> AssignmentInput:
         "previous_plan_id": None,
         "admission_source_snapshot_id": "admission-snapshot-1",
         "admission_source_sha256": "e" * 64,
-        "admission_verification_method": "SOURCE_SNAPSHOT",
+        "admission_verification_method": "VERIFIED_ADMISSION_FACT",
         "admission_record_reference_hash": None,
+        "admission_fact_id": "admission-fact-1",
+        "admission_fact_content_hash": "f" * 64,
     }
     values.update(overrides)
     return AssignmentInput(**values)  # type: ignore[arg-type]

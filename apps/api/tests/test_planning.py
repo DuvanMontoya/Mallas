@@ -211,8 +211,8 @@ class PlanningScenarioApiTests(TestCase):
             "schema_version": "offerings/1.0.0",
             "term": {
                 "code": self.term_one.code,
-                "starts_at": "2026-01-01T00:00:00Z",
-                "ends_at": "2026-06-30T23:59:59Z",
+                "starts_at": self.term_one.starts_at.isoformat(),
+                "ends_at": self.term_one.ends_at.isoformat(),
                 "status": "OPEN",
             },
             "offerings": [
@@ -318,16 +318,24 @@ class PlanningScenarioApiTests(TestCase):
         )
         self.assertEqual(share.status_code, 200, share.content)
         share_token = share.json()["share_token"]
-        public = self.client.get(f"/api/v1/shared/scenarios/{share_token}")
-        self.assertEqual(public.status_code, 200, public.content)
-        public_payload = public.json()
+        self.assertEqual(Client().get(f"/api/v1/shared/scenarios/{share_token}").status_code, 401)
+        private = self.client.get(f"/api/v1/shared/scenarios/{share_token}")
+        self.assertEqual(private.status_code, 200, private.content)
+        private_payload = private.json()
         self.assertEqual(
-            public_payload["privacy"],
+            private_payload["privacy"],
             "No incluye enrollment, estudiante, historial ni auditoría personal.",
         )
-        self.assertNotIn("enrollment_id", public_payload)
-        self.assertNotIn("audit_projection", public_payload)
-        self.assertNotIn("share_token", public_payload)
+        self.assertNotIn("enrollment_id", private_payload)
+        self.assertNotIn("audit_projection", private_payload)
+        self.assertNotIn("share_token", private_payload)
+
+        other = foundation(suffix="-planning-share-other")
+        other_client = Client()
+        other_client.force_login(other["user"])
+        self.assertEqual(
+            other_client.get(f"/api/v1/shared/scenarios/{share_token}").status_code, 403
+        )
 
         unshare = self._json(
             "patch",

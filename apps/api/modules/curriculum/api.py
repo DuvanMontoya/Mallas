@@ -8,6 +8,7 @@ from uuid import UUID
 
 from django.http import HttpRequest, HttpResponse
 from ninja import Router, Schema
+from ninja.security import django_auth
 
 from modules.common.api import raise_problem, with_problem_responses
 from modules.curriculum.application.graph import build_dependency_graph
@@ -244,6 +245,7 @@ router = Router(tags=["Curriculum map"])
 
 @router.get(
     "/curriculum-map",
+    auth=django_auth,
     response=with_problem_responses(CurriculumMapView),
 )
 def curriculum_map(
@@ -276,6 +278,7 @@ def curriculum_map(
 
 @router.get(
     "/dependency-graph",
+    auth=django_auth,
     response=with_problem_responses(DependencyGraphView),
 )
 def dependency_graph(

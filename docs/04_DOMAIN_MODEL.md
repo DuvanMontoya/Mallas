@@ -58,6 +58,18 @@ coincidencia única produce `RESOLVED`. `CurriculumAssignmentDecision` conserva
 append-only inputs y su procedencia, candidatos, razones, política, objetivo,
 método, versión del resolver y hash reproducible por matrícula.
 
+`AdmissionFact` demuestra el hecho individual de que una persona fue admitida
+en un programa y período determinados. Una fuente del catálogo de períodos no
+demuestra por sí sola la admisión de esa persona. El hecho verificado conserva
+referencia protegida, evidencia archivada, actor, fecha, huella HMAC del número
+estudiantil y hash, y es inmutable. La decisión lo consume una sola vez y el
+backend compara el sujeto contra el sello, no contra metadata mutable.
+
+El paso `DRAFT → IN_REVIEW` sella campos, revisión objetivo y evidencia tipada;
+el material en revisión no puede mutar. Una persona distinta, con rol de
+revisión y MFA privilegiado, puede publicar exactamente ese paquete. Una
+política sin evidencia suficiente permanece no resoluble.
+
 ## Catálogo
 
 ### Course
@@ -121,7 +133,15 @@ vigente se obtiene de `PersonProfile`; `legacy_display_name` es sólo fallback
 para migraciones aún no confirmadas.
 
 ### ProgramEnrollment
-`student_id, program_id, plan_id, revision_basis, admission_term, status`.
+`student_id, program_id, plan_id?, revision_basis?, admission_term, status,
+review_reasons`. Plan y revisión son nulos mientras la asignación permanezca
+`NEEDS_REVIEW`; no se usan identificadores ficticios.
+
+`EnrollmentTransition` enlaza de forma append-only matrícula fuente y destino
+para `REENTRY` o `PLAN_TRANSITION`, sella términos, fechas, plan/revisión
+anteriores, estados y hash de decisión. Una transición de plan cierra la fuente
+como `TRANSITIONED`; un reingreso parte de una vinculación histórica. El
+onboarding pertenece a una matrícula concreta, no a la persona global.
 
 ### CourseAttempt
 - course/version;

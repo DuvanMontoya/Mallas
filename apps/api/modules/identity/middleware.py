@@ -54,6 +54,9 @@ class OriginAndSecurityMiddleware:
         response.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         response.setdefault("Cross-Origin-Opener-Policy", "same-origin")
         response.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+        user = getattr(request, "user", None)
+        if request.path.startswith("/api/v1/") and getattr(user, "is_authenticated", False):
+            response.setdefault("Cache-Control", "private, no-store")
         response["X-Request-ID"] = correlation_id
         return response
 

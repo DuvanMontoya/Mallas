@@ -117,6 +117,7 @@ class EnrollmentStatus(StrEnum):
     SUSPENDED = "SUSPENDED"
     WITHDRAWN = "WITHDRAWN"
     NEEDS_REVIEW = "NEEDS_REVIEW"
+    TRANSITIONED = "TRANSITIONED"
 
 
 class CurriculumAssignmentContext(StrEnum):
@@ -150,6 +151,7 @@ class CurriculumAssignmentMethod(StrEnum):
 class AdmissionFactVerificationMethod(StrEnum):
     SOURCE_SNAPSHOT = "SOURCE_SNAPSHOT"
     INSTITUTIONAL_RECORD_REFERENCE = "INSTITUTIONAL_RECORD_REFERENCE"
+    VERIFIED_ADMISSION_FACT = "VERIFIED_ADMISSION_FACT"
 
 
 class AttemptStatus(StrEnum):
@@ -245,6 +247,28 @@ class PublicationImpactStatus(StrEnum):
     RECOMPUTE_QUEUED = "RECOMPUTE_QUEUED"
     NEEDS_REVIEW = "NEEDS_REVIEW"
     RECOMPUTED = "RECOMPUTED"
+
+
+class CurriculumLayoutType(StrEnum):
+    SOURCE_FAITHFUL_LAYOUT = "SOURCE_FAITHFUL_LAYOUT"
+    DEPENDENCY_DERIVED_LAYOUT = "DEPENDENCY_DERIVED_LAYOUT"
+
+
+class CurriculumLayoutStatus(StrEnum):
+    DRAFT = "DRAFT"
+    IN_REVIEW = "IN_REVIEW"
+    PUBLISHED = "PUBLISHED"
+    SUPERSEDED = "SUPERSEDED"
+    RETIRED = "RETIRED"
+
+
+class CurriculumLayoutNodeType(StrEnum):
+    COURSE = "COURSE"
+    CHOICE_POOL = "CHOICE_POOL"
+    FREE_ELECTIVE_POOL = "FREE_ELECTIVE_POOL"
+    EXTERNAL_REQUIREMENT = "EXTERNAL_REQUIREMENT"
+    MILESTONE = "MILESTONE"
+    ANNOTATION = "ANNOTATION"
 
 
 class NotificationDeliveryStatus(StrEnum):

@@ -64,6 +64,8 @@ describe("StudentOnboardingForm", () => {
     expect((await axe.run(container)).violations).toEqual([]);
 
     fireEvent.click(screen.getByLabelText("Revisé mis nombres y apellidos"));
+    fireEvent.change(screen.getByRole("combobox", { name: /Historia académica/ }), { target: { value: "SKIPPED" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /Decisión sobre el recorrido/ }), { target: { value: "COMPLETED" } });
     fireEvent.click(screen.getByRole("button", { name: "Terminar y abrir mi espacio" }));
 
     await waitFor(() => expect(updateStudentOnboarding).toHaveBeenCalledWith(

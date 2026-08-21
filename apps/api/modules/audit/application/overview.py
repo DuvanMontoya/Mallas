@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import quote
 from uuid import UUID
 
-from domain.audit.engine import audit_degree
+from domain.audit.engine import AuditInputError, audit_degree
 from modules.audit.application.services import build_audit_input
 from modules.audit.models import DegreeAuditResult, DegreeAuditRun
 from modules.curriculum.models import CourseVersion
@@ -237,7 +237,15 @@ def _latest_audit_payload(
     # A GET must still be useful for a newly created student, but it must not
     # create an audit run as a side effect. Mutations/imports persist the
     # reproducible run; this path is a read-only preview for the empty state.
-    result = audit_degree(build_audit_input(enrollment))
+    try:
+        result = audit_degree(build_audit_input(enrollment))
+    except AuditInputError as error:
+        raise AcademicOverviewError(
+            "La revisión curricular de esta matrícula tiene datos inconsistentes "
+            "(por ejemplo, créditos de componentes que no suman el total); "
+            "la administración debe corregirla antes de presentar el avance.",
+            code="audit_input_inconsistent",
+        ) from error
     return result.to_dict(), None, "READ_ONLY_PREVIEW"
 
 

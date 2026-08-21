@@ -9,6 +9,13 @@ Añadir una entrada por sesión significativa:
 - Pendiente:
 - Siguiente:
 
+## 2026-08-21 15:44 — Codex / GPT-5
+- Objetivo: cerrar fugas de autenticación, pantallas públicas y lecturas API anónimas.
+- Cambios: guard servidor fail-closed para todas las rutas de producto y Proxy temprano; currículo/grafo/oferta/períodos/secciones/reuniones/definiciones analíticas autenticados; cache privado; escenarios por token sólo owner/advisor autenticado y sin acción UI de enlace externo; OpenAPI/docs HTTP retirados; ADR-0033 y documentación actualizada.
+- Verificaciones: `python3 scripts/verify.py` PASS (241 backend, 1 skip esperado; 19 archivos/56 tests frontend), build Next PASS, migraciones/check/OpenAPI cliente/diff PASS y pruebas negativas 401/403 añadidas.
+- Pendiente: gates externos existentes de PostgreSQL production-like, MFA/IdP, antimalware, egress y evidencia curricular; no commit/push/deploy.
+- Siguiente: continuar P102/P109 desde `CURRENT_STATE.md` sin relajar el límite autenticado.
+
 ## 2026-08-16 00:34 — Codex / GPT-5
 - Objetivo: ejecutar y cerrar P00 (`prompts/01_TOOLCHAIN_AND_BOOTSTRAP.md`).
 - Cambios: bootstrap Django/Next/cliente OpenAPI/Compose; versiones y lockfiles; CI/Renovate/README; Dockerfiles y `.dockerignore`; script standalone de Next corregido; estado y ADR-0011 actualizados.
@@ -695,3 +702,26 @@ No se hicieron commits, pushes, despliegues ni publicaciones normativas.
   2023-05-09 y no contiene reglas de transición, reingreso o grandfathering. La
   búsqueda oficial confirmó el registro del acuerdo y su uso actual, no la fecha
   ni las reglas faltantes. Se registró D-010; no se inventó una política 2514.
+
+## 2026-08-19 — P102 implementado fail-closed; milestone pendiente
+
+- Se implementó el resolver determinista de asignación, matrículas sin plan
+  inventado, decisiones append-only, políticas con revisión sellada a cuatro
+  ojos, override gobernado y onboarding por matrícula.
+- `AdmissionFact` usa manifiesto institucional exacto, sella evidencia y sujeto
+  mediante HMAC, se consume una vez y valida el sello antes de alta o transición.
+- Reingreso y transición de plan tienen preview reproducible, cronología,
+  matrícula fuente/destino y efecto de lifecycle explícito. Los períodos
+  referenciados no cambian campus, fechas ni snapshot, pero las ofertas pueden
+  refrescarse con procedencia propia.
+- El backoffice muestra trazabilidad tanto en `RESOLVED` como en
+  `NEEDS_REVIEW`, integra la verificación de admisión en cada flujo, aplica
+  separación de funciones visible y nombres accesibles por estudiante.
+- `python scripts/verify.py` PASS: 222 backend + un skip PostgreSQL esperado;
+  18 archivos/53 pruebas frontend; Ruff, formato, mypy, Django, migraciones,
+  OpenAPI/cliente, ESLint y TypeScript PASS. Build Next de producción PASS.
+- Arquitectura, currículo, código, seguridad y UX reportan 0 Critical/High.
+  PostgreSQL production-like no está disponible en este host y permanece gate
+  de release.
+- P102 continúa `pending`: P94 sigue `in_progress` y D-010 impide publicar una
+  política `VERIFIED` para 2514. No hubo commit, push ni despliegue.

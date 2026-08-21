@@ -303,8 +303,8 @@
       ],
       "prompt": "prompts/23_SECURITY_HARDENING.md",
       "completed_at": "2026-08-17T01:08:00-05:00",
-      "verification": "scripts/verify.py PASS: 131 backend passed, 1 expected trigger skip, 33 frontend passed; focused security/history/identity 34 passed and 10 subtests; pypdf 6.16.1 parser 23 passed and 1 skip; secret scan, SAST, pip-audit 2.9.0, uv pip check, pnpm audit, migrations, OpenAPI/client, Ruff, mypy, ESLint and TypeScript PASS",
-      "notes": "Threat model, IDOR/BOLA matrix, SSRF source fetch hardening, mutation rate limits, secure headers, upload hardening, audit immutability, secret/SAST gates, least-privilege SQL reference and security runbook implemented. pypdf 6.10.0 vulnerability findings were remediated by upgrading and locking pypdf 6.16.1. Specialized reviewers unavailable; manual read-only review documented. External MFA/IdP, malware scanning and network egress remain deployment prerequisites. No automatic Git commit created."
+      "verification": "scripts/verify.py PASS: 241 backend passed, 1 expected trigger skip, 56 frontend tests; generated OpenAPI/client, migrations, Ruff, mypy, ESLint, TypeScript, SAST, secret, anti-MVP and privacy-route negative tests pass. Next 16.3.1 production build includes the authenticated Proxy boundary.",
+      "notes": "Threat model, IDOR/BOLA matrix, SSRF source fetch hardening, mutation rate limits, secure headers, upload hardening, audit immutability, secret/SAST gates, least-privilege SQL reference and security runbook implemented. The 2026-08-21 re-hardening makes every product screen and formerly public curriculum/offering/analytics read authenticated, removes HTTP OpenAPI/docs, and revokes anonymous scenario capability links (ADR-0033). pypdf 6.10.0 vulnerability findings were remediated by upgrading and locking pypdf 6.16.1. Specialized reviewers unavailable; manual read-only review documented. External MFA/IdP, malware scanning and network egress remain deployment prerequisites. No automatic Git commit created."
     },
     {
       "id": "P24",
@@ -454,7 +454,8 @@
       "status": "pending",
       "depends_on": ["P101", "P94"],
       "prompt": "docs/plans/2026-08-18_PRODUCT_AND_CURRICULUM_UX_COMPLETION_PLAN.md",
-      "notes": "Program and admission context must resolve exactly one applicable plan/revision or fail honestly to NEEDS_REVIEW. Preliminary curriculum audit found no archived publication date or transition/reentry/grandfathering rule for Agreement 496; 2023-05-09 is the issuance date, so no VERIFIED 2514 assignment policy may be seeded yet. An unresolved preview must not create an enrollment with invented plan/revision IDs."
+      "verification": "Implementation is present and fail-closed: pure resolver, nullable unresolved enrollment, individual AdmissionFact sealed to subject and consumed once, append-only decisions/transitions, immutable two-person policy review, governed two-person override, admin preview/create/reentry/plan-transition, enrollment-scoped onboarding, OpenAPI/client and responsive backoffice. Canonical scripts/verify.py PASS: 222 backend tests + 1 expected PostgreSQL-trigger skip; Ruff/format/mypy/Django/migrations/OpenAPI/client/ESLint/TypeScript PASS; 18 frontend files/53 tests and Next production build PASS. Architecture, curriculum, code, security and UX reviewers report 0 Critical/High.",
+      "notes": "P102 remains pending solely because dependency P94 is in_progress and there is no archived publication/applicability evidence for Agreement 496: 2023-05-09 is issuance, not proven publication. No VERIFIED 2514 policy is seeded. The implemented resolver returns NEEDS_REVIEW/UNKNOWN instead of inventing plan/revision. Operational contexts in this gate are ADMISSION, REENTRY and PLAN_TRANSITION; TRANSFER and DUAL_DEGREE remain explicitly future scope. PostgreSQL-specific guards were reviewed statically but must be repeated on the production-like release gate."
     },
     {
       "id": "P103",

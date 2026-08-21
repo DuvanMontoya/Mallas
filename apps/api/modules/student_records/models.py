@@ -8,9 +8,11 @@ from django.db.models import F, Q
 from domain.enums import (
     AttemptOrigin,
     AttemptStatus,
+    CurriculumAssignmentContext,
     CurriculumAssignmentDecisionStatus,
     CurriculumAssignmentMethod,
     EnrollmentStatus,
+    EpistemicStatus,
     ExceptionStatus,
     RecognitionType,
     enum_choices,
@@ -200,6 +202,87 @@ class ProgramEnrollment(UUIDTimestampedModel):
         return f"{self.student} — {self.program.name}"
 
 
+class AdmissionFact(UUIDTimestampedModel):
+    program = models.ForeignKey(
+        "institutions.Program", on_delete=models.PROTECT, related_name="admission_facts"
+    )
+    academic_term = models.ForeignKey(
+        "offerings.AcademicTerm", on_delete=models.PROTECT, related_name="admission_facts"
+    )
+    evidence = models.ForeignKey(
+        "governance.Evidence", on_delete=models.PROTECT, related_name="admission_facts"
+    )
+    record_reference_hash = models.CharField(max_length=64)
+    status = models.CharField(
+        max_length=32,
+        choices=enum_choices(EpistemicStatus),
+        default=EpistemicStatus.UNKNOWN.value,
+    )
+    content_hash = models.CharField(max_length=64, blank=True)
+    sealed_snapshot_id = models.UUIDField(null=True, blank=True)
+    sealed_snapshot_sha256 = models.CharField(max_length=64, blank=True)
+    sealed_storage_key_hash = models.CharField(max_length=64, blank=True)
+    sealed_excerpt_hash = models.CharField(max_length=64, blank=True)
+    sealed_locator = models.CharField(max_length=500, blank=True)
+    sealed_source_title = models.CharField(max_length=320, blank=True)
+    sealed_provider = models.CharField(max_length=160, blank=True)
+    sealed_artifact_type = models.CharField(max_length=80, blank=True)
+    sealed_scope_hash = models.CharField(max_length=64, blank=True)
+    sealed_subject_identifier_hash = models.CharField(max_length=64, blank=True)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="verified_admission_facts",
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["program", "academic_term", "record_reference_hash"],
+                name="admission_fact_program_term_reference_unique",
+            ),
+            models.CheckConstraint(
+                condition=~Q(status="VERIFIED")
+                | (
+                    ~Q(content_hash="")
+                    & Q(sealed_snapshot_id__isnull=False)
+                    & ~Q(sealed_snapshot_sha256="")
+                    & ~Q(sealed_storage_key_hash="")
+                    & ~Q(sealed_excerpt_hash="")
+                    & ~Q(sealed_locator="")
+                    & ~Q(sealed_source_title="")
+                    & ~Q(sealed_provider="")
+                    & ~Q(sealed_artifact_type="")
+                    & ~Q(sealed_scope_hash="")
+                    & ~Q(sealed_subject_identifier_hash="")
+                    & Q(verified_by__isnull=False)
+                    & Q(verified_at__isnull=False)
+                ),
+                name="verified_admission_fact_is_sealed",
+            ),
+        ]
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).first()
+            if previous and previous.status == EpistemicStatus.VERIFIED.value:
+                raise ValidationError("Verified admission facts are immutable.")
+        if self.status == EpistemicStatus.VERIFIED.value and not getattr(
+            self, "_verification_service_authorized", False
+        ):
+            raise ValidationError("Admission facts can only be verified through governance.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        if self.status == EpistemicStatus.VERIFIED.value:
+            raise ValidationError("Verified admission facts are immutable.")
+        return super().delete(*args, **kwargs)
+
+
 class StudentOnboarding(UUIDTimestampedModel):
     class HistoryStepStatus(models.TextChoices):
         PENDING = "PENDING", "Pending"
@@ -249,11 +332,115 @@ class StudentOnboarding(UUIDTimestampedModel):
         return self.completed_at is not None
 
 
+class EnrollmentTransition(UUIDTimestampedModel):
+    source_enrollment = models.ForeignKey(
+        ProgramEnrollment, on_delete=models.PROTECT, related_name="outgoing_transitions"
+    )
+    target_enrollment = models.OneToOneField(
+        ProgramEnrollment, on_delete=models.PROTECT, related_name="incoming_transition"
+    )
+    context = models.CharField(max_length=24, choices=enum_choices(CurriculumAssignmentContext))
+    previous_plan = models.ForeignKey(
+        "curriculum.CurriculumPlan",
+        on_delete=models.PROTECT,
+        related_name="enrollment_transitions_as_source_plan",
+    )
+    previous_revision = models.ForeignKey(
+        "curriculum.CurriculumRevision",
+        on_delete=models.PROTECT,
+        related_name="enrollment_transitions_as_source_revision",
+    )
+    decision_hash = models.CharField(max_length=64)
+    source_previous_status = models.CharField(max_length=24, choices=enum_choices(EnrollmentStatus))
+    source_result_status = models.CharField(max_length=24, choices=enum_choices(EnrollmentStatus))
+    source_term_id = models.UUIDField()
+    source_term_code = models.CharField(max_length=80)
+    source_term_starts_at = models.DateTimeField()
+    target_term_id = models.UUIDField()
+    target_term_code = models.CharField(max_length=80)
+    target_term_starts_at = models.DateTimeField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_enrollment_transitions",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["source_enrollment", "context"], name="enroll_transition_source_idx"
+            )
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(source_enrollment=F("target_enrollment")),
+                name="enrollment_transition_distinct_rows",
+            ),
+            models.CheckConstraint(
+                condition=Q(context__in=["REENTRY", "PLAN_TRANSITION"]),
+                name="enrollment_transition_supported_context",
+            ),
+            models.UniqueConstraint(
+                fields=["source_enrollment", "context"],
+                name="enrollment_transition_source_context_unique",
+            ),
+        ]
+
+    def clean(self) -> None:
+        errors: dict[str, str] = {}
+        if self.source_enrollment_id and self.target_enrollment_id:
+            if self.source_enrollment.student_id != self.target_enrollment.student_id:
+                errors["target_enrollment"] = "Transition enrollments must belong to one student."
+            if self.source_enrollment.program_id != self.target_enrollment.program_id:
+                errors["target_enrollment"] = "Transition enrollments must belong to one program."
+        if self.source_enrollment_id:
+            if self.previous_plan_id != self.source_enrollment.plan_id:
+                errors["previous_plan"] = "Previous plan must match the source enrollment."
+            if self.previous_revision_id != self.source_enrollment.revision_basis_id:
+                errors["previous_revision"] = "Previous revision must match the source enrollment."
+            if self.source_term_id != self.source_enrollment.admission_term_id:
+                errors["source_term_id"] = "Source term seal must match the source enrollment."
+        if (
+            self.target_enrollment_id
+            and self.target_term_id != self.target_enrollment.admission_term_id
+        ):
+            errors["target_term_id"] = "Target term seal must match the target enrollment."
+        if self.target_term_starts_at <= self.source_term_starts_at:
+            errors["target_term_starts_at"] = "Target term must start after the source term."
+        if self.context == "PLAN_TRANSITION" and (
+            self.source_previous_status != "ACTIVE" or self.source_result_status != "TRANSITIONED"
+        ):
+            errors["source_result_status"] = "Plan transition must close an active source."
+        if self.context == "REENTRY" and self.source_previous_status not in {
+            "COMPLETED",
+            "SUSPENDED",
+            "WITHDRAWN",
+            "TRANSITIONED",
+        }:
+            errors["source_previous_status"] = "Reentry requires a historical source."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise ValidationError("Enrollment transitions are append-only.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
+        raise ValidationError("Enrollment transitions are append-only.")
+
+
 class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Draft"
         APPROVED = "APPROVED", "Approved"
         REJECTED = "REJECTED", "Rejected"
+
+    class SealVersion(models.TextChoices):
+        LEGACY_UNCLASSIFIED = "LEGACY_UNCLASSIFIED", "Legacy unclassified"
+        LEGACY_APPLIED = "LEGACY_APPLIED", "Legacy already applied"
+        V2 = "OVERRIDE_AUTH_V2", "Prepared evidence envelope v2"
 
     enrollment = models.ForeignKey(
         ProgramEnrollment,
@@ -292,21 +479,26 @@ class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
     approved_at = models.DateTimeField(null=True, blank=True)
     revision_content_hash = models.CharField(max_length=128, blank=True)
     revision_source_set_hash = models.CharField(max_length=128, blank=True)
+    revision_status = models.CharField(max_length=24, blank=True)
     sealed_snapshot_id = models.UUIDField(null=True, blank=True)
     sealed_snapshot_sha256 = models.CharField(max_length=64, blank=True)
     sealed_storage_key_hash = models.CharField(max_length=64, blank=True)
     sealed_excerpt_hash = models.CharField(max_length=128, blank=True)
+    sealed_excerpt = models.TextField(blank=True)
+    sealed_locator_hash = models.CharField(max_length=64, blank=True)
+    sealed_locator = models.CharField(max_length=500, blank=True)
+    sealed_source_title = models.CharField(max_length=320, blank=True)
     content_hash = models.CharField(max_length=64, blank=True)
+    seal_version = models.CharField(
+        max_length=32, choices=SealVersion.choices, default=SealVersion.V2
+    )
 
     class Meta:
-        indexes = [
-            models.Index(
-                fields=["enrollment", "status"], name="asg_ovr_auth_enroll_idx"
-            )
-        ]
+        indexes = [models.Index(fields=["enrollment", "status"], name="asg_ovr_auth_enroll_idx")]
         constraints = [
             models.CheckConstraint(
                 condition=~Q(status="APPROVED")
+                | Q(seal_version="LEGACY_APPLIED")
                 | (
                     Q(approved_by__isnull=False)
                     & Q(approved_at__isnull=False)
@@ -317,6 +509,10 @@ class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
                     & ~Q(sealed_snapshot_sha256="")
                     & ~Q(sealed_storage_key_hash="")
                     & ~Q(sealed_excerpt_hash="")
+                    & ~Q(sealed_locator_hash="")
+                    & ~Q(sealed_locator="")
+                    & ~Q(sealed_source_title="")
+                    & Q(seal_version="OVERRIDE_AUTH_V2")
                 ),
                 name="assignment_override_approved_is_sealed",
             ),
@@ -339,6 +535,31 @@ class CurriculumAssignmentOverrideAuthorization(UUIDTimestampedModel):
             previous = type(self).objects.filter(pk=self.pk).first()
             if previous and previous.status == self.Status.APPROVED:
                 raise ValidationError("An approved curriculum override authorization is immutable.")
+            immutable_fields = (
+                "enrollment_id",
+                "plan_id",
+                "revision_basis_id",
+                "reason_code",
+                "evidence_id",
+                "prepared_by_id",
+                "revision_content_hash",
+                "revision_source_set_hash",
+                "revision_status",
+                "sealed_snapshot_id",
+                "sealed_snapshot_sha256",
+                "sealed_storage_key_hash",
+                "sealed_excerpt_hash",
+                "sealed_excerpt",
+                "sealed_locator_hash",
+                "sealed_locator",
+                "sealed_source_title",
+                "content_hash",
+                "seal_version",
+            )
+            if previous and any(
+                getattr(previous, field) != getattr(self, field) for field in immutable_fields
+            ):
+                raise ValidationError("Prepared override authorization content is immutable.")
         self.full_clean()
         super().save(*args, **kwargs)
 
@@ -353,6 +574,13 @@ class CurriculumAssignmentDecision(UUIDTimestampedModel):
         blank=True,
         on_delete=models.PROTECT,
         related_name="assignment_decisions",
+    )
+    admission_fact = models.OneToOneField(
+        "student_records.AdmissionFact",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="assignment_decision",
     )
     status = models.CharField(
         max_length=24, choices=enum_choices(CurriculumAssignmentDecisionStatus)

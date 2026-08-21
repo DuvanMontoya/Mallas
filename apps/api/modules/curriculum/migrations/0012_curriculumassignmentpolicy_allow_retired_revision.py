@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('curriculum', '0011_curriculumassignmentpolicy_approved_by_and_more'),
+        ("curriculum", "0011_curriculumassignmentpolicy_approved_by_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='curriculumassignmentpolicy',
-            name='allow_retired_revision',
+            model_name="curriculumassignmentpolicy",
+            name="allow_retired_revision",
             field=models.BooleanField(default=False),
         ),
     ]

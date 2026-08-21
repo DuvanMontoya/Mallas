@@ -1,8 +1,7 @@
-import { cookies } from "next/headers";
-
 import { PlannerBoard } from "@/components/planner-board";
 import { SessionRequired } from "@/components/session-required";
-import { getAcademicOverview, getAcademicTerms, getCurriculumMap, getScenarioCompare, getScenarios, getSessionSnapshot } from "@/lib/api";
+import { getAcademicOverview, getAcademicTerms, getCurriculumMap, getScenarioCompare, getScenarios } from "@/lib/api";
+import { requireAuthenticatedSession } from "@/lib/require-authenticated-session";
 
 export const dynamic = "force-dynamic";
 
@@ -19,17 +18,7 @@ function first(value: string | string[] | undefined) {
 
 export default async function PlannerPage({ searchParams }: PlannerPageProps) {
   const params = await searchParams;
-  let headers: HeadersInit | undefined;
-  try {
-    const cookieHeader = (await cookies()).toString();
-    headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
-  } catch {
-    headers = undefined;
-  }
-  const session = await getSessionSnapshot(headers);
-  if (session.state !== "authenticated") {
-    return <SessionRequired nextPath="/planner" title="Inicia sesión para planear" description="Los escenarios son privados, versionados y están vinculados a una matrícula concreta." />;
-  }
+  const { headers, session } = await requireAuthenticatedSession("/planner");
   const isEditorialOnly = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) && !session.user.student_profile_id && !session.user.roles.includes("STUDENT");
   if (isEditorialOnly) {
     return <SessionRequired nextPath="/planner" title="No hay una matrícula disponible" description="Los escenarios pertenecen a una matrícula estudiantil. Esta cuenta administrativa no tiene un espacio de planificación propio." showSignIn={false} />;

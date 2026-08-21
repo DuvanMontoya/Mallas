@@ -2230,6 +2230,11 @@
         },
         "tags": [
           "Analytics"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -2942,6 +2947,11 @@
         },
         "tags": [
           "Curriculum map"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -3141,6 +3151,276 @@
         },
         "tags": [
           "Curriculum map"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/governance/assignment-policies": {
+      "get": {
+        "operationId": "modules_governance_api_assignment_policies",
+        "summary": "Assignment Policies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentPolicyCollectionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Curriculum governance"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/governance/assignment-policies/{policy_id}/submit": {
+      "post": {
+        "operationId": "modules_governance_api_assignment_policy_submit",
+        "summary": "Assignment Policy Submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentPolicySummaryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Curriculum governance"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -6765,6 +7045,143 @@
         ]
       }
     },
+    "/api/v1/admin/students/admission-facts/verify": {
+      "post": {
+        "operationId": "modules_student_records_admin_api_admin_admission_fact_verify",
+        "summary": "Admin Admission Fact Verify",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAdmissionFactView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Student administration"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminAdmissionFactVerifyPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/students/enrollments/{source_enrollment_id}/transition-preview": {
       "post": {
         "operationId": "modules_student_records_admin_api_admin_transition_preview",
@@ -8266,6 +8683,144 @@
         ]
       }
     },
+    "/api/v1/admin/students/enrollments/{enrollment_id}/assignment-override-evidence": {
+      "get": {
+        "operationId": "modules_student_records_admin_api_admin_override_evidence",
+        "summary": "Admin Override Evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "enrollment_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Enrollment Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverrideEvidenceCollectionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Student administration"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/students/assignment-override-authorizations/{authorization_id}/approve": {
       "post": {
         "operationId": "modules_student_records_admin_api_admin_override_authorization_approve",
@@ -8869,6 +9424,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       },
       "post": {
@@ -9137,6 +9697,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       },
       "patch": {
@@ -9607,6 +10172,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -9748,6 +10318,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -9881,6 +10456,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -10014,6 +10594,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -10147,6 +10732,11 @@
         },
         "tags": [
           "Offerings"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -11278,6 +11868,11 @@
         },
         "tags": [
           "Planning"
+        ],
+        "security": [
+          {
+            "SessionAuth": []
+          }
         ]
       }
     },
@@ -16165,6 +16760,272 @@
         "title": "GraphRelationView",
         "type": "object"
       },
+      "AssignmentPolicyCollectionView": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentPolicySummaryView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AssignmentPolicyCollectionView",
+        "type": "object"
+      },
+      "AssignmentPolicyEvidenceReviewView": {
+        "properties": {
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "source_title": {
+            "title": "Source Title",
+            "type": "string"
+          },
+          "locator": {
+            "title": "Locator",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "excerpt_hash": {
+            "title": "Excerpt Hash",
+            "type": "string"
+          },
+          "snapshot_sha256": {
+            "title": "Snapshot Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "purpose",
+          "source_title",
+          "locator",
+          "excerpt",
+          "excerpt_hash",
+          "snapshot_sha256"
+        ],
+        "title": "AssignmentPolicyEvidenceReviewView",
+        "type": "object"
+      },
+      "AssignmentPolicySummaryView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "policy_code": {
+            "title": "Policy Code",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "program_name": {
+            "title": "Program Name",
+            "type": "string"
+          },
+          "plan_code": {
+            "title": "Plan Code",
+            "type": "string"
+          },
+          "revision_code": {
+            "title": "Revision Code",
+            "type": "string"
+          },
+          "revision_status": {
+            "title": "Revision Status",
+            "type": "string"
+          },
+          "revision_content_hash": {
+            "title": "Revision Content Hash",
+            "type": "string"
+          },
+          "revision_source_set_hash": {
+            "title": "Revision Source Set Hash",
+            "type": "string"
+          },
+          "context": {
+            "title": "Context",
+            "type": "string"
+          },
+          "epistemic_status": {
+            "title": "Epistemic Status",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "prepared_by_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared By Id"
+          },
+          "approved_by_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By Id"
+          },
+          "admission_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admission From"
+          },
+          "admission_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admission To"
+          },
+          "cohort_code": {
+            "title": "Cohort Code",
+            "type": "string"
+          },
+          "previous_plan_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Plan Code"
+          },
+          "normative_published_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normative Published On"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective To"
+          },
+          "allow_retired_revision": {
+            "title": "Allow Retired Revision",
+            "type": "boolean"
+          },
+          "review_content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Content Hash"
+          },
+          "source_set_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Set Hash"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentPolicyEvidenceReviewView"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "policy_code",
+          "version",
+          "program_name",
+          "plan_code",
+          "revision_code",
+          "revision_status",
+          "revision_content_hash",
+          "revision_source_set_hash",
+          "context",
+          "epistemic_status",
+          "status",
+          "prepared_by_id",
+          "approved_by_id",
+          "admission_from",
+          "admission_to",
+          "cohort_code",
+          "previous_plan_code",
+          "normative_published_on",
+          "effective_from",
+          "effective_to",
+          "allow_retired_revision",
+          "review_content_hash",
+          "source_set_hash",
+          "evidence"
+        ],
+        "title": "AssignmentPolicySummaryView",
+        "type": "object"
+      },
       "AssignmentPolicyPublicationView": {
         "properties": {
           "id": {
@@ -18822,6 +19683,10 @@
             "title": "Admission Term Source Status",
             "type": "string"
           },
+          "admission_fact_status": {
+            "title": "Admission Fact Status",
+            "type": "string"
+          },
           "selected_plan_code": {
             "anyOf": [
               {
@@ -18869,6 +19734,7 @@
           "admission_term_id",
           "admission_term_code",
           "admission_term_source_status",
+          "admission_fact_status",
           "selected_plan_code",
           "selected_revision_code"
         ],
@@ -18931,6 +19797,91 @@
           "admission_term_id"
         ],
         "title": "AdminAssignmentPreviewPayload",
+        "type": "object"
+      },
+      "AdminAdmissionFactView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "program_id": {
+            "format": "uuid",
+            "title": "Program Id",
+            "type": "string"
+          },
+          "admission_term_id": {
+            "format": "uuid",
+            "title": "Admission Term Id",
+            "type": "string"
+          },
+          "evidence_id": {
+            "format": "uuid",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "verified_at": {
+            "format": "date-time",
+            "title": "Verified At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "program_id",
+          "admission_term_id",
+          "evidence_id",
+          "content_hash",
+          "verified_at"
+        ],
+        "title": "AdminAdmissionFactView",
+        "type": "object"
+      },
+      "AdminAdmissionFactVerifyPayload": {
+        "properties": {
+          "program_id": {
+            "format": "uuid",
+            "title": "Program Id",
+            "type": "string"
+          },
+          "admission_term_id": {
+            "format": "uuid",
+            "title": "Admission Term Id",
+            "type": "string"
+          },
+          "record_reference": {
+            "title": "Record Reference",
+            "type": "string"
+          },
+          "source_enrollment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Enrollment Id"
+          }
+        },
+        "required": [
+          "program_id",
+          "admission_term_id",
+          "record_reference"
+        ],
+        "title": "AdminAdmissionFactVerifyPayload",
         "type": "object"
       },
       "AdminTransitionPayload": {
@@ -19634,6 +20585,7 @@
         "type": "object"
       },
       "AdminEnrollmentRevisionPayload": {
+        "description": "Explicit empty body: reevaluation derives every input from governed state.",
         "properties": {},
         "title": "AdminEnrollmentRevisionPayload",
         "type": "object"
@@ -19707,6 +20659,34 @@
             "title": "Evidence Id",
             "type": "string"
           },
+          "evidence_source_title": {
+            "title": "Evidence Source Title",
+            "type": "string"
+          },
+          "evidence_locator": {
+            "title": "Evidence Locator",
+            "type": "string"
+          },
+          "evidence_excerpt": {
+            "title": "Evidence Excerpt",
+            "type": "string"
+          },
+          "evidence_snapshot_sha256": {
+            "title": "Evidence Snapshot Sha256",
+            "type": "string"
+          },
+          "evidence_excerpt_hash": {
+            "title": "Evidence Excerpt Hash",
+            "type": "string"
+          },
+          "revision_status": {
+            "title": "Revision Status",
+            "type": "string"
+          },
+          "seal_version": {
+            "title": "Seal Version",
+            "type": "string"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -19751,6 +20731,13 @@
           "revision_code",
           "reason_code",
           "evidence_id",
+          "evidence_source_title",
+          "evidence_locator",
+          "evidence_excerpt",
+          "evidence_snapshot_sha256",
+          "evidence_excerpt_hash",
+          "revision_status",
+          "seal_version",
           "status",
           "prepared_by_id",
           "approved_by_id",
@@ -19789,6 +20776,56 @@
           "reason_code"
         ],
         "title": "AdminOverrideAuthorizationCreatePayload",
+        "type": "object"
+      },
+      "AdminOverrideEvidenceCollectionView": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminOverrideEvidenceView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AdminOverrideEvidenceCollectionView",
+        "type": "object"
+      },
+      "AdminOverrideEvidenceView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "source_title": {
+            "title": "Source Title",
+            "type": "string"
+          },
+          "snapshot_sha256": {
+            "title": "Snapshot Sha256",
+            "type": "string"
+          },
+          "locator": {
+            "title": "Locator",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source_title",
+          "snapshot_sha256",
+          "locator",
+          "excerpt"
+        ],
+        "title": "AdminOverrideEvidenceView",
         "type": "object"
       },
       "StudentOnboardingView": {

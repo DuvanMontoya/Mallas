@@ -43,8 +43,10 @@ from modules.identity.models import (
 from modules.institutions.models import Institution, Program
 from modules.offerings.models import AcademicTerm
 from modules.student_records.models import (
+    AdmissionFact,
     CurriculumAssignmentDecision,
     CurriculumAssignmentOverrideAuthorization,
+    EnrollmentTransition,
     ProgramEnrollment,
     StudentOnboarding,
     StudentProfile,
@@ -90,6 +92,224 @@ def _can_administer(
         if assignment.program_id in (None, program_id):
             return True
     return False
+
+
+@transaction.atomic  # type: ignore[untyped-decorator]
+def verify_admission_fact(
+    *,
+    actor: Any,
+    program_id: UUID,
+    admission_term_id: UUID,
+    evidence_id: UUID | None = None,
+    record_reference: str,
+    source_enrollment_id: UUID | None = None,
+    request: Any | None = None,
+) -> AdmissionFact:
+    normalized_reference = " ".join(record_reference.split())
+    if not normalized_reference:
+        raise StudentAdministrationError(
+            "An institutional admission reference is required.",
+            code="student_admin_admission_fact_invalid",
+        )
+    reference_hash = digest_identifier(f"admission-record:{normalized_reference}")
+    try:
+        program = Program.objects.select_related("faculty__campus").get(pk=program_id)
+        term = AcademicTerm.objects.select_for_update().get(pk=admission_term_id)
+    except (Program.DoesNotExist, AcademicTerm.DoesNotExist) as exc:
+        raise StudentAdministrationError(
+            "Admission fact material was not found.", code="student_admin_reference_not_found"
+        ) from exc
+    institution_id = program.faculty.campus.institution_id
+    if term.institution_id != institution_id or not _can_administer(
+        actor, institution_id, program_id=program.pk
+    ):
+        raise StudentAdministrationError(
+            "You cannot verify this admission fact.", code="student_admin_forbidden"
+        )
+    source_enrollment = None
+    if source_enrollment_id:
+        try:
+            source_enrollment = ProgramEnrollment.objects.select_related("student").get(
+                pk=source_enrollment_id
+            )
+        except ProgramEnrollment.DoesNotExist as exc:
+            raise StudentAdministrationError(
+                "Source enrollment was not found.", code="student_admin_reference_not_found"
+            ) from exc
+        if source_enrollment.program_id != program.pk or not _can_administer(
+            actor, institution_id, program_id=program.pk
+        ):
+            raise StudentAdministrationError(
+                "The admission manifest is outside this enrollment scope.",
+                code="student_admin_forbidden",
+            )
+    expected_scope = {
+        "purpose": "STUDENT_ADMISSION_FACT",
+        "artifact_type": "INSTITUTIONAL_ADMISSION_RECORD",
+        "institution_id": str(institution_id),
+        "program_id": str(program.pk),
+        "academic_term_id": str(term.pk),
+        "record_reference_hash": reference_hash,
+    }
+    evidence_query = Evidence.objects.select_related("snapshot__document").filter(
+        snapshot__metadata__purpose=expected_scope["purpose"],
+        snapshot__metadata__artifact_type=expected_scope["artifact_type"],
+        snapshot__metadata__institution_id=expected_scope["institution_id"],
+        snapshot__metadata__program_id=expected_scope["program_id"],
+        snapshot__metadata__academic_term_id=expected_scope["academic_term_id"],
+        snapshot__metadata__record_reference_hash=reference_hash,
+    )
+    if evidence_id:
+        evidence_query = evidence_query.filter(pk=evidence_id)
+    matches = list(evidence_query.order_by("id")[:2])
+    if len(matches) != 1:
+        raise StudentAdministrationError(
+            "Exactly one archived institutional admission manifest must match this reference.",
+            code="student_admin_admission_evidence_not_unique",
+        )
+    evidence = matches[0]
+    if (
+        any(evidence.snapshot.metadata.get(key) != value for key, value in expected_scope.items())
+        or not str(evidence.snapshot.metadata.get("provider") or "").strip()
+        or not str(evidence.snapshot.metadata.get("subject_identifier_hash") or "").strip()
+    ):
+        raise StudentAdministrationError(
+            "The archived evidence is not scoped to this program, term and admission-fact purpose.",
+            code="student_admin_admission_evidence_scope_invalid",
+        )
+    if settings.PRIVILEGED_MFA_REQUIRED and not getattr(actor, "_privileged_mfa_verified", False):
+        raise StudentAdministrationError(
+            "Privileged authentication is required to verify admission.",
+            code="student_admin_step_up_required",
+        )
+    fact = (
+        AdmissionFact.objects.select_for_update()
+        .filter(
+            program=program,
+            academic_term=term,
+            record_reference_hash=reference_hash,
+        )
+        .first()
+    )
+    if source_enrollment:
+        manifest_subject_hash = (
+            fact.sealed_subject_identifier_hash
+            if fact and fact.status == EpistemicStatus.VERIFIED.value
+            else str(evidence.snapshot.metadata.get("subject_identifier_hash") or "")
+        )
+        expected_subject_hash = digest_identifier(
+            f"admission-subject:{source_enrollment.student.student_number.strip()}"
+        )
+        if manifest_subject_hash != expected_subject_hash:
+            raise StudentAdministrationError(
+                "The admission manifest belongs to a different institutional subject.",
+                code="student_admin_admission_subject_mismatch",
+            )
+    if fact and fact.status == EpistemicStatus.VERIFIED.value:
+        return fact
+    fact = fact or AdmissionFact(
+        program=program,
+        academic_term=term,
+        record_reference_hash=reference_hash,
+        evidence=evidence,
+    )
+    fact.evidence = evidence
+    locator = (
+        evidence.line_locator
+        or evidence.section
+        or (f"p. {evidence.page}" if evidence.page else "source")
+    )
+    fact.sealed_snapshot_id = evidence.snapshot_id
+    fact.sealed_snapshot_sha256 = evidence.snapshot.sha256
+    fact.sealed_storage_key_hash = canonical_content_hash(
+        {"storage_key": evidence.snapshot.storage_key}
+    )
+    fact.sealed_excerpt_hash = canonical_content_hash({"excerpt": evidence.excerpt})
+    fact.sealed_locator = locator
+    fact.sealed_source_title = evidence.snapshot.document.title
+    fact.sealed_provider = str(evidence.snapshot.metadata["provider"])
+    fact.sealed_artifact_type = str(evidence.snapshot.metadata["artifact_type"])
+    fact.sealed_scope_hash = canonical_content_hash(expected_scope)
+    fact.sealed_subject_identifier_hash = str(evidence.snapshot.metadata["subject_identifier_hash"])
+    fact.status = EpistemicStatus.VERIFIED.value
+    fact.verified_by = actor
+    fact.verified_at = timezone.now()
+    fact.content_hash = canonical_content_hash(
+        {
+            "program_id": str(program.pk),
+            "academic_term_id": str(term.pk),
+            "record_reference_hash": reference_hash,
+            "evidence_id": str(evidence.pk),
+            "snapshot_id": str(fact.sealed_snapshot_id),
+            "snapshot_sha256": fact.sealed_snapshot_sha256,
+            "storage_key_hash": fact.sealed_storage_key_hash,
+            "excerpt_hash": fact.sealed_excerpt_hash,
+            "locator": fact.sealed_locator,
+            "source_title": fact.sealed_source_title,
+            "provider": fact.sealed_provider,
+            "artifact_type": fact.sealed_artifact_type,
+            "scope_hash": fact.sealed_scope_hash,
+            "subject_identifier_hash": fact.sealed_subject_identifier_hash,
+        }
+    )
+    fact._verification_service_authorized = True
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL app.admission_fact_verification = 'allowed'")
+    fact.save()
+    record_audit_event(
+        request,
+        action="STUDENT_ADMISSION_FACT_VERIFIED",
+        actor=actor,
+        object_type="AdmissionFact",
+        object_id=fact.pk,
+        institution_id=institution_id,
+        metadata={
+            "program_id": str(program.pk),
+            "academic_term_id": str(term.pk),
+            "evidence_id": str(evidence.pk),
+            "content_hash": fact.content_hash,
+        },
+    )
+    return fact
+
+
+def _lock_unconsumed_admission_fact(
+    assignment: dict[str, Any], *, subject_identifier: str
+) -> AdmissionFact | None:
+    if assignment.get("status") != CurriculumAssignmentDecisionStatus.RESOLVED.value:
+        return None
+    input_data = assignment.get("input") or {}
+    fact_id = input_data.get("admission_fact_id")
+    fact_hash = input_data.get("admission_fact_content_hash")
+    if not fact_id or not fact_hash:
+        raise StudentAdministrationError(
+            "A resolved automatic assignment is missing its individual admission fact.",
+            code="student_admin_admission_fact_invalid",
+        )
+    try:
+        fact = AdmissionFact.objects.select_for_update().get(
+            pk=fact_id,
+            content_hash=fact_hash,
+            status=EpistemicStatus.VERIFIED.value,
+        )
+    except AdmissionFact.DoesNotExist as exc:
+        raise StudentAdministrationError(
+            "The verified admission fact changed after preview.",
+            code="student_admin_stale_resource",
+        ) from exc
+    if CurriculumAssignmentDecision.objects.filter(admission_fact=fact).exists():
+        raise StudentAdministrationError(
+            "This individual admission fact was already consumed by another enrollment.",
+            code="student_admin_admission_fact_already_consumed",
+        )
+    expected_subject_hash = digest_identifier(f"admission-subject:{subject_identifier.strip()}")
+    if fact.sealed_subject_identifier_hash != expected_subject_hash:
+        raise StudentAdministrationError(
+            "The admission manifest belongs to a different institutional subject.",
+            code="student_admin_admission_subject_mismatch",
+        )
+    return fact
 
 
 def _authorized_institutions(actor: Any) -> list[Institution]:
@@ -261,21 +481,42 @@ def preview_administered_assignment(
             "The campus timezone is not configured correctly.",
             code="student_admin_configuration_invalid",
         ) from exc
+    admission_fact = (
+        AdmissionFact.objects.filter(
+            program=program,
+            academic_term=term,
+            record_reference_hash=reference_hash,
+            status=EpistemicStatus.VERIFIED.value,
+        ).first()
+        if reference_hash
+        else None
+    )
     decision = resolve_assignment_preview(
         program_id=program.pk,
         admission_date=admission_date,
         context=context,
         cohort_code=cohort_code,
         previous_plan_id=previous_plan.pk if previous_plan else None,
-        admission_source_snapshot_id=term.source_snapshot_id,
-        admission_source_sha256=(term.source_snapshot.sha256 if term.source_snapshot_id else None),
-        admission_verification_method=admission_verification_method,
+        admission_source_snapshot_id=(
+            admission_fact.sealed_snapshot_id if admission_fact else None
+        ),
+        admission_source_sha256=(admission_fact.sealed_snapshot_sha256 if admission_fact else None),
+        admission_verification_method=(
+            AdmissionFactVerificationMethod.VERIFIED_ADMISSION_FACT.value
+            if admission_fact
+            else admission_verification_method
+        ),
         admission_record_reference_hash=reference_hash,
+        admission_fact_id=admission_fact.pk if admission_fact else None,
+        admission_fact_content_hash=admission_fact.content_hash if admission_fact else None,
     )
     decision["admission_term_id"] = str(term.pk)
     decision["admission_term_code"] = term.code
     decision["admission_term_source_status"] = (
         EpistemicStatus.VERIFIED.value if term.source_snapshot_id else EpistemicStatus.UNKNOWN.value
+    )
+    decision["admission_fact_status"] = (
+        EpistemicStatus.VERIFIED.value if admission_fact else EpistemicStatus.UNKNOWN.value
     )
     selected_plan_id = decision.get("selected_plan_id")
     selected_revision_id = decision.get("selected_revision_id")
@@ -315,10 +556,11 @@ def preview_administered_transition(
             code="student_admin_validation",
         )
     try:
-        source = ProgramEnrollment.objects.select_related("student", "program", "plan").get(
-            pk=source_enrollment_id
-        )
-    except ProgramEnrollment.DoesNotExist as exc:
+        source = ProgramEnrollment.objects.select_related(
+            "student", "program", "plan", "admission_term"
+        ).get(pk=source_enrollment_id)
+        target_term = AcademicTerm.objects.get(pk=admission_term_id)
+    except (ProgramEnrollment.DoesNotExist, AcademicTerm.DoesNotExist) as exc:
         raise StudentAdministrationError(
             "Source enrollment was not found.", code="student_admin_reference_not_found"
         ) from exc
@@ -330,6 +572,29 @@ def preview_administered_transition(
         raise StudentAdministrationError(
             "Resolve the source enrollment curriculum before a transition.",
             code="student_admin_assignment_needs_review",
+        )
+    if context == CurriculumAssignmentContext.REENTRY.value and source.status not in {
+        EnrollmentStatus.COMPLETED.value,
+        EnrollmentStatus.SUSPENDED.value,
+        EnrollmentStatus.WITHDRAWN.value,
+        EnrollmentStatus.TRANSITIONED.value,
+    }:
+        raise StudentAdministrationError(
+            "Reentry requires a historical, suspended or withdrawn source enrollment.",
+            code="student_admin_transition_source_status_invalid",
+        )
+    if (
+        context == CurriculumAssignmentContext.PLAN_TRANSITION.value
+        and source.status != EnrollmentStatus.ACTIVE.value
+    ):
+        raise StudentAdministrationError(
+            "Plan transition requires a current source enrollment.",
+            code="student_admin_transition_source_status_invalid",
+        )
+    if target_term.starts_at <= source.admission_term.starts_at:
+        raise StudentAdministrationError(
+            "The reentry or transition term must be later than the source enrollment term.",
+            code="student_admin_transition_chronology_invalid",
         )
     decision = preview_administered_assignment(
         actor=actor,
@@ -366,7 +631,13 @@ def create_administered_transition_enrollment(
     try:
         source = (
             ProgramEnrollment.objects.select_for_update()
-            .select_related("student__institution", "program", "plan", "revision_basis")
+            .select_related(
+                "student__institution",
+                "program",
+                "plan",
+                "revision_basis",
+                "admission_term",
+            )
             .get(pk=source_enrollment_id)
         )
     except ProgramEnrollment.DoesNotExist as exc:
@@ -382,6 +653,25 @@ def create_administered_transition_enrollment(
             "Privileged authentication is required to create a transition.",
             code="student_admin_step_up_required",
         )
+    term_ids = sorted({source.admission_term_id, admission_term_id}, key=str)
+    locked_terms = {
+        term.pk: term
+        for term in AcademicTerm.objects.select_for_update()
+        .select_related("source_snapshot")
+        .filter(pk__in=term_ids)
+        .order_by("id")
+    }
+    if len(locked_terms) != len(term_ids):
+        raise StudentAdministrationError(
+            "Transition term was not found.", code="student_admin_reference_not_found"
+        )
+    source_term = locked_terms[source.admission_term_id]
+    target_term = locked_terms[admission_term_id]
+    if target_term.starts_at <= source_term.starts_at:
+        raise StudentAdministrationError(
+            "The reentry or transition term must be later than the source enrollment term.",
+            code="student_admin_transition_chronology_invalid",
+        )
     decision = preview_administered_transition(
         actor=actor,
         source_enrollment_id=source.pk,
@@ -396,6 +686,9 @@ def create_administered_transition_enrollment(
             "Curriculum assignment changed after preview; review it again.",
             code="student_admin_stale_resource",
         )
+    admission_fact = _lock_unconsumed_admission_fact(
+        decision, subject_identifier=source.student.student_number
+    )
     automatic_assignment = decision["status"] == CurriculumAssignmentDecisionStatus.RESOLVED.value
     plan = None
     revision = None
@@ -447,6 +740,7 @@ def create_administered_transition_enrollment(
     StudentOnboarding.objects.create(enrollment=enrollment)
     CurriculumAssignmentDecision.objects.create(
         enrollment=enrollment,
+        admission_fact=admission_fact,
         policy_id=policy_id,
         status=decision["status"],
         method=(
@@ -462,6 +756,28 @@ def create_administered_transition_enrollment(
         selected_revision=revision,
         decision_hash=decision["decision_hash"],
         decided_by=actor,
+    )
+    source_previous_status = source.status
+    if context == CurriculumAssignmentContext.PLAN_TRANSITION.value:
+        source.status = EnrollmentStatus.TRANSITIONED.value
+        source.review_reasons = []
+        source.save(update_fields=("status", "review_reasons", "updated_at"))
+    EnrollmentTransition.objects.create(
+        source_enrollment=source,
+        target_enrollment=enrollment,
+        context=context,
+        previous_plan=source.plan,
+        previous_revision=source.revision_basis,
+        decision_hash=decision["decision_hash"],
+        source_previous_status=source_previous_status,
+        source_result_status=source.status,
+        source_term_id=source_term.pk,
+        source_term_code=source_term.code,
+        source_term_starts_at=source_term.starts_at,
+        target_term_id=target_term.pk,
+        target_term_code=target_term.code,
+        target_term_starts_at=target_term.starts_at,
+        created_by=actor,
     )
     record_audit_event(
         request,
@@ -609,17 +925,13 @@ def resolve_administered_enrollment_revision(
             code="student_admin_precondition_required",
         )
     try:
-        enrollment = (
-            ProgramEnrollment.objects.select_for_update()
-            .select_related(
-                "student__user",
-                "student__institution",
-                "program",
-                "plan",
-                "admission_term",
-            )
-            .get(pk=enrollment_id)
-        )
+        enrollment = ProgramEnrollment.objects.select_related(
+            "student__user",
+            "student__institution",
+            "program",
+            "plan",
+            "admission_term",
+        ).get(pk=enrollment_id)
     except ProgramEnrollment.DoesNotExist as exc:
         raise StudentAdministrationError(
             "Enrollment was not found.", code="student_admin_reference_not_found"
@@ -659,6 +971,18 @@ def resolve_administered_enrollment_revision(
             code="student_admin_assignment_needs_review",
         )
     input_data = previous_decision.input_data
+    admission_fact = (
+        AdmissionFact.objects.select_related("evidence__snapshot")
+        .filter(
+            program_id=enrollment.program_id,
+            academic_term_id=enrollment.admission_term_id,
+            record_reference_hash=input_data.get("admission_record_reference_hash"),
+            status=EpistemicStatus.VERIFIED.value,
+        )
+        .first()
+        if input_data.get("admission_record_reference_hash")
+        else None
+    )
     try:
         assignment = resolve_assignment_preview(
             program_id=enrollment.program_id,
@@ -671,13 +995,27 @@ def resolve_administered_enrollment_revision(
                 else None
             ),
             admission_source_snapshot_id=(
-                UUID(str(input_data["admission_source_snapshot_id"]))
-                if input_data.get("admission_source_snapshot_id")
-                else None
+                admission_fact.sealed_snapshot_id
+                if admission_fact
+                else (
+                    UUID(str(input_data["admission_source_snapshot_id"]))
+                    if input_data.get("admission_source_snapshot_id")
+                    else None
+                )
             ),
-            admission_source_sha256=input_data.get("admission_source_sha256"),
-            admission_verification_method=input_data.get("admission_verification_method"),
+            admission_source_sha256=(
+                admission_fact.sealed_snapshot_sha256
+                if admission_fact
+                else input_data.get("admission_source_sha256")
+            ),
+            admission_verification_method=(
+                AdmissionFactVerificationMethod.VERIFIED_ADMISSION_FACT.value
+                if admission_fact
+                else input_data.get("admission_verification_method")
+            ),
             admission_record_reference_hash=input_data.get("admission_record_reference_hash"),
+            admission_fact_id=admission_fact.pk if admission_fact else None,
+            admission_fact_content_hash=(admission_fact.content_hash if admission_fact else None),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise StudentAdministrationError(
@@ -689,6 +1027,9 @@ def resolve_administered_enrollment_revision(
             "No unique verified assignment policy is available yet.",
             code="student_admin_assignment_needs_review",
         )
+    consumed_admission_fact = _lock_unconsumed_admission_fact(
+        assignment, subject_identifier=enrollment.student.student_number
+    )
     try:
         plan = CurriculumPlan.objects.get(pk=assignment["selected_plan_id"])
         revision = CurriculumRevision.objects.get(pk=assignment["selected_revision_id"])
@@ -723,6 +1064,7 @@ def resolve_administered_enrollment_revision(
     )
     CurriculumAssignmentDecision.objects.create(
         enrollment=enrollment,
+        admission_fact=consumed_admission_fact,
         policy=policy,
         status=CurriculumAssignmentDecisionStatus.RESOLVED.value,
         method=CurriculumAssignmentMethod.AUTOMATIC.value,
@@ -764,6 +1106,13 @@ def assignment_override_authorization_view(
         "revision_code": authorization.revision_basis.revision_code,
         "reason_code": authorization.reason_code,
         "evidence_id": authorization.evidence_id,
+        "evidence_source_title": authorization.sealed_source_title,
+        "evidence_locator": authorization.sealed_locator,
+        "evidence_excerpt": authorization.sealed_excerpt,
+        "evidence_snapshot_sha256": authorization.sealed_snapshot_sha256,
+        "evidence_excerpt_hash": authorization.sealed_excerpt_hash,
+        "revision_status": authorization.revision_status,
+        "seal_version": authorization.seal_version,
         "status": authorization.status,
         "prepared_by_id": authorization.prepared_by_id,
         "approved_by_id": authorization.approved_by_id,
@@ -792,6 +1141,63 @@ def list_assignment_override_authorizations(
         CurriculumAssignmentOverrideAuthorization.objects.filter(enrollment=enrollment)
         .select_related("plan", "revision_basis", "evidence")
         .order_by("-created_at", "-id")
+    )
+
+
+def _eligible_assignment_override_evidence(
+    enrollment: ProgramEnrollment,
+    *,
+    revision_id: UUID | str | None = None,
+    reason_code: str | None = None,
+) -> Any:
+    shared_scope = Q(
+        assignment_policy_links__policy__program_id=enrollment.program_id,
+        assignment_policy_links__policy__status__in=("PUBLISHED", "SUPERSEDED"),
+        assignment_policy_links__policy__epistemic_status="VERIFIED",
+        assignment_policy_links__purpose="ASSIGNMENT_OVERRIDE_AUTHORITY",
+    )
+    today = timezone.localdate()
+    individual_scope = (
+        Q(
+            academic_exceptions__enrollment=enrollment,
+            academic_exceptions__exception_type="CURRICULUM_ASSIGNMENT_OVERRIDE",
+            academic_exceptions__status="APPROVED",
+        )
+        & (
+            Q(academic_exceptions__valid_from__isnull=True)
+            | Q(academic_exceptions__valid_from__lte=today)
+        )
+        & (
+            Q(academic_exceptions__valid_to__isnull=True)
+            | Q(academic_exceptions__valid_to__gte=today)
+        )
+    )
+    if revision_id is not None:
+        shared_scope &= Q(assignment_policy_links__policy__revision_basis_id=revision_id)
+        individual_scope &= Q(academic_exceptions__scope__revision_id=str(revision_id))
+    if reason_code is not None:
+        individual_scope &= Q(academic_exceptions__scope__reason_code=reason_code)
+    return Evidence.objects.filter(shared_scope | individual_scope).distinct()
+
+
+def list_assignment_override_evidence(*, actor: Any, enrollment_id: UUID | str) -> list[Evidence]:
+    enrollment = (
+        ProgramEnrollment.objects.select_related("student").filter(pk=enrollment_id).first()
+    )
+    if enrollment is None:
+        raise StudentAdministrationError(
+            "Enrollment was not found.", code="student_admin_reference_not_found"
+        )
+    if not _can_administer(
+        actor, enrollment.student.institution_id, program_id=enrollment.program_id
+    ):
+        raise StudentAdministrationError(
+            "You cannot view evidence for this enrollment.", code="student_admin_forbidden"
+        )
+    return list(
+        _eligible_assignment_override_evidence(enrollment)
+        .select_related("snapshot__document")
+        .order_by("snapshot__document__title", "snapshot_id", "page", "id")[:500]
     )
 
 
@@ -851,7 +1257,15 @@ def create_assignment_override_authorization(
                 RevisionStatus.RETIRED.value,
             ),
         )
-        evidence = Evidence.objects.get(pk=evidence_id)
+        evidence = (
+            _eligible_assignment_override_evidence(
+                enrollment,
+                revision_id=revision_basis_id,
+                reason_code=reason_code,
+            )
+            .select_related("snapshot__document")
+            .get(pk=evidence_id)
+        )
     except (
         CurriculumPlan.DoesNotExist,
         CurriculumRevision.DoesNotExist,
@@ -866,14 +1280,52 @@ def create_assignment_override_authorization(
             "The override target must be an immutable, fully hashed revision.",
             code="student_admin_revision_not_published",
         )
-    authorization = CurriculumAssignmentOverrideAuthorization.objects.create(
+    snapshot = evidence.snapshot
+    locator = (
+        evidence.line_locator
+        or evidence.section
+        or (f"p. {evidence.page}" if evidence.page else "source")
+    )
+    authorization = CurriculumAssignmentOverrideAuthorization(
         enrollment=enrollment,
         plan=plan,
         revision_basis=revision,
         reason_code=reason_code,
         evidence=evidence,
         prepared_by=actor,
+        revision_content_hash=revision.content_hash,
+        revision_source_set_hash=revision.source_set_hash,
+        revision_status=revision.status,
+        sealed_snapshot_id=snapshot.pk,
+        sealed_snapshot_sha256=snapshot.sha256,
+        sealed_storage_key_hash=canonical_content_hash({"storage_key": snapshot.storage_key}),
+        sealed_excerpt_hash=canonical_content_hash({"excerpt": evidence.excerpt}),
+        sealed_excerpt=evidence.excerpt,
+        sealed_locator_hash=canonical_content_hash({"locator": locator}),
+        sealed_locator=locator,
+        sealed_source_title=snapshot.document.title,
     )
+    prepared_envelope = {
+        "authorization_id": str(authorization.pk),
+        "enrollment_id": str(enrollment.pk),
+        "plan_id": str(plan.pk),
+        "revision_id": str(revision.pk),
+        "reason_code": reason_code,
+        "evidence_id": str(evidence.pk),
+        "revision_content_hash": authorization.revision_content_hash,
+        "revision_source_set_hash": authorization.revision_source_set_hash,
+        "revision_status": authorization.revision_status,
+        "snapshot_id": str(authorization.sealed_snapshot_id),
+        "snapshot_sha256": authorization.sealed_snapshot_sha256,
+        "storage_key_hash": authorization.sealed_storage_key_hash,
+        "excerpt_hash": authorization.sealed_excerpt_hash,
+        "excerpt": authorization.sealed_excerpt,
+        "locator_hash": authorization.sealed_locator_hash,
+        "source_title": authorization.sealed_source_title,
+        "prepared_by_id": str(actor.pk),
+    }
+    authorization.content_hash = canonical_content_hash(prepared_envelope)
+    authorization.save()
     record_audit_event(
         request,
         action="CURRICULUM_ASSIGNMENT_OVERRIDE_PREPARED",
@@ -887,6 +1339,7 @@ def create_assignment_override_authorization(
             "revision_id": str(revision.pk),
             "reason_code": reason_code,
             "evidence_id": str(evidence.pk),
+            "prepared_content_hash": authorization.content_hash,
         },
     )
     return authorization
@@ -911,7 +1364,6 @@ def approve_assignment_override_authorization(
             "enrollment__student",
             "plan",
             "revision_basis",
-            "evidence__snapshot",
             "prepared_by",
         )
         .filter(pk=authorization_id)
@@ -941,14 +1393,17 @@ def approve_assignment_override_authorization(
         raise StudentAdministrationError(
             "Only a draft authorization can be approved.", code="student_admin_status_invalid"
         )
+    if authorization.seal_version != CurriculumAssignmentOverrideAuthorization.SealVersion.V2:
+        raise StudentAdministrationError(
+            "Legacy override material must be prepared again under the current seal.",
+            code="student_admin_override_authorization_invalid",
+        )
     if authorization.prepared_by_id == actor.pk:
         raise StudentAdministrationError(
             "A different administrator must approve this override.",
             code="student_admin_separation_required",
         )
     revision = authorization.revision_basis
-    evidence = authorization.evidence
-    snapshot = evidence.snapshot
     if (
         revision.status
         not in {
@@ -956,41 +1411,41 @@ def approve_assignment_override_authorization(
             RevisionStatus.SUPERSEDED.value,
             RevisionStatus.RETIRED.value,
         }
-        or not revision.content_hash
-        or not revision.source_set_hash
-        or not snapshot.sha256
-        or not evidence.excerpt_hash
+        or revision.status != authorization.revision_status
+        or revision.content_hash != authorization.revision_content_hash
+        or revision.source_set_hash != authorization.revision_source_set_hash
     ):
         raise StudentAdministrationError(
             "The authorization cannot be sealed from incomplete governance material.",
             code="student_admin_override_authorization_invalid",
         )
-    sealed = {
+    prepared_envelope = {
         "authorization_id": str(authorization.pk),
         "enrollment_id": str(enrollment.pk),
         "plan_id": str(authorization.plan_id),
         "revision_id": str(revision.pk),
         "reason_code": authorization.reason_code,
-        "evidence_id": str(evidence.pk),
-        "revision_content_hash": revision.content_hash,
-        "revision_source_set_hash": revision.source_set_hash,
-        "snapshot_id": str(snapshot.pk),
-        "snapshot_sha256": snapshot.sha256,
-        "storage_key_hash": canonical_content_hash({"storage_key": snapshot.storage_key}),
-        "excerpt_hash": evidence.excerpt_hash,
+        "evidence_id": str(authorization.evidence_id),
+        "revision_content_hash": authorization.revision_content_hash,
+        "revision_source_set_hash": authorization.revision_source_set_hash,
+        "revision_status": authorization.revision_status,
+        "snapshot_id": str(authorization.sealed_snapshot_id),
+        "snapshot_sha256": authorization.sealed_snapshot_sha256,
+        "storage_key_hash": authorization.sealed_storage_key_hash,
+        "excerpt_hash": authorization.sealed_excerpt_hash,
+        "excerpt": authorization.sealed_excerpt,
+        "locator_hash": authorization.sealed_locator_hash,
+        "source_title": authorization.sealed_source_title,
         "prepared_by_id": str(authorization.prepared_by_id),
-        "approved_by_id": str(actor.pk),
     }
+    if canonical_content_hash(prepared_envelope) != authorization.content_hash:
+        raise StudentAdministrationError(
+            "The prepared authorization seal is invalid.",
+            code="student_admin_override_authorization_invalid",
+        )
     authorization.status = CurriculumAssignmentOverrideAuthorization.Status.APPROVED
     authorization.approved_by = actor
     authorization.approved_at = timezone.now()
-    authorization.revision_content_hash = revision.content_hash
-    authorization.revision_source_set_hash = revision.source_set_hash
-    authorization.sealed_snapshot_id = snapshot.pk
-    authorization.sealed_snapshot_sha256 = snapshot.sha256
-    authorization.sealed_storage_key_hash = sealed["storage_key_hash"]
-    authorization.sealed_excerpt_hash = evidence.excerpt_hash
-    authorization.content_hash = canonical_content_hash(sealed)
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
             cursor.execute("SET LOCAL app.assignment_override_approval = 'allowed'")
@@ -1067,6 +1522,11 @@ def override_administered_enrollment_assignment(
     if authorization is None or not authorization.content_hash:
         raise StudentAdministrationError(
             "A sealed approved authorization is required.",
+            code="student_admin_override_authorization_invalid",
+        )
+    if authorization.seal_version != CurriculumAssignmentOverrideAuthorization.SealVersion.V2:
+        raise StudentAdministrationError(
+            "Legacy override material must be prepared again under the current seal.",
             code="student_admin_override_authorization_invalid",
         )
     plan = authorization.plan
@@ -1171,17 +1631,13 @@ def update_administered_identity(
             code="student_admin_precondition_required",
         )
     try:
-        enrollment = (
-            ProgramEnrollment.objects.select_for_update()
-            .select_related(
-                "student__user",
-                "student__institution",
-                "program",
-                "plan",
-                "admission_term",
-            )
-            .get(pk=enrollment_id)
-        )
+        enrollment = ProgramEnrollment.objects.select_related(
+            "student__user",
+            "student__institution",
+            "program",
+            "plan",
+            "admission_term",
+        ).get(pk=enrollment_id)
     except ProgramEnrollment.DoesNotExist as exc:
         raise StudentAdministrationError(
             "Enrollment was not found.", code="student_admin_reference_not_found"
@@ -1215,6 +1671,13 @@ def update_administered_identity(
                 "created_for_legacy_student_profile": str(enrollment.student_id),
             },
         )
+    locked_enrollments = list(
+        ProgramEnrollment.objects.select_for_update()
+        .select_related("student__institution", "program", "plan", "admission_term")
+        .filter(student_id=enrollment.student_id)
+        .order_by("id")
+    )
+    enrollment = next(item for item in locked_enrollments if item.pk == enrollment.pk)
     if person_existed and expected_version.strip('"') != person.updated_at.isoformat():
         raise StudentAdministrationError(
             "Identity data changed since it was reviewed.",
@@ -1266,17 +1729,18 @@ def update_administered_identity(
         "birth_date": person.birth_date,
     }
     changed_fields = sorted(field for field in previous if previous[field] != current[field])
-    remaining_review_reasons = [
-        reason for reason in enrollment.review_reasons if reason != "IDENTITY_REVIEW"
-    ]
-    if remaining_review_reasons != enrollment.review_reasons:
-        enrollment.review_reasons = remaining_review_reasons
-        enrollment.status = (
-            EnrollmentStatus.NEEDS_REVIEW.value
-            if remaining_review_reasons
-            else EnrollmentStatus.ACTIVE.value
-        )
-        enrollment.save(update_fields=("review_reasons", "status", "updated_at"))
+    for student_enrollment in locked_enrollments:
+        remaining_review_reasons = [
+            reason for reason in student_enrollment.review_reasons if reason != "IDENTITY_REVIEW"
+        ]
+        if remaining_review_reasons != student_enrollment.review_reasons:
+            student_enrollment.review_reasons = remaining_review_reasons
+            student_enrollment.status = (
+                EnrollmentStatus.NEEDS_REVIEW.value
+                if remaining_review_reasons
+                else EnrollmentStatus.ACTIVE.value
+            )
+            student_enrollment.save(update_fields=("review_reasons", "status", "updated_at"))
     record_audit_event(
         request,
         action="PERSON_IDENTITY_RECTIFIED",
@@ -1413,7 +1877,11 @@ def create_administered_enrollment(
     try:
         institution = Institution.objects.get(pk=institution_id)
         program = Program.objects.select_related("faculty__campus").get(pk=program_id)
-        term = AcademicTerm.objects.select_related("source_snapshot").get(pk=admission_term_id)
+        term = (
+            AcademicTerm.objects.select_for_update()
+            .select_related("source_snapshot")
+            .get(pk=admission_term_id)
+        )
     except (
         Institution.DoesNotExist,
         Program.DoesNotExist,
@@ -1450,28 +1918,49 @@ def create_administered_enrollment(
             "The campus timezone is not configured correctly.",
             code="student_admin_configuration_invalid",
         ) from exc
+    normalized_reference = " ".join((admission_record_reference or "").split())
+    reference_hash = (
+        digest_identifier(f"admission-record:{normalized_reference}")
+        if normalized_reference
+        else None
+    )
+    admission_fact = (
+        AdmissionFact.objects.select_related("evidence__snapshot")
+        .filter(
+            program=program,
+            academic_term=term,
+            record_reference_hash=reference_hash,
+            status=EpistemicStatus.VERIFIED.value,
+        )
+        .first()
+        if reference_hash
+        else None
+    )
     assignment = resolve_assignment_preview(
         program_id=program.pk,
         admission_date=admission_date,
         context=assignment_context,
         cohort_code=(cohort_code or "").strip(),
         previous_plan_id=previous_plan_id,
-        admission_source_snapshot_id=term.source_snapshot_id,
-        admission_source_sha256=(term.source_snapshot.sha256 if term.source_snapshot_id else None),
-        admission_verification_method=admission_verification_method,
-        admission_record_reference_hash=(
-            digest_identifier(
-                "admission-record:" + " ".join((admission_record_reference or "").split())
-            )
-            if (admission_record_reference or "").strip()
-            else None
+        admission_source_snapshot_id=(
+            admission_fact.sealed_snapshot_id if admission_fact else None
         ),
+        admission_source_sha256=(admission_fact.sealed_snapshot_sha256 if admission_fact else None),
+        admission_verification_method=(
+            AdmissionFactVerificationMethod.VERIFIED_ADMISSION_FACT.value
+            if admission_fact
+            else admission_verification_method
+        ),
+        admission_record_reference_hash=reference_hash,
+        admission_fact_id=admission_fact.pk if admission_fact else None,
+        admission_fact_content_hash=admission_fact.content_hash if admission_fact else None,
     )
     if expected_assignment_hash and assignment["decision_hash"] != expected_assignment_hash:
         raise StudentAdministrationError(
             "Curriculum assignment changed after preview; review it again.",
             code="student_admin_stale_resource",
         )
+    admission_fact = _lock_unconsumed_admission_fact(assignment, subject_identifier=student_number)
     automatic_assignment = assignment["status"] == "RESOLVED"
     if automatic_assignment and expected_assignment_hash is None:
         raise StudentAdministrationError(
@@ -1628,6 +2117,7 @@ def create_administered_enrollment(
     StudentOnboarding.objects.create(enrollment=enrollment)
     CurriculumAssignmentDecision.objects.create(
         enrollment=enrollment,
+        admission_fact=admission_fact,
         policy_id=assignment["selected_policy_id"] if automatic_assignment else None,
         status=assignment["status"],
         method=(

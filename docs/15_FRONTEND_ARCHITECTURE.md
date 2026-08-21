@@ -17,6 +17,11 @@ El layout raíz es Server Component dinámico y obtiene la sesión mediante
 generado. El servidor reenvía la cookie de sesión al backend; en navegador el
 cliente usa `credentials: include`.
 
+Toda ruta de producto usa además `requireAuthenticatedSession`: valida la
+sesión en el backend antes de renderizar y redirige al login ante cookie
+ausente, inválida o servicio de identidad no verificable. `proxy.ts` cubre el
+caso sin cookie como optimización, pero no es una decisión de autorización.
+
 Mutaciones y lecturas de dominio pasan por la misma capa tipada (`getSessionSnapshot`,
 `getCsrfToken`, `signIn`, `signOut` y los servicios que se agreguen después). No
 se permiten llamadas dispersas a `fetch`, URLs API ni DTOs escritos a mano en

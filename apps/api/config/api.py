@@ -63,6 +63,8 @@ api = NinjaAPI(
     title=settings.API_TITLE,
     version=settings.API_VERSION,
     description="API versionada para navegación curricular y planificación académica explicable.",
+    openapi_url=None,
+    docs_url=None,
     urls_namespace="curriculum_navigator_api",
 )
 

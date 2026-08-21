@@ -10,7 +10,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { GripVertical, Lock, LockOpen, Plus, Share2, Trash2, WandSparkles } from "lucide-react";
+import { GripVertical, Lock, LockOpen, Plus, Trash2, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
@@ -320,18 +320,6 @@ export function PlannerBoard({
     await runMutation(() => archiveScenario(scenario.id, { ifMatch: quoteVersion(scenario.version) }));
   }
 
-  async function handleShare() {
-    if (!scenario) return;
-    const updated = await runMutation(() => updateScenario(
-      scenario.id,
-      { sharing_enabled: !scenario.sharing_enabled },
-      { ifMatch: quoteVersion(scenario.version) },
-    ));
-    if (updated?.sharing_enabled && updated.share_token) {
-      setMessage(`Enlace privado listo: ${window.location.origin}/shared/scenarios/${updated.share_token}`);
-    }
-  }
-
   async function handleCompare(nextId: string) {
     setCompareId(nextId);
     if (!scenario || !nextId) {
@@ -390,9 +378,8 @@ export function PlannerBoard({
         <div className="section-heading"><div><p className="eyebrow">Control de escenario</p><h2 id="planner-controls-title">Tu ruta de planificación</h2></div><StatusBadge tone={toneForState(scenario.validation.state)} label={scenario.validation.state === "VALID" ? "Sin advertencias" : "Requiere revisión"} /></div>
         <div className="planner-toolbar-grid">
           <label className="field-group"><span>Escenario activo</span><select value={scenario.id} onChange={(event) => selectScenario(event.target.value)}><option value={scenario.id}>{scenario.name}</option>{otherScenarios.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <div className="planner-toolbar-actions"><button className="button button-secondary" type="button" onClick={handleDuplicate} disabled={pending}><WandSparkles size={15} aria-hidden="true" /> Duplicar</button><button className="button button-secondary" type="button" onClick={handleShare} disabled={pending}><Share2 size={15} aria-hidden="true" /> {scenario.sharing_enabled ? "Dejar de compartir" : "Compartir vista"}</button><button className="button button-quiet" type="button" onClick={handleArchive} disabled={pending}>Archivar</button></div>
+          <div className="planner-toolbar-actions"><button className="button button-secondary" type="button" onClick={handleDuplicate} disabled={pending}><WandSparkles size={15} aria-hidden="true" /> Duplicar</button><button className="button button-quiet" type="button" onClick={handleArchive} disabled={pending}>Archivar</button></div>
         </div>
-        {scenario.sharing_enabled && scenario.share_token ? <p className="planner-share-note" role="status">Vista compartible activa. El enlace no contiene datos personales: <code>{scenario.share_token}</code></p> : null}
         <form className="planner-create-form planner-create-inline" onSubmit={handleCreate}><label className="field-group"><span>Nuevo escenario</span><input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Ej. Ruta con práctica" /></label><button className="button button-primary" type="submit" disabled={pending || !newName.trim()}><Plus size={15} aria-hidden="true" /> Crear</button></form>
       </section>
 

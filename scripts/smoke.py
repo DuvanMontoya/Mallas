@@ -23,8 +23,8 @@ def _fetch(url: str) -> tuple[int, bytes | None, str | None]:
     request = Request(url, method="GET", headers={"Accept": "application/json"})
     try:
         with urlopen(request, timeout=5) as response:
-            # OpenAPI is intentionally public and can exceed a small error
-            # response buffer, but keep a hard ceiling for synthetic checks.
+            # Keep a hard ceiling even though health responses are deliberately
+            # small, so a compromised endpoint cannot exhaust the smoke runner.
             return response.status, response.read(4 * 1024 * 1024), None
     except HTTPError as error:
         return error.code, None, f"http_{error.code}"
@@ -77,13 +77,6 @@ def main() -> int:
             _check_json(
                 f"{base}/api/v1/health/ready",
                 lambda payload: payload.get("status") == "ready" and payload.get("database") == "ok",
-            ),
-        ),
-        (
-            "openapi",
-            _check_json(
-                f"{base}/api/v1/openapi.json",
-                lambda payload: isinstance(payload.get("openapi"), str),
             ),
         ),
     ]

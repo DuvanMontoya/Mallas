@@ -6,31 +6,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('curriculum', '0010_assignment_policy_publication_guard'),
+        ("curriculum", "0010_assignment_policy_publication_guard"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='curriculumassignmentpolicy',
-            name='approved_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='approved_curriculum_assignment_policies', to=settings.AUTH_USER_MODEL),
+            model_name="curriculumassignmentpolicy",
+            name="approved_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="approved_curriculum_assignment_policies",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='curriculumassignmentpolicy',
-            name='prepared_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='prepared_curriculum_assignment_policies', to=settings.AUTH_USER_MODEL),
+            model_name="curriculumassignmentpolicy",
+            name="prepared_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="prepared_curriculum_assignment_policies",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='curriculumassignmentpolicyevidence',
-            name='sealed_snapshot_id',
+            model_name="curriculumassignmentpolicyevidence",
+            name="sealed_snapshot_id",
             field=models.UUIDField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='curriculumassignmentpolicyevidence',
-            name='sealed_storage_key_hash',
+            model_name="curriculumassignmentpolicyevidence",
+            name="sealed_storage_key_hash",
             field=models.CharField(blank=True, max_length=64),
         ),
     ]

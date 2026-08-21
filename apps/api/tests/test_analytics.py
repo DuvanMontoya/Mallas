@@ -24,7 +24,9 @@ class AnalyticsApiTests(TestCase):
         )
         run_degree_audit(self.data["enrollment"].pk)
 
-    def test_definitions_are_visible_without_private_records(self) -> None:
+    def test_definitions_require_a_session_and_exclude_private_records(self) -> None:
+        self.assertEqual(self.client.get("/api/v1/analytics/definitions").status_code, 401)
+        self.client.force_login(self.data["user"])
         response = self.client.get("/api/v1/analytics/definitions")
 
         self.assertEqual(response.status_code, 200, response.content)
@@ -49,9 +51,7 @@ class AnalyticsApiTests(TestCase):
     def test_needs_review_returns_a_complete_safe_analytics_payload(self) -> None:
         self.data["enrollment"].status = "NEEDS_REVIEW"
         self.data["enrollment"].review_reasons = ["LEGACY_REVIEW"]
-        self.data["enrollment"].save(
-            update_fields=["status", "review_reasons", "updated_at"]
-        )
+        self.data["enrollment"].save(update_fields=["status", "review_reasons", "updated_at"])
         self.client.force_login(self.data["user"])
 
         response = self.client.get("/api/v1/analytics/student")

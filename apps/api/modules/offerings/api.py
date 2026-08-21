@@ -6,6 +6,7 @@ from datetime import date, datetime, time
 from typing import Any
 from uuid import UUID
 
+from django.db import transaction
 from django.db.models import ProtectedError, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -184,6 +185,7 @@ def _etag(payload: object) -> str:
 
 @router.get(
     "/academic-terms",
+    auth=django_auth,
     response=with_problem_responses(AcademicTermCollectionView),
 )
 def academic_terms(
@@ -240,6 +242,7 @@ def academic_terms(
 
 @router.get(
     "/academic-terms/{term_id}",
+    auth=django_auth,
     response=with_problem_responses(AcademicTermView),
 )
 def academic_term_detail(
@@ -295,20 +298,29 @@ def academic_term_create(
     return Status(201, _term_dict(term))
 
 
-@router.patch(
-    "/academic-terms/{term_id}",
-    auth=django_auth,
-    response=with_problem_responses(AcademicTermView),
-)
-def academic_term_patch(
-    request: HttpRequest,
-    response: HttpResponse,
-    term_id: UUID,
-    payload: AcademicTermPatch,
+@transaction.atomic  # type: ignore[untyped-decorator]
+def _patch_academic_term(
+    request: HttpRequest, term_id: UUID, payload: AcademicTermPatch
 ) -> dict[str, Any]:
-    term = get_object_or_404(AcademicTerm, pk=term_id)
+    term = get_object_or_404(AcademicTerm.objects.select_for_update(), pk=term_id)
     _manage_offerings(request, term.institution_id)
     changes = payload.model_dump(exclude_unset=True)
+    immutable_admission_fields = {
+        "code",
+        "starts_at",
+        "ends_at",
+        "campus_id",
+        "source_snapshot_id",
+    }
+    if immutable_admission_fields.intersection(changes) and (
+        term.admissions.exists() or term.admission_facts.filter(status="VERIFIED").exists()
+    ):
+        raise_problem(
+            status=409,
+            code="TERM_ADMISSION_FACT_IMMUTABLE",
+            title="Academic term is already used for admissions",
+            detail="Code, dates, campus and source cannot change after an enrollment or verified admission fact references the term.",
+        )
     if "campus_id" in changes:
         campus_id = changes.pop("campus_id")
         term.campus = get_object_or_404(Campus, pk=campus_id) if campus_id else None
@@ -332,6 +344,21 @@ def academic_term_patch(
     payload_view = _term_dict(
         AcademicTerm.objects.select_related("campus", "source_snapshot__document").get(pk=term.pk)
     )
+    return payload_view
+
+
+@router.patch(
+    "/academic-terms/{term_id}",
+    auth=django_auth,
+    response=with_problem_responses(AcademicTermView),
+)
+def academic_term_patch(
+    request: HttpRequest,
+    response: HttpResponse,
+    term_id: UUID,
+    payload: AcademicTermPatch,
+) -> dict[str, Any]:
+    payload_view = _patch_academic_term(request, term_id, payload)
     response["ETag"] = f'"{_etag(payload_view)}"'
     return payload_view
 
@@ -365,6 +392,7 @@ def academic_term_delete(request: HttpRequest, term_id: UUID) -> dict[str, str]:
 
 @router.get(
     "/offerings",
+    auth=django_auth,
     response=with_problem_responses(OfferingsView),
 )
 def offerings(
@@ -404,6 +432,7 @@ def offerings(
 
 @router.get(
     "/offerings/schedule",
+    auth=django_auth,
     response=with_problem_responses(ScheduleEvaluationView),
 )
 def offering_schedule(
@@ -437,6 +466,7 @@ def offering_schedule(
 
 @router.get(
     "/offerings/{offering_id}",
+    auth=django_auth,
     response=with_problem_responses(OfferingView),
 )
 def offering_detail(
@@ -463,6 +493,7 @@ def offering_detail(
 
 @router.get(
     "/sections/{section_id}",
+    auth=django_auth,
     response=with_problem_responses(SectionView),
 )
 def section_detail(request: HttpRequest, section_id: UUID) -> dict[str, Any]:
@@ -489,6 +520,7 @@ def section_detail(request: HttpRequest, section_id: UUID) -> dict[str, Any]:
 
 @router.get(
     "/meetings/{meeting_id}",
+    auth=django_auth,
     response=with_problem_responses(MeetingView),
 )
 def meeting_detail(request: HttpRequest, meeting_id: UUID) -> dict[str, Any]:

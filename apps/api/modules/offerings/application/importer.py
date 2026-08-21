@@ -265,21 +265,28 @@ def import_offering_payload(
             },
         )
         if not term_created:
+            next_campus_id = (campus or term.campus).pk if (campus or term.campus) else None
+            term_is_referenced = (
+                term.admissions.exists() or term.admission_facts.filter(status="VERIFIED").exists()
+            )
+            protected_changed = (
+                term.campus_id != next_campus_id
+                or term.starts_at != starts_at
+                or term.ends_at != ends_at
+            )
+            if term_is_referenced and protected_changed:
+                raise OfferingImportError(
+                    "A referenced term cannot change campus or dates during an offering import."
+                )
             term.campus = campus or term.campus
             term.starts_at = starts_at
             term.ends_at = ends_at
             term.status = str(term_payload.get("status", term.status))
-            term.source_snapshot = snapshot
-            term.save(
-                update_fields=[
-                    "campus",
-                    "starts_at",
-                    "ends_at",
-                    "status",
-                    "source_snapshot",
-                    "updated_at",
-                ]
-            )
+            update_fields = ["campus", "starts_at", "ends_at", "status", "updated_at"]
+            if not term_is_referenced:
+                term.source_snapshot = snapshot
+                update_fields.append("source_snapshot")
+            term.save(update_fields=update_fields)
 
         offerings_created = offerings_updated = sections_created = sections_updated = 0
         meetings_created = 0

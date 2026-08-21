@@ -284,12 +284,12 @@ def scenario_compare(
 
 @router.get(
     "/shared/scenarios/{share_token}",
+    auth=django_auth,
     response=with_problem_responses(SharedScenarioView),
 )
 def shared_scenario(request: HttpRequest, share_token: UUID) -> dict[str, Any]:
-    del request
     try:
-        return shared_scenario_view(share_token)
+        return shared_scenario_view(request.auth, share_token)
     except ScenarioError as error:
         _error(error)
 

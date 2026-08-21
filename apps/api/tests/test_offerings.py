@@ -12,10 +12,12 @@ from modules.governance.models import SourceSnapshot
 from modules.identity.models import RoleAssignment
 from modules.institutions.models import Campus
 from modules.offerings.application.importer import (
+    OfferingImportError,
     SourceDescriptor,
     import_offering_payload,
 )
 from modules.offerings.models import AcademicTerm, CourseOffering
+from modules.student_records.models import ProgramEnrollment
 from tests.factories import foundation
 
 
@@ -166,6 +168,10 @@ class OfferingImportAndApiTests(TestCase):
         self.assertEqual(CurriculumRevision.objects.count(), revision_count)
         self.assertEqual(first.source_snapshot_id, second.source_snapshot_id)
 
+        self.assertEqual(self.client.get("/api/v1/offerings?term_code=2026-1").status_code, 401)
+        self.assertEqual(self.client.get("/api/v1/academic-terms").status_code, 401)
+        self.assertEqual(self.client.get("/api/v1/offerings/schedule").status_code, 401)
+        self.client.force_login(self.user)
         response = self.client.get("/api/v1/offerings?term_code=2026-1")
 
         self.assertEqual(response.status_code, 200)
@@ -186,6 +192,69 @@ class OfferingImportAndApiTests(TestCase):
         conflicts = conflict_response.json()["conflicts"]
         self.assertGreater(len(conflicts), 0)
         self.assertEqual(conflicts[0]["occurrence_date"], "2026-01-05")
+
+    def test_reimport_cannot_move_a_term_referenced_by_an_enrollment(self) -> None:
+        import_offering_payload(
+            offering_payload(course_code=self.context["course"].code),
+            institution=self.institution,
+            campus=self.context["campus"],
+            descriptor=self.descriptor,
+            captured_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+        )
+        term = AcademicTerm.objects.get(institution=self.institution, code="2026-1")
+        ProgramEnrollment.objects.create(
+            student=self.context["student"],
+            program=self.context["program"],
+            plan=self.context["plan"],
+            revision_basis=self.context["revision"],
+            admission_term=term,
+            status="ACTIVE",
+        )
+        changed = offering_payload(course_code=self.context["course"].code)
+        changed["term"]["starts_at"] = "2025-12-15T00:00:00Z"  # type: ignore[index]
+        with self.assertRaises(OfferingImportError):
+            import_offering_payload(
+                changed,
+                institution=self.institution,
+                campus=self.context["campus"],
+                descriptor=self.descriptor,
+                captured_at=datetime.datetime(2026, 1, 3, tzinfo=datetime.UTC),
+            )
+
+    def test_reimport_refreshes_offerings_without_rewriting_referenced_term_source(self) -> None:
+        first = import_offering_payload(
+            offering_payload(course_code=self.context["course"].code),
+            institution=self.institution,
+            campus=self.context["campus"],
+            descriptor=self.descriptor,
+            captured_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+        )
+        term = AcademicTerm.objects.get(institution=self.institution, code="2026-1")
+        ProgramEnrollment.objects.create(
+            student=self.context["student"],
+            program=self.context["program"],
+            plan=self.context["plan"],
+            revision_basis=self.context["revision"],
+            admission_term=term,
+            status="ACTIVE",
+        )
+        changed = offering_payload(course_code=self.context["course"].code)
+        changed["offerings"][0]["status"] = "CANCELLED"  # type: ignore[index]
+
+        second = import_offering_payload(
+            changed,
+            institution=self.institution,
+            campus=self.context["campus"],
+            descriptor=self.descriptor,
+            captured_at=datetime.datetime(2026, 1, 3, tzinfo=datetime.UTC),
+        )
+
+        term.refresh_from_db()
+        offering = CourseOffering.objects.get(term=term)
+        self.assertNotEqual(first.source_snapshot_id, second.source_snapshot_id)
+        self.assertEqual(term.source_snapshot_id, first.source_snapshot_id)
+        self.assertEqual(offering.source_snapshot_id, second.source_snapshot_id)
+        self.assertEqual(offering.status, "CANCELLED")
 
     def test_offered_and_eligibility_are_independent_states(self) -> None:
         other_course = Course.objects.create(institution=self.institution, code="STAT102-offerings")
@@ -213,6 +282,7 @@ class OfferingImportAndApiTests(TestCase):
                 {"code": "STAT102-offerings", "eligibility": "ELIGIBLE", "reasons": []},
             ]
         }
+        self.client.force_login(self.user)
         with patch(
             "modules.offerings.application.services.build_academic_overview",
             return_value=eligibility,
@@ -271,7 +341,7 @@ class OfferingImportAndApiTests(TestCase):
             "/api/v1/academic-terms",
             {"enrollment_id": str(self.enrollment.pk)},
         )
-        self.assertEqual(anonymous.status_code, 403)
+        self.assertEqual(anonymous.status_code, 401)
 
         mismatch = self.client.get(
             "/api/v1/academic-terms",

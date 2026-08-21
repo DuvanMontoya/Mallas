@@ -1,5 +1,5 @@
 import axe from "axe-core";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { GovernanceBackoffice } from "../components/governance-backoffice";
@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   previewGovernanceCandidates: vi.fn(),
   applyGovernanceCandidates: vi.fn(),
   linkGovernanceRequirementEvidence: vi.fn(),
+  getAssignmentPolicies: vi.fn().mockResolvedValue({ data: [], failure: null }),
+  submitAssignmentPolicy: vi.fn(),
+  publishAssignmentPolicy: vi.fn(),
   problemMessage: vi.fn((problem: { detail?: string } | null, fallback: string) => problem?.detail ?? fallback),
 }));
 
@@ -131,7 +134,7 @@ const proposal = {
 describe("governance backoffice", () => {
   it("shows the rule inspector, source chain, and editor action", async () => {
     mocks.submitGovernanceProposal.mockResolvedValue({ data: { ...proposal, status: "IN_REVIEW" }, failure: null });
-    render(<GovernanceBackoffice initialInbox={inbox} initialFailure={null} initialProposal={proposal} initialProposalEtag={'"2026-08-16T20:00:00Z"'} initialProposalFailure={null} roles={["EDITOR"]} />);
+    render(<GovernanceBackoffice initialInbox={inbox} initialFailure={null} initialProposal={proposal} initialProposalEtag={'"2026-08-16T20:00:00Z"'} initialProposalFailure={null} roles={["EDITOR"]} currentUserId={10} />);
     expect(screen.getByRole("heading", { name: /revisiones curriculares/i })).toBeInTheDocument();
     fireEvent.click(screen.getByText(/inspeccionar reglas y evidencia/i));
     expect(screen.getByRole("heading", { name: /qué significa la regla y de dónde sale/i })).toBeInTheDocument();
@@ -148,7 +151,7 @@ describe("governance backoffice", () => {
   it("exposes reviewer-only approval and has no serious accessibility violations", async () => {
     const reviewProposal = { ...proposal, status: "IN_REVIEW" } as GovernanceProposal;
     mocks.reviewGovernanceProposal.mockResolvedValue({ data: { ...reviewProposal, status: "APPROVED" }, failure: null });
-    const { container } = render(<GovernanceBackoffice initialInbox={{ ...inbox, proposals: [{ ...inbox.proposals[0], status: "IN_REVIEW" }] } as SourceInbox} initialFailure={null} initialProposal={reviewProposal} initialProposalEtag={'"2026-08-16T20:00:00Z"'} initialProposalFailure={null} roles={["REVIEWER"]} />);
+    const { container } = render(<GovernanceBackoffice initialInbox={{ ...inbox, proposals: [{ ...inbox.proposals[0], status: "IN_REVIEW" }] } as SourceInbox} initialFailure={null} initialProposal={reviewProposal} initialProposalEtag={'"2026-08-16T20:00:00Z"'} initialProposalFailure={null} roles={["REVIEWER"]} currentUserId={11} />);
     expect(screen.getByRole("button", { name: /aprobar revisión/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /aprobar revisión/i }));
     await waitFor(() => expect(mocks.reviewGovernanceProposal).toHaveBeenCalledWith(
@@ -158,5 +161,50 @@ describe("governance backoffice", () => {
     ));
     await waitFor(() => expect(screen.getByTestId("governance-live-region")).toHaveTextContent(/estado APPROVED/i));
     expect((await axe.run(container)).violations).toEqual([]);
+  });
+
+  it("submits a draft assignment policy and exposes the sealed review package", async () => {
+    const draft = {
+      id: "00000000-0000-4000-8000-000000000801",
+      policy_code: "STAT-ADMISSION",
+      version: 1,
+      program_name: "Estadística",
+      plan_code: "2514",
+      revision_code: "2514-2026",
+      context: "ADMISSION",
+      epistemic_status: "VERIFIED",
+      status: "DRAFT",
+      prepared_by_id: 10,
+      approved_by_id: null,
+      admission_from: "2026-01-01",
+      admission_to: null,
+      cohort_code: "",
+      previous_plan_code: null,
+      normative_published_on: "2025-06-01",
+      effective_from: "2026-01-01",
+      effective_to: null,
+      allow_retired_revision: false,
+      review_content_hash: null,
+      source_set_hash: null,
+      evidence: [],
+    };
+    const submitted = {
+      ...draft,
+      status: "IN_REVIEW",
+      review_content_hash: "a".repeat(64),
+      source_set_hash: "b".repeat(64),
+      evidence: [{ purpose: "ASSIGNMENT_SCOPE", source_title: "Acuerdo 17", locator: "Art. 2", excerpt: "Aplica a ingresos 2026-1.", excerpt_hash: "c".repeat(64), snapshot_sha256: "d".repeat(64) }],
+    };
+    mocks.getAssignmentPolicies.mockResolvedValue({ data: [draft], failure: null });
+    mocks.submitAssignmentPolicy.mockResolvedValue({ data: submitted, failure: null });
+    render(<GovernanceBackoffice initialInbox={inbox} initialFailure={null} initialProposal={proposal} initialProposalEtag={'"2026-08-16T20:00:00Z"'} initialProposalFailure={null} roles={["EDITOR"]} currentUserId={10} />);
+    fireEvent.click(screen.getByText("Políticas de asignación curricular"));
+    const policyRow = (await screen.findByText("STAT-ADMISSION")).closest("tr");
+    expect(policyRow).not.toBeNull();
+    fireEvent.click(within(policyRow!).getByRole("button", { name: "Enviar STAT-ADMISSION a revisión" }));
+    expect(await screen.findByText("Ver material sometido")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Ver material sometido"));
+    expect(screen.getByText("Aplica a ingresos 2026-1.")).toBeInTheDocument();
+    expect(mocks.submitAssignmentPolicy).toHaveBeenCalledWith(draft.id);
   });
 });

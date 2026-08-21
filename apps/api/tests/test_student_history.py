@@ -598,7 +598,8 @@ class HistoryApiTests(TransactionTestCase):
 
     def test_history_context_remains_available_while_revision_needs_review(self) -> None:
         self.data["enrollment"].status = "NEEDS_REVIEW"
-        self.data["enrollment"].save(update_fields=["status", "updated_at"])
+        self.data["enrollment"].review_reasons = ["LEGACY_REVIEW"]
+        self.data["enrollment"].save(update_fields=["status", "review_reasons", "updated_at"])
 
         response = self.client.get("/api/v1/history/context")
 

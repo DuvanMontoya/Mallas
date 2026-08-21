@@ -225,7 +225,7 @@ def academic_overview(
             403
             if error.code == "overview_forbidden"
             else 409
-            if error.code == "enrollment_needs_review"
+            if error.code in {"enrollment_needs_review", "audit_input_inconsistent"}
             else 404
         )
         raise_problem(

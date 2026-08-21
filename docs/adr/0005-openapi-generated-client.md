@@ -4,9 +4,9 @@
 
 ## Decisión
 
-El backend publica el contrato versionado en `/api/v1/openapi.json` y lo archiva
-en `artifacts/openapi.json`. `packages/api-client/src/generated.ts` se genera
-con `openapi-typescript` desde ese artefacto y se consume mediante
+El backend genera el contrato versionado localmente y lo archiva en
+`artifacts/openapi.json`; no expone el documento por HTTP.
+`packages/api-client/src/generated.ts` se genera con `openapi-typescript` desde ese artefacto y se consume mediante
 `openapi-fetch`; no se editan manualmente los tipos de transporte.
 
 La frescura es una comparación byte a byte de la salida generada en memoria. La

@@ -21,12 +21,14 @@ from modules.student_records.application.administration import (
     get_administered_identity,
     list_administered_enrollments,
     list_assignment_override_authorizations,
+    list_assignment_override_evidence,
     override_administered_enrollment_assignment,
     preview_administered_assignment,
     preview_administered_transition,
     resolve_administered_enrollment_revision,
     student_admin_catalog,
     update_administered_identity,
+    verify_admission_fact,
 )
 
 router = Router(tags=["Student administration"])
@@ -221,6 +223,7 @@ class AdminAssignmentPreviewView(Schema):
     admission_term_id: str
     admission_term_code: str
     admission_term_source_status: str
+    admission_fact_status: str
     selected_plan_code: str | None
     selected_revision_code: str | None
     source_enrollment_id: str | None = None
@@ -239,7 +242,24 @@ class AdminTransitionCreatePayload(AdminTransitionPayload):
 
 
 class AdminEnrollmentRevisionPayload(Schema):
-    pass
+    """Explicit empty body: reevaluation derives every input from governed state."""
+
+
+class AdminAdmissionFactVerifyPayload(Schema):
+    program_id: UUID
+    admission_term_id: UUID
+    record_reference: str
+    source_enrollment_id: UUID | None = None
+
+
+class AdminAdmissionFactView(Schema):
+    id: UUID
+    status: str
+    program_id: UUID
+    admission_term_id: UUID
+    evidence_id: UUID
+    content_hash: str
+    verified_at: datetime
 
 
 class AdminEnrollmentOverridePayload(Schema):
@@ -262,6 +282,13 @@ class AdminOverrideAuthorizationView(Schema):
     revision_code: str
     reason_code: str
     evidence_id: UUID
+    evidence_source_title: str
+    evidence_locator: str
+    evidence_excerpt: str
+    evidence_snapshot_sha256: str
+    evidence_excerpt_hash: str
+    revision_status: str
+    seal_version: str
     status: str
     prepared_by_id: int
     approved_by_id: int | None
@@ -271,6 +298,18 @@ class AdminOverrideAuthorizationView(Schema):
 
 class AdminOverrideAuthorizationCollectionView(Schema):
     items: list[AdminOverrideAuthorizationView]
+
+
+class AdminOverrideEvidenceView(Schema):
+    id: UUID
+    source_title: str
+    snapshot_sha256: str
+    locator: str
+    excerpt: str
+
+
+class AdminOverrideEvidenceCollectionView(Schema):
+    items: list[AdminOverrideEvidenceView]
 
 
 class AdminIdentityUpdatePayload(Schema):
@@ -292,7 +331,12 @@ def _error(error: StudentAdministrationError) -> NoReturn:
         else 428
         if error.code == "student_admin_precondition_required"
         else 409
-        if error.code in {"student_account_exists", "student_admin_stale_resource"}
+        if error.code
+        in {
+            "student_account_exists",
+            "student_admin_stale_resource",
+            "student_admin_admission_fact_already_consumed",
+        }
         else 429
         if error.code == "student_admin_rate_limited"
         else 422
@@ -334,6 +378,36 @@ def admin_assignment_preview(
         _error(error)
     response["Cache-Control"] = "private, no-store"
     return result
+
+
+@router.post(
+    "/admission-facts/verify",
+    auth=django_auth,
+    response=with_problem_responses(AdminAdmissionFactView),
+)
+def admin_admission_fact_verify(
+    request: HttpRequest,
+    response: HttpResponse,
+    payload: AdminAdmissionFactVerifyPayload,
+) -> dict[str, Any]:
+    try:
+        fact = verify_admission_fact(
+            actor=request.auth,
+            request=request,
+            **payload.model_dump(),
+        )
+    except StudentAdministrationError as error:
+        _error(error)
+    response["Cache-Control"] = "private, no-store"
+    return {
+        "id": fact.pk,
+        "status": fact.status,
+        "program_id": fact.program_id,
+        "admission_term_id": fact.academic_term_id,
+        "evidence_id": fact.evidence_id,
+        "content_hash": fact.content_hash,
+        "verified_at": fact.verified_at,
+    }
 
 
 @router.post(
@@ -486,14 +560,48 @@ def admin_enrollment_assignment_override(
     auth=django_auth,
     response=with_problem_responses(AdminOverrideAuthorizationCollectionView),
 )
-def admin_override_authorizations(request: HttpRequest, enrollment_id: UUID) -> dict[str, Any]:
+def admin_override_authorizations(
+    request: HttpRequest, response: HttpResponse, enrollment_id: UUID
+) -> dict[str, Any]:
     try:
         items = list_assignment_override_authorizations(
             actor=request.auth, enrollment_id=enrollment_id
         )
     except StudentAdministrationError as error:
         _error(error)
+    response["Cache-Control"] = "private, no-store"
     return {"items": [assignment_override_authorization_view(item) for item in items]}
+
+
+@router.get(
+    "/enrollments/{enrollment_id}/assignment-override-evidence",
+    auth=django_auth,
+    response=with_problem_responses(AdminOverrideEvidenceCollectionView),
+)
+def admin_override_evidence(
+    request: HttpRequest, response: HttpResponse, enrollment_id: UUID
+) -> dict[str, Any]:
+    try:
+        evidence_items = list_assignment_override_evidence(
+            actor=request.auth, enrollment_id=enrollment_id
+        )
+    except StudentAdministrationError as error:
+        _error(error)
+    response["Cache-Control"] = "private, no-store"
+    return {
+        "items": [
+            {
+                "id": item.pk,
+                "source_title": item.snapshot.document.title,
+                "snapshot_sha256": item.snapshot.sha256,
+                "locator": item.line_locator
+                or item.section
+                or (f"p. {item.page}" if item.page else "source"),
+                "excerpt": item.excerpt,
+            }
+            for item in evidence_items
+        ]
+    }
 
 
 @router.post(

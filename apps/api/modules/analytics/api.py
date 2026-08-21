@@ -85,6 +85,7 @@ def _error(error: AnalyticsError) -> NoReturn:
 
 @router.get(
     "/analytics/definitions",
+    auth=django_auth,
     response=with_problem_responses(AnalyticsDefinitionsView),
 )
 def definitions(request: HttpRequest) -> dict[str, Any]:
