@@ -6,9 +6,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock
 
+from django.conf import settings
 from django.db import connection
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 
+from config.settings import _default_web_origins
 from domain.errors import AuditEventImmutableError
 from modules.governance.application.source_fetch import (
     SafeSourceFetcher,
@@ -179,14 +181,29 @@ class UploadStorageSecurityTests(SimpleTestCase):
 class SecurityHeadersAndRateLimitTests(TestCase):
     def test_security_headers_and_cors_allowlist_are_explicit(self) -> None:
         client = Client()
-        response = client.get("/api/v1/health/live", HTTP_ORIGIN="http://localhost:3000")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Access-Control-Allow-Origin"], "http://localhost:3000")
-        self.assertIn("script-src 'self'", response["Content-Security-Policy"])
-        self.assertEqual(response["Permissions-Policy"], "camera=(), microphone=(), geolocation=()")
-        self.assertEqual(response["Cross-Origin-Opener-Policy"], "same-origin")
-        self.assertEqual(response["Cross-Origin-Resource-Policy"], "same-origin")
-        self.assertIn("Idempotency-Key", response["Access-Control-Allow-Headers"])
+        expected_development_origins = (
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3100",
+            "http://127.0.0.1:3100",
+        )
+        self.assertEqual(_default_web_origins(debug=False), "")
+        self.assertEqual(
+            _default_web_origins(debug=True).split(","), list(expected_development_origins)
+        )
+        self.assertTrue(set(expected_development_origins).issubset(settings.CSRF_TRUSTED_ORIGINS))
+        for origin in expected_development_origins:
+            with self.subTest(origin=origin):
+                response = client.get("/api/v1/health/live", HTTP_ORIGIN=origin)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response["Access-Control-Allow-Origin"], origin)
+                self.assertIn("script-src 'self'", response["Content-Security-Policy"])
+                self.assertEqual(
+                    response["Permissions-Policy"], "camera=(), microphone=(), geolocation=()"
+                )
+                self.assertEqual(response["Cross-Origin-Opener-Policy"], "same-origin")
+                self.assertEqual(response["Cross-Origin-Resource-Policy"], "same-origin")
+                self.assertIn("Idempotency-Key", response["Access-Control-Allow-Headers"])
 
     @override_settings(API_MUTATION_RATE_LIMIT_PER_MINUTE=1)  # type: ignore[untyped-decorator]
     def test_state_changing_api_requests_share_a_database_rate_limit(self) -> None:

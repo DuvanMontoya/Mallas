@@ -79,6 +79,6 @@ describe("StudentOnboardingForm", () => {
       }),
       initial.version,
     ));
-    expect(replace).toHaveBeenCalledWith("/");
+    expect(replace).toHaveBeenCalledWith("/curriculum");
   });
 });

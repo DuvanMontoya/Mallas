@@ -40,17 +40,29 @@ ALLOWED_HOSTS = [
     for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
+DEVELOPMENT_WEB_ORIGINS = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3100",
+    "http://127.0.0.1:3100",
+)
+
+
+def _default_web_origins(*, debug: bool) -> str:
+    """Keep loopback browser origins available only in local development."""
+
+    return ",".join(DEVELOPMENT_WEB_ORIGINS) if debug else ""
+
+
+DEFAULT_WEB_ORIGINS = _default_web_origins(debug=DEBUG)
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get(
-        "CSRF_TRUSTED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000" if DEBUG else "",
-    ).split(",")
+    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", DEFAULT_WEB_ORIGINS).split(",")
     if origin.strip()
 ]
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", DEFAULT_WEB_ORIGINS).split(",")
     if origin.strip()
 ]
 

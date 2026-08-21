@@ -274,6 +274,16 @@ WCAG 2.2 AA como mínimo. Nunca codifiques estados sólo por color.
 
 ## 12. Git y operaciones peligrosas
 
+### Autorización operativa del propietario — 2026-08-21
+
+El propietario autorizó de forma continua las acciones necesarias dentro de este
+repositorio local, incluidos commits y `git push origin main`, después de las
+verificaciones proporcionales. Esta autorización no elimina los controles de
+seguridad, privacidad, evidencia curricular ni los límites del entorno; tampoco
+autoriza inventar reglas académicas o datos personales reales. Para validaciones
+locales se pueden crear identidades sintéticas marcadas como tales mediante los
+flujos auditables de producto.
+
 Permitido sin preguntar:
 - leer;
 - buscar;
