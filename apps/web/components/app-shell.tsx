@@ -101,7 +101,7 @@ export function AppShell({ children, session }: { children: React.ReactNode; ses
   const hadOpenMobileMenu = useRef(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const isAuthRoute = pathname === "/login";
+  const isAuthRoute = pathname === "/login" || pathname === "/reset-password";
   const canSeeEditorial = session.user?.roles.some((role) => ["EDITOR", "REVIEWER", "ADMIN"].includes(role)) ?? false;
   const canSeeAdministration = session.user?.roles.includes("ADMIN") ?? false;
   // Student is the default product persona and older accounts can legitimately

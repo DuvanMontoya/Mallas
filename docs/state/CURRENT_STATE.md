@@ -1,5 +1,54 @@
 # Current State
 
+## Acceso, recuperación y bootstrap local reforzados — 2026-08-21
+
+### Terminado en esta sesión
+
+- El acceso es ahora una superficie académica sobria y responsive: explica el
+  valor de la malla, dependencias y planeación sin gamificación, conserva
+  accesibilidad, permite mostrar/ocultar la contraseña y prioriza el formulario
+  en móvil.
+- El alta local de `admin@localhost` es idempotente: la cuenta persiste, una
+  nueva ejecución no rota la contraseña y el comando informa con precisión si
+  existe un archivo privado de credenciales. La rotación sigue siendo explícita
+  con `--reset-password`; el proyecto puede iniciar en SQLite sin `.env`.
+- La recuperación institucional ya tiene UI y backend conectados. En desarrollo
+  no finge correo: indica el comando seguro de rotación local. En producción el
+  envío se habilita sólo con `PASSWORD_RESET_EMAIL_ENABLED=true` y el endpoint
+  falla uniformemente si la entrega no fue configurada.
+- `/reset-password` es público, conserva CSRF/rate limit/tokens de propósito
+  específico y usa `Referrer-Policy: no-referrer` para que `uid` y token no se
+  propaguen a logs vía `Referer`. El login muestra confirmación tras una
+  actualización exitosa.
+
+### Verificaciones
+
+- Backend focalizado: 14 pruebas de identidad/bootstrap PASS; `manage.py check`
+  y `makemigrations --check --dry-run` PASS.
+- Frontend: Vitest 21 archivos/60 pruebas, ESLint, TypeScript y build de Next
+  PASS. Pruebas nuevas cubren visibilidad de contraseña, recuperación no
+  enumerante, bootstrap idempotente, ruta pública y cabecera anti-Referer.
+- Revisión independiente de arquitectura, seguridad, UX y código: los hallazgos
+  High/P1 de correo local, ruta bloqueada, tokens en Referer, objetivos táctiles
+  y prioridad móvil fueron corregidos.
+- Verificación visual de build standalone en desktop/móvil: login y recuperación
+  renderizan; `/reset-password?uid=sample&token=sample` devuelve 200 con
+  `Referrer-Policy: no-referrer`.
+
+### No terminado / siguiente acción exacta
+
+- `python3 scripts/verify.py` fue interrumpido por el cambio de prioridad del
+  usuario después de superar los gates iniciales y ~63% de pytest; debe repetirse
+  y terminar en PASS antes de declarar una release.
+- La recuperación por correo en producción requiere configurar y probar el
+  proveedor institucional, fuera de este checkout. No se habilita con SMTP local
+  implícito.
+- La creación de una persona/matrícula real exige datos personales y evidencia
+  de admisión autorizados; no se crearán identidades o hechos académicos falsos.
+- Commit local creado: `a9f3d42 Improve secure login and local admin recovery`.
+  El push a `origin/main` permanece bloqueado porque este equipo no tiene
+  credencial HTTPS ni clave SSH autorizada para GitHub.
+
 ## Límite de producto autenticado reforzado — 2026-08-21
 
 ### Terminado en esta sesión

@@ -9,6 +9,13 @@ Añadir una entrada por sesión significativa:
 - Pendiente:
 - Siguiente:
 
+## 2026-08-21 16:15 — Codex / GPT-5
+- Objetivo: rediseñar el acceso, impedir pérdida del administrador local y cerrar recuperación de contraseña real.
+- Cambios: login académico responsive; visibilidad de clave y confirmación post-reset; ruta/reset UI; bootstrap de `admin@localhost` idempotente con credencial privada y rotación explícita; guía local sin `.env`; delivery de reset bloqueado hasta configuración explícita de producción; bypass público con `Referrer-Policy: no-referrer`; documentación/configuración y tests actualizados.
+- Verificaciones: 14 pruebas backend de identidad/bootstrap, checks/migraciones, 21 archivos/60 tests frontend, ESLint, TypeScript, build Next y verificación visual standalone PASS; tres revisiones read-only corrigieron hallazgos P1/High. `scripts/verify.py` fue interrumpido por nueva prioridad a ~63% de pytest y se debe repetir.
+- Pendiente: repetir `python3 scripts/verify.py` completo hasta el resultado final PASS; configurar un proveedor institucional de correo antes de activar reset de producción; no crear identidad/matrícula real sin datos y autorización legítimos; GitHub necesita autenticación local antes del push.
+- Siguiente: autenticar GitHub, ejecutar `git push origin main`; luego usar Chrome sólo con una cuenta real autorizada.
+
 ## 2026-08-21 15:44 — Codex / GPT-5
 - Objetivo: cerrar fugas de autenticación, pantallas públicas y lecturas API anónimas.
 - Cambios: guard servidor fail-closed para todas las rutas de producto y Proxy temprano; currículo/grafo/oferta/períodos/secciones/reuniones/definiciones analíticas autenticados; cache privado; escenarios por token sólo owner/advisor autenticado y sin acción UI de enlace externo; OpenAPI/docs HTTP retirados; ADR-0033 y documentación actualizada.

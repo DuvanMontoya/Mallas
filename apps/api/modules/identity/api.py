@@ -378,6 +378,11 @@ def password_reset_request(
             metadata={"action": "password_reset", "identifier_digest": digest_identifier(email)},
         )
         raise HttpError(429, "Too many authentication attempts.")
+    if not settings.PASSWORD_RESET_EMAIL_ENABLED:
+        raise HttpError(
+            503,
+            "Password recovery email is not configured for this installation. Contact support.",
+        )
     user = User.objects.filter(email__iexact=email, is_active=True).first()
     if user is not None:
         uid = urlsafe_base64_encode(force_bytes(user.pk))

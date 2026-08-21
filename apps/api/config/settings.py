@@ -192,6 +192,11 @@ PUBLIC_APP_URL = os.environ.get(
     "PUBLIC_APP_URL", os.environ.get("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
 )
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@curriculum.local")
+PASSWORD_RESET_EMAIL_ENABLED = os.environ.get("PASSWORD_RESET_EMAIL_ENABLED", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 NOTIFICATIONS_EMAIL_ENABLED = os.environ.get("NOTIFICATIONS_EMAIL_ENABLED", "false").lower() in {
     "1",
     "true",

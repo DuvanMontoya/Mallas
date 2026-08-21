@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
   output: "standalone",
   typedRoutes: false,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  async headers() {
+    return [
+      {
+        source: "/reset-password",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+    ];
+  },
   images: {
     remotePatterns: [],
   },

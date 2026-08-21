@@ -79,14 +79,40 @@ class Command(BaseCommand):
 
         user = User.objects.filter(email__iexact=email).first()
         reset_password = bool(options["reset_password"])
-        if user and not reset_password:
-            raise CommandError(
-                "The account already exists. Use --reset-password to rotate its local password."
-            )
         if user and not user.is_superuser:
             raise CommandError(
                 "The existing account is not a superuser and will not be elevated by this command."
             )
+
+        if user is not None and not reset_password:
+            curriculum_imported = self._ensure_local_curriculum(user)
+            credentials_file_is_private = (
+                credentials_file.is_file()
+                and not credentials_file.is_symlink()
+                and (credentials_file.stat().st_mode & 0o777) == 0o600
+            )
+            if credentials_file_is_private:
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        "Local superuser is ready. A private credential file was found at "
+                        f"{credentials_file}."
+                    )
+                )
+            else:
+                self.stdout.write(
+                    self.style.WARNING(
+                        "Local superuser is ready, but a valid private credentials file was not found. "
+                        "Run this command again with --reset-password to create a new local password."
+                    )
+                )
+            if curriculum_imported:
+                self.stdout.write(
+                    "Verified curriculum baseline imported as a local DRAFT revision."
+                )
+            self.stdout.write(
+                "Sign in at http://localhost:3000/login after starting the web application."
+            )
+            return
 
         password = secrets.token_urlsafe(24)
         credential_content = (
@@ -113,6 +139,9 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Local superuser {action}. Credentials saved to {credentials_file}."
             )
+        )
+        self.stdout.write(
+            "Sign in at http://localhost:3000/login after starting the web application."
         )
         if curriculum_imported:
             self.stdout.write("Verified curriculum baseline imported as a local DRAFT revision.")

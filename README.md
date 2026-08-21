@@ -64,13 +64,16 @@ uv run --project apps/api python apps/api/manage.py bootstrap_local_admin
 cat var/local-admin-credentials.txt
 ```
 
-El comando genera una contraseña aleatoria, crea `admin@localhost` como
-superusuario, importa de forma idempotente el baseline curricular verificado y
-guarda las credenciales sólo en
+No necesitas un archivo `.env` para este primer arranque: en desarrollo, sin
+`DATABASE_URL`, Django usa `local.sqlite3`. El comando genera una contraseña
+aleatoria la primera vez, crea `admin@localhost` como superusuario, importa de
+forma idempotente el baseline curricular verificado y guarda las credenciales sólo en
 `var/local-admin-credentials.txt` (permisos `0600`, ruta ignorada por Git).
 Así, la malla, el grafo y la procedencia quedan disponibles desde el primer
-arranque. Úsalas en `http://localhost:8000/admin/` o con el formulario de
-`http://localhost:3000/login`. Si necesitas regenerarla durante desarrollo:
+arranque. Ejecutar el comando de nuevo conserva la cuenta y su contraseña;
+úsalas en el formulario de `http://localhost:3000/login` (o en
+`http://localhost:8000/admin/`). Si perdiste el archivo de credenciales o
+necesitas rotar la contraseña durante desarrollo:
 
 ```bash
 uv run --project apps/api python apps/api/manage.py bootstrap_local_admin --reset-password
@@ -79,7 +82,9 @@ uv run --project apps/api python apps/api/manage.py bootstrap_local_admin --rese
 El baseline se conserva en `DRAFT`: la aplicación no simula una publicación
 curricular ni convierte sus incertidumbres explícitas en hechos. El comando
 sólo funciona con `DJANGO_DEBUG=true`; no es un mecanismo de alta de cuentas
-para producción.
+para producción. La recuperación por correo está desactivada localmente: use
+`bootstrap_local_admin --reset-password`. En producción sólo se habilita con
+`PASSWORD_RESET_EMAIL_ENABLED=true` y un proveedor de correo institucional operativo.
 
 5. Ejecute el backend y el frontend en terminales separadas:
 

@@ -68,11 +68,21 @@ class LocalAdminBootstrapCommandTests(TestCase):
         finally:
             credentials_file.unlink(missing_ok=True)
 
-    def test_refuses_to_overwrite_an_existing_account_without_explicit_rotation(self) -> None:
-        User.objects.create_superuser(email="admin@localhost", password="LocalAdminPassword!2026")
+    def test_existing_account_is_idempotent_and_password_is_preserved(self) -> None:
+        user = User.objects.create_superuser(
+            email="admin@localhost", password="LocalAdminPassword!2026"
+        )
+        credentials_file = self.credentials_file()
+        try:
+            with override_settings(DEBUG=True):
+                call_command("bootstrap_local_admin", credentials_file=str(credentials_file))
 
-        with override_settings(DEBUG=True), self.assertRaises(CommandError):
-            call_command("bootstrap_local_admin", credentials_file=str(self.credentials_file()))
+            user.refresh_from_db()
+            self.assertTrue(user.check_password("LocalAdminPassword!2026"))
+            self.assertFalse(credentials_file.exists())
+            self.assertTrue(CurriculumRevision.objects.filter(plan__code="2514").exists())
+        finally:
+            credentials_file.unlink(missing_ok=True)
 
     def test_refuses_to_run_outside_debug_mode(self) -> None:
         with override_settings(DEBUG=False), self.assertRaises(CommandError):
@@ -243,7 +253,10 @@ class IdentityApiTests(TestCase):
         self.assertEqual(response.status_code, 429)
         self.assertFalse(PersonProfile.objects.filter(user=self.user).exists())
 
-    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")  # type: ignore[untyped-decorator]
+    @override_settings(  # type: ignore[untyped-decorator]
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        PASSWORD_RESET_EMAIL_ENABLED=True,
+    )
     def test_password_reset_is_non_enumerating_and_invalidates_token(self) -> None:
         self.user.must_change_password = True
         self.user.initial_password_expires_at = timezone.now() - timedelta(minutes=1)
@@ -288,6 +301,17 @@ class IdentityApiTests(TestCase):
             **headers,
         )
         self.assertEqual(replay.status_code, 400)
+
+    def test_password_reset_is_unavailable_until_email_delivery_is_configured(self) -> None:
+        response = self.client.post(
+            "/api/v1/auth/password-reset/request",
+            {"email": self.user.email},
+            content_type="application/json",
+            **self.csrf_headers(),
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(AuditEvent.objects.filter(action="AUTH_PASSWORD_RESET_REQUESTED").exists())
 
     def test_expired_initial_password_invalidates_an_already_open_session(self) -> None:
         self.user.must_change_password = True

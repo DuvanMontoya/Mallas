@@ -201,6 +201,36 @@ export async function signIn(
   }
 }
 
+export async function requestPasswordReset(email: string): Promise<ApiFailure | null> {
+  try {
+    const csrfToken = await getCsrfToken();
+    const result = await api.POST("/api/v1/auth/password-reset/request", {
+      body: { email },
+      headers: { "X-CSRFToken": csrfToken },
+    });
+    return result.data ? null : failureFromResult(result);
+  } catch {
+    return { problem: null, correlationId: null, unavailable: true };
+  }
+}
+
+export async function confirmPasswordReset(
+  uid: string,
+  token: string,
+  newPassword: string,
+): Promise<ApiFailure | null> {
+  try {
+    const csrfToken = await getCsrfToken();
+    const result = await api.POST("/api/v1/auth/password-reset/confirm", {
+      body: { uid, token, new_password: newPassword },
+      headers: { "X-CSRFToken": csrfToken },
+    });
+    return result.data ? null : failureFromResult(result);
+  } catch {
+    return { problem: null, correlationId: null, unavailable: true };
+  }
+}
+
 export async function signOut(): Promise<ApiFailure | null> {
   try {
     const csrfToken = await getCsrfToken();

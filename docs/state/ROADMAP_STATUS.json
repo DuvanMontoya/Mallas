@@ -71,7 +71,7 @@
       "prompt": "prompts/06_IDENTITY_SECURITY.md",
       "completed_at": "2026-08-16T02:54:00-05:00",
       "verification": "41 SQLite tests + 1 expected curricular-trigger skip; 42 PostgreSQL tests; identity focused 10; migrations/check/deploy; OpenAPI/client; Ruff/format/mypy/frontend; scripts/verify.py",
-      "notes": "First-party Django sessions, CSRF/CORS/CSP, purpose-specific password/email tokens, ownership/RBAC, editor/reviewer separation, append-only audit events with PostgreSQL/SQLite triggers, shared rate limits and negative security tests implemented. MFA is an explicit P23 boundary in ADR-0012. Specialized reviewers unavailable; manual read-only security/architecture/code review completed. No automatic Git commit created."
+      "notes": "First-party Django sessions, CSRF/CORS/CSP, purpose-specific password/email tokens, ownership/RBAC, editor/reviewer separation, append-only audit events with PostgreSQL/SQLite triggers, shared rate limits and negative security tests implemented. The 2026-08-21 maintenance update added an idempotent local-admin bootstrap, explicit local password recovery, production email-delivery gate, public reset route, no-referrer reset-token boundary, responsive login and regression coverage. MFA is an explicit P23 boundary in ADR-0012."
     },
     {
       "id": "P06",

@@ -20,4 +20,10 @@ describe("product route proxy", () => {
 
     expect(proxy(request).headers.get("x-middleware-next")).toBe("1");
   });
+
+  it("leaves password recovery public so a locked-out person can use the signed link", () => {
+    const response = proxy(new NextRequest("https://navigator.test/reset-password?uid=abc&token=def"));
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
 });

@@ -5,6 +5,7 @@
 | `DJANGO_DEBUG` | `true` | `false` | `false` | no |
 | `DJANGO_SECRET_KEY` | placeholder local | ephemeral CI | secret manager, 50+ chars | sí |
 | `DATABASE_URL` | local Compose | service PostgreSQL | private DB endpoint | sí |
+| `PASSWORD_RESET_EMAIL_ENABLED` | `false`; use `bootstrap_local_admin --reset-password` | `false` unless a test mail backend is configured | `true` only with an operational institutional mail provider | no |
 | `ALLOWED_HOSTS` | localhost | localhost | exact hostnames | no |
 | `CSRF_TRUSTED_ORIGINS` | localhost HTTP | test origin | exact HTTPS origins | no |
 | `CORS_ALLOWED_ORIGINS` | localhost | test origin | exact HTTPS origins | no |

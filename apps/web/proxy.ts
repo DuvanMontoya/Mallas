@@ -9,6 +9,9 @@ const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? "curriculum_session";
  * Django before they render any product content.
  */
 export function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/reset-password") {
+    return NextResponse.next();
+  }
   if (request.cookies.has(SESSION_COOKIE)) return NextResponse.next();
 
   const loginUrl = new URL("/login", request.url);
@@ -17,5 +20,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login(?:/|$)|api/v1(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: ["/((?!login(?:/|$)|reset-password(?:/|$)|api/v1(?:/|$)|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
 };
