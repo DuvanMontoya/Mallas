@@ -630,7 +630,7 @@ def create_administered_transition_enrollment(
         )
     try:
         source = (
-            ProgramEnrollment.objects.select_for_update()
+            ProgramEnrollment.objects.select_for_update(of=("self",))
             .select_related(
                 "student__institution",
                 "program",
@@ -656,7 +656,7 @@ def create_administered_transition_enrollment(
     term_ids = sorted({source.admission_term_id, admission_term_id}, key=str)
     locked_terms = {
         term.pk: term
-        for term in AcademicTerm.objects.select_for_update()
+        for term in AcademicTerm.objects.select_for_update(of=("self",))
         .select_related("source_snapshot")
         .filter(pk__in=term_ids)
         .order_by("id")
@@ -1218,7 +1218,7 @@ def create_assignment_override_authorization(
             code="student_admin_override_reason_invalid",
         )
     enrollment = (
-        ProgramEnrollment.objects.select_for_update()
+        ProgramEnrollment.objects.select_for_update(of=("self",))
         .select_related("student__institution", "program")
         .filter(pk=enrollment_id)
         .first()
@@ -1672,7 +1672,7 @@ def update_administered_identity(
             },
         )
     locked_enrollments = list(
-        ProgramEnrollment.objects.select_for_update()
+        ProgramEnrollment.objects.select_for_update(of=("self",))
         .select_related("student__institution", "program", "plan", "admission_term")
         .filter(student_id=enrollment.student_id)
         .order_by("id")
@@ -1878,7 +1878,7 @@ def create_administered_enrollment(
         institution = Institution.objects.get(pk=institution_id)
         program = Program.objects.select_related("faculty__campus").get(pk=program_id)
         term = (
-            AcademicTerm.objects.select_for_update()
+            AcademicTerm.objects.select_for_update(of=("self",))
             .select_related("source_snapshot")
             .get(pk=admission_term_id)
         )

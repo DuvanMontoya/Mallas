@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
+import unittest
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -30,6 +32,7 @@ from modules.identity.application.authorization import (
     can_view_student,
 )
 from modules.identity.application.rate_limit import consume_rate_limit
+from modules.identity.management.commands.bootstrap_local_admin import Command
 from modules.identity.models import (
     AuditEvent,
     IdentityVerificationMethod,
@@ -58,7 +61,9 @@ class LocalAdminBootstrapCommandTests(TestCase):
             self.assertTrue(user.is_staff)
             self.assertTrue(CurriculumRevision.objects.filter(plan__code="2514").exists())
             self.assertIn("EMAIL=admin@localhost", content)
-            self.assertEqual(os.stat(credentials_file).st_mode & 0o777, 0o600)
+            self.assertTrue(Command._credentials_file_is_private(credentials_file))
+            if os.name != "nt":
+                self.assertEqual(os.stat(credentials_file).st_mode & 0o777, 0o600)
             password = next(
                 line.removeprefix("PASSWORD=")
                 for line in content.splitlines()
@@ -87,6 +92,24 @@ class LocalAdminBootstrapCommandTests(TestCase):
     def test_refuses_to_run_outside_debug_mode(self) -> None:
         with override_settings(DEBUG=False), self.assertRaises(CommandError):
             call_command("bootstrap_local_admin", credentials_file=str(self.credentials_file()))
+
+    @unittest.skipUnless(os.name == "nt", "Windows ACL regression")
+    def test_private_check_rejects_an_unexpected_readable_sid(self) -> None:
+        temporary = Command._write_credentials(self.credentials_file(), "test-only\n")
+        try:
+            result = subprocess.run(
+                ["icacls.exe", str(temporary), "/grant", "*S-1-1-0:(R)"],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(Command._credentials_file_is_private(temporary))
+
+            Command._restrict_credentials_file(temporary)
+            self.assertTrue(Command._credentials_file_is_private(temporary))
+        finally:
+            temporary.unlink(missing_ok=True)
 
 
 class IdentityApiTests(TestCase):

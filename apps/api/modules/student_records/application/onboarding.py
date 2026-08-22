@@ -37,7 +37,11 @@ def _state_for_user(user: Any, *, lock: bool = False) -> StudentOnboarding:
         "current_term",
     ).filter(enrollment__student__user_id=user.pk)
     if lock:
-        query = query.select_for_update()
+        # PostgreSQL cannot apply an unrestricted FOR UPDATE to the nullable
+        # sides introduced by plan, revision, term and current-term joins.
+        # The onboarding row is the concurrency boundary; related academic
+        # records are read-only in this transaction.
+        query = query.select_for_update(of=("self",))
     state = query.order_by(
         F("completed_at").asc(nulls_first=True),
         "-enrollment__admission_term__starts_at",

@@ -19,6 +19,13 @@ def _pending_migrations() -> list[str]:
 
 def _analyze() -> str:
     if connection.vendor == "postgresql":
+        if connection.in_atomic_block:
+            # ANALYZE is valid in a transaction and is the only safe bounded
+            # operation when the caller (including Django's TestCase) already
+            # owns the transaction boundary. VACUUM must remain outside it.
+            with connection.cursor() as cursor:
+                cursor.execute("ANALYZE")
+            return "ANALYZE"
         previous = connection.get_autocommit()
         if not previous:
             connection.set_autocommit(True)

@@ -685,6 +685,7 @@ def import_curriculum_baseline(
         semantic=semantic,
         revision_status=revision.status,
         evidence_without_snapshot=evidence_without_snapshot,
+        repository_root=project_root(),
     )
     if report_path is None:
         target_report = (

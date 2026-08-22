@@ -612,7 +612,15 @@ def render_ingestion_report(
     semantic: Mapping[str, Any],
     revision_status: str,
     evidence_without_snapshot: int,
+    repository_root: Path,
 ) -> str:
+    def portable_path(path: Path) -> str:
+        resolved = path.resolve(strict=False)
+        try:
+            return resolved.relative_to(repository_root.resolve(strict=False)).as_posix()
+        except ValueError:
+            return "external-input"
+
     counts = "\n".join(f"- {key}: {value}" for key, value in validation.counts.items())
     totals = "\n".join(f"- {key}: {value}" for key, value in validation.totals.items())
     unknowns = (
@@ -627,10 +635,10 @@ def render_ingestion_report(
     warnings = "\n".join(f"- {warning}" for warning in validation.warnings) or "- Ninguno"
     return f"""# Informe de ingestión curricular
 
-- Archivo estructurado: `{document.path}`
+- Archivo estructurado: `{portable_path(document.path)}`
 - Schema: `{document.schema_version}`
 - Fingerprint JSON: `{document.fingerprint}`
-- Snapshot fuente: `{source_path}`
+- Snapshot fuente: `{portable_path(source_path)}`
 - SHA-256 fuente: `{source_sha256}`
 - Estado de la revisión generada: `{revision_status}`
 - Propuesta editorial: `DRAFT`; la ingestión no publica automáticamente.

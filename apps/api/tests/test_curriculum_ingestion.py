@@ -20,6 +20,7 @@ from modules.governance.models import ChangeProposal, Evidence, SourceSnapshot
 from modules.imports.application.baseline import (
     baseline_fingerprint,
     load_baseline,
+    render_ingestion_report,
     semantic_diff,
     validate_baseline,
 )
@@ -78,11 +79,39 @@ class CurriculumBaselineValidationTests(TestCase):
 
 
 class CurriculumIngestionPersistenceTests(TestCase):
+    def test_report_never_exposes_absolute_external_paths(self) -> None:
+        document = load_baseline(BASELINE)
+        validation = validate_baseline(document.payload)
+        with tempfile.TemporaryDirectory() as directory:
+            report = render_ingestion_report(
+                document,
+                validation,
+                source_sha256="test-sha256",
+                source_path=BASELINE.parent / "external-source.pdf",
+                semantic={"added": {}, "removed": {}, "changed": []},
+                revision_status=RevisionStatus.DRAFT.value,
+                evidence_without_snapshot=0,
+                repository_root=Path(directory),
+            )
+        self.assertEqual(report.count("`external-input`"), 2)
+        self.assertNotIn(str(BASELINE.resolve()), report)
+        self.assertNotIn(str(BASELINE.parent.resolve()), report)
+
     def test_import_is_idempotent_draft_and_evidence_backed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             first = import_curriculum_baseline(BASELINE, report_path=Path(directory) / "first.md")
             second = import_curriculum_baseline(BASELINE, report_path=Path(directory) / "second.md")
             self.assertTrue(Path(first.report_path).is_file())
+            report = Path(first.report_path).read_text(encoding="utf-8")
+            self.assertIn(
+                "`data/curricula/unal/bogota/estadistica/2514/plan_2514_acuerdo_496_2023.json`",
+                report,
+            )
+            self.assertIn(
+                "`sources/unal/estadistica/ACUERDO_496_2023_PLAN_2514_ESTADISTICA.pdf`",
+                report,
+            )
+            self.assertNotIn(str(BASELINE.resolve()), report)
 
         self.assertEqual(first.revision_id, second.revision_id)
         self.assertEqual(first.fingerprint, second.fingerprint)

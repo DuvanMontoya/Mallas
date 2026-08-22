@@ -730,7 +730,7 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .local-access-help summary { color: var(--text-body); cursor: pointer; font-weight: 800; }
 .local-access-help div { display: grid; gap: .65rem; margin-top: .85rem; }
 .local-access-help p { margin: 0; }
-.local-access-help code { overflow-wrap: anywhere; border: 1px solid var(--border-default); border-radius: .45rem; background: var(--surface-1); color: var(--text-strong); padding: .5rem .6rem; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .65rem; }
+.local-access-help code { display: block; max-width: 100%; overflow-wrap: anywhere; border: 1px solid var(--border-default); border-radius: .45rem; background: var(--surface-1); color: var(--text-strong); padding: .5rem .6rem; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .65rem; white-space: normal; }
 
 .mobile-nav, .mobile-more-menu { display: none; }
 .mobile-menu-toggle { border: 0; background: transparent; color: var(--text-body); cursor: pointer; font-size: .58rem; }

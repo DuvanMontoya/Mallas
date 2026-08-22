@@ -291,7 +291,7 @@ def submit_assignment_policy(
     policy_id: UUID, *, actor: Any, request: Any | None = None
 ) -> CurriculumAssignmentPolicy:
     policy = (
-        CurriculumAssignmentPolicy.objects.select_for_update()
+        CurriculumAssignmentPolicy.objects.select_for_update(of=("self", "revision_basis"))
         .select_related("program__faculty__campus", "plan", "revision_basis")
         .get(pk=policy_id)
     )
@@ -386,7 +386,7 @@ def publish_assignment_policy(
     policy_id: UUID, *, actor: Any, request: Any | None = None
 ) -> CurriculumAssignmentPolicy:
     policy = (
-        CurriculumAssignmentPolicy.objects.select_for_update()
+        CurriculumAssignmentPolicy.objects.select_for_update(of=("self", "revision_basis"))
         .select_related("program__faculty__campus", "plan", "revision_basis", "previous_plan")
         .get(pk=policy_id)
     )

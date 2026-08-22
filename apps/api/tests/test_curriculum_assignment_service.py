@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.test import Client, TestCase
+from django.db import OperationalError, close_old_connections, connection, transaction
+from django.test import Client, TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.utils import timezone
 
 from domain.enums import (
@@ -22,6 +25,7 @@ from modules.curriculum.application.assignment import (
     resolve_assignment_preview,
     submit_assignment_policy,
 )
+from modules.curriculum.application.services import CurriculumRevisionService
 from modules.curriculum.models import (
     CurriculumAssignmentPolicy,
     CurriculumAssignmentPolicyEvidence,
@@ -1029,6 +1033,7 @@ class CurriculumAssignmentPolicyTests(TestCase):
                 source_enrollment_id=self.data["enrollment"].pk,
             )
         self.assertEqual(error.value.code, "student_admin_admission_subject_mismatch")
+
         fact = verify_admission_fact(
             actor=self.admission_verifier,
             program_id=self.data["program"].pk,
@@ -1101,3 +1106,136 @@ class CurriculumAssignmentPolicyTests(TestCase):
             )
 
         self.assertEqual(error.value.code, "student_admin_admission_subject_mismatch")
+
+
+class CurriculumAssignmentPolicyConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self) -> None:
+        self.data = foundation(suffix="-assignment-policy-lock")
+        revision = self.data["revision"]
+        revision.status = RevisionStatus.PUBLISHED.value
+        revision.published_at = timezone.now()
+        revision.content_hash = "a" * 64
+        revision.source_set_hash = "b" * 64
+        revision.save(
+            update_fields=(
+                "status",
+                "published_at",
+                "content_hash",
+                "source_set_hash",
+                "updated_at",
+            )
+        )
+        author = User.objects.create_user(
+            email="policy.lock.author@example.test", password="safe-test-password"
+        )
+        reviewer = User.objects.create_user(
+            email="policy.lock.reviewer@example.test", password="safe-test-password"
+        )
+        for user, role in ((author, UserRole.EDITOR.value), (reviewer, UserRole.REVIEWER.value)):
+            RoleAssignment.objects.create(
+                user=user,
+                role=role,
+                institution=self.data["institution"],
+                program=self.data["program"],
+            )
+        document = NormativeDocument.objects.create(
+            issuer="Test University",
+            document_type="Academic agreement",
+            number="LOCK-17",
+            year=2025,
+            title="Concurrent assignment policy evidence",
+            publication_date=datetime.date(2025, 6, 1),
+        )
+        snapshot = SourceSnapshot.objects.create(
+            document=document,
+            captured_at=timezone.now(),
+            sha256="c" * 64,
+            mime_type="application/pdf",
+            storage_key="test/policy-lock-17.pdf",
+        )
+        policy = CurriculumAssignmentPolicy.objects.create(
+            policy_code="STAT-LOCK",
+            version=1,
+            program=self.data["program"],
+            plan=self.data["plan"],
+            revision_basis=revision,
+            context=CurriculumAssignmentContext.ADMISSION.value,
+            admission_from=datetime.date(2026, 1, 1),
+            normative_published_on=datetime.date(2025, 6, 1),
+            effective_from=datetime.date(2026, 1, 1),
+            status=CurriculumAssignmentPolicyStatus.DRAFT.value,
+            epistemic_status=EpistemicStatus.VERIFIED.value,
+            prepared_by=author,
+        )
+        purposes = (
+            "NORMATIVE_PUBLICATION",
+            "ASSIGNMENT_SCOPE",
+            "TARGET_REVISION",
+            "CONTEXT_RULE",
+            "ASSIGNMENT_OVERRIDE_AUTHORITY",
+        )
+        for index, purpose in enumerate(purposes, start=1):
+            excerpt = f"Verified concurrent policy evidence {index}."
+            evidence = Evidence.objects.create(
+                snapshot=snapshot,
+                page=index,
+                section=f"Section {index}",
+                excerpt=excerpt,
+                excerpt_hash=canonical_content_hash({"excerpt": excerpt}),
+            )
+            CurriculumAssignmentPolicyEvidence.objects.create(
+                policy=policy, evidence=evidence, purpose=purpose
+            )
+        self.policy = submit_assignment_policy(policy.pk, actor=author)
+        self.reviewer_id = reviewer.pk
+
+    @skipUnlessDBFeature("has_select_for_update_of")  # type: ignore[untyped-decorator]
+    def test_retirement_serializes_before_policy_publication(self) -> None:
+        revision_id = self.data["revision"].pk
+        policy_id = self.policy.pk
+        retired = threading.Event()
+        release_retirement = threading.Event()
+
+        def retire_revision() -> None:
+            close_old_connections()
+            try:
+                with transaction.atomic():
+                    CurriculumRevisionService.retire(revision_id)
+                    retired.set()
+                    if not release_retirement.wait(timeout=5):
+                        raise TimeoutError("The publication worker did not reach the lock in time.")
+            finally:
+                close_old_connections()
+
+        def publish_policy() -> str:
+            close_old_connections()
+            try:
+                with transaction.atomic():
+                    with connection.cursor() as cursor:
+                        cursor.execute("SET LOCAL lock_timeout = '500ms'")
+                    reviewer = User.objects.get(pk=self.reviewer_id)
+                    publish_assignment_policy(policy_id, actor=reviewer)
+            except OperationalError:
+                return "lock_timeout"
+            finally:
+                close_old_connections()
+            return "published_without_waiting"
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            retirement_future = executor.submit(retire_revision)
+            self.assertTrue(retired.wait(timeout=5))
+            publication_future = executor.submit(publish_policy)
+            try:
+                self.assertEqual(
+                    publication_future.result(timeout=5),
+                    "lock_timeout",
+                    "Publication did not attempt to lock the revision row.",
+                )
+            finally:
+                release_retirement.set()
+            retirement_future.result(timeout=5)
+
+        self.policy.refresh_from_db()
+        self.assertEqual(self.policy.status, CurriculumAssignmentPolicyStatus.IN_REVIEW.value)

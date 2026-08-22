@@ -1,5 +1,66 @@
 # Current State
 
+## Auditoría integral local en Chrome — 2026-08-22 00:35 -05:00
+
+### Terminado en esta sesión
+
+- Se levantaron PostgreSQL 18, Django 6.0.8 y Next local. Desde el frontend
+  administrativo se creó y persistió una identidad sintética de estudiante con
+  cuenta, rol y matrícula real; no se usaron mocks ni Django admin.
+- Chrome inició sesión con esa cuenta y conserva la sesión tras recargar y
+  reiniciar la API. La asignación quedó honestamente en `NEEDS_REVIEW`: no hay
+  política curricular `PUBLISHED` con evidencia suficiente y no se inventó una.
+- Se corrigieron bloqueos PostgreSQL `select_for_update` sobre joins anulables
+  en asignación, onboarding y administración estudiantil. La publicación vuelve
+  a bloquear también la revisión normativa.
+- Se retiró por completo un intento inseguro de omitir la contraseña inicial.
+  Backend, formulario, OpenAPI y cliente generado vuelven a exigirla; revisión
+  independiente reportó cero Critical/High.
+- El archivo local de credenciales usa en Windows un DACL exacto y verificado
+  para el SID propietario. Se corrigió la incompatibilidad entre rutas de
+  módulos de PowerShell 7 y Windows PowerShell y la prueba Windows pasa.
+- La pantalla de recuperación no desborda a 390 px. La matriz de aceptación
+  navegable está en `docs/audit/STUDENT_CHROME_MATRIX_2026-08-21.md`.
+
+### Verificaciones y evidencia
+
+- Chrome visible: `/admin/students` creó el estudiante (HTTP 201), login real,
+  `auth/me` 200 después de recarga, y `/change-password` muestra los tres campos
+  seguros. Mientras la clave es temporal, las rutas privadas fallan cerradas
+  con 403, como corresponde.
+- OpenAPI regenerado, cliente TypeScript regenerado y `pnpm --dir apps/web
+  typecheck` PASS.
+- `python scripts/verify.py` canónico PASS sobre PostgreSQL: 245 backend PASS,
+  un skip esperado cubierto en identidad, Ruff, formato, MyPy, OpenAPI/cliente,
+  ESLint, TypeScript y 21 archivos/60 pruebas frontend PASS.
+- `LocalAdminBootstrapCommandTests`: 4/4 PASS en Windows. El informe de
+  ingestión también tiene cobertura que impide filtrar rutas absolutas externas.
+- Revisión de la reversión de credenciales: cero Critical/High. La revisión de
+  seguridad detectó el atajo inseguro antes de cierre y éste fue eliminado.
+
+### No terminado / bloqueo exacto
+
+- La integración de Chrome no expone la capacidad segura `browserAuth`. La
+  contraseña privada definitiva sólo puede crearla la persona en el formulario;
+  el propietario indicó que está en el móvil y no puede tomar control del PC.
+  El agente no puede leer, inventar ni escribir ese secreto sin violar el límite
+  de seguridad. Por ello `/change-password` no se puede completar y las rutas
+  privadas posteriores no tienen todavía aceptación Chrome válida.
+- La revisión y publicación de la propuesta normativa 2514 tampoco puede
+  automatizarse: conserva 12 hechos `UNKNOWN`/pendientes y no existe evidencia
+  archivada que pruebe aplicabilidad/publicación. Esto no se sustituye con datos
+  ficticios.
+- Antes de cerrar: completar el cambio privado mediante handoff seguro, recorrer
+  todas las filas pendientes en escritorio y 390 px, resolver defectos hallados
+  y repetir la aceptación/review final si ese recorrido modifica el producto.
+
+### Comandos activos para reanudar
+
+- API: `DATABASE_URL=... uv run --project apps/api --frozen python
+  apps/api/manage.py runserver 127.0.0.1:8000 --noreload` (puerto 8000).
+- Web: `pnpm --dir apps/web dev` (puerto 3000).
+- PostgreSQL: contenedor local `infra-postgres-1`, host `127.0.0.1:55432`.
+
 ## Flujo local completo de estudiante y onboarding editorial — 2026-08-21
 
 ### Terminado en esta sesión
